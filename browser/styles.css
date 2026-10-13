@@ -30,3 +30,4 @@ body.floating-view { margin:0; padding:0; background:#101b28; color:#e1f0e9; }
 #sign-source a { color:#9edfc9; }
 .floating-view #sign-video,.floating-view #sign-text { order:1;max-height:30vh;margin:0; }
 .floating-view #sign-source { order:2;margin:0;font-size:11px; }
+label[for="document-file"] { display:block;margin-top:18px; }
