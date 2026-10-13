@@ -16,8 +16,8 @@
   ],
   "files": {
     ".github/workflows/windows-release.yml": {
-      "bytes": 5758,
-      "sha256": "448ae76453ed75a1d90287fdd624dc1fddc239f20aa1934900c4d102376ae647"
+      "bytes": 5942,
+      "sha256": "898b3e5355ffc2cc442a7eeb8695d20cc29c7ff59c4c2cbd4a67e74525618985"
     },
     ".gitignore": {
       "bytes": 143,
