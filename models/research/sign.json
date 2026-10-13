@@ -1,0 +1,58 @@
+{
+  "name": "Rebuilt INCLUDE four-label ISL SignGRU",
+  "version": "0.2.0",
+  "experimental": true,
+  "labels": [
+    "good evening",
+    "good night",
+    "pleased",
+    "thank you"
+  ],
+  "parameters": 298660,
+  "data_sha256": "4b75149f9841909e99291a0ef4ed93d7f49e708a102778a19f8f4f38fcacc051",
+  "source": "https://zenodo.org/records/4010759",
+  "license": "CC-BY-4.0 derived research artifact",
+  "pose_schema": "mp_tasks_49x4_shoulder_v1",
+  "input_shape": [
+    48,
+    196
+  ],
+  "test": {
+    "accuracy": 1.0,
+    "macro_f1": 1.0,
+    "confusion_matrix": [
+      [
+        4,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        4,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        4,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        4
+      ]
+    ],
+    "samples": 16
+  },
+  "signer_independent": false,
+  "calibrated_scores": false,
+  "limitations": [
+    "Small four-class clip-disjoint subset; signer IDs unknown.",
+    "No continuous sign segmentation, sentence translation or unknown-sign calibration.",
+    "Architecture reconstructed and retrained; older ONNX artifacts are not new exports."
+  ]
+}

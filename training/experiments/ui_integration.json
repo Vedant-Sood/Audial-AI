@@ -1,0 +1,16 @@
+{
+  "environment": "CLOUD / Linux Qt offscreen",
+  "real_background_file_pipeline": "PASS",
+  "network_connections_blocked_during_inference": true,
+  "public_sample": "assets/evaluation_sample.wav",
+  "source": "RAVDESS / Livingstone & Russo, CC-BY-NC-SA-4.0",
+  "caption_lines": 1,
+  "transcript": "Kids are talking by the door.",
+  "all_12_pages_previously_tested": true,
+  "qprocess_hardware_check_launch": "PASS",
+  "windows_worker_launch": "NOT_RUN",
+  "screenshot_home": "assets/desktop-preview.png",
+  "screenshot_combined": "assets/combined-preview.png",
+  "single_actor_sample_speaker_count": 1,
+  "trailing_word_regression": "PASS"
+}

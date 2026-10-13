@@ -1,0 +1,50 @@
+{
+  "environment": "Cloud Linux CPU / Chromium",
+  "source_audio": "assets/evaluation_sample.wav",
+  "checks": {
+    "real_ISL_lights_and_unknown_words": "PASS",
+    "floating_panel_controls_and_return": "PASS",
+    "mobile_width_no_horizontal_overflow": "PASS",
+    "real_worklet_audio_Whisper_ECAPA_voice_and_stop_flush": "PASS",
+    "WebVTT_export": "PASS",
+    "browser_runtime_errors": "NONE"
+  },
+  "transcript": {
+    "schema_version": 2,
+    "id": "561e26a099ad47bf98ed0308d5eea042",
+    "created": "2026-10-07T13:33:29.820360+00:00",
+    "title": "Browser meeting",
+    "speakers": {
+      "Speaker 1": {
+        "name": "Speaker 1",
+        "color": "#254f6d"
+      }
+    },
+    "captions": [
+      {
+        "start": 0.84,
+        "end": 2.3,
+        "text": "Kids are talking by the door.",
+        "speaker": "Speaker 1",
+        "word_confidence": 0.567158043384552,
+        "speaker_similarity": null,
+        "overlap": false,
+        "voice": {
+          "f0_hz": 114.28571428571429,
+          "dbfs": -44.70745494524682,
+          "pitch_confidence": 0.642850829707019,
+          "tone": "uncertain",
+          "tone_confidence": 0.3851
+        }
+      }
+    ]
+  },
+  "elapsed_seconds": 5.65,
+  "floating_layout": {
+    "viewport": [
+      520,
+      560
+    ],
+    "latest_caption_visible": true
+  }
+}

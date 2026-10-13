@@ -1,0 +1,15 @@
+.venv/
+.venvs/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+build/
+dist/
+artifacts/
+datasets/raw/
+*.log
+*.zip
+.env
+.env.*
+ci-state/
+windows-tests.xml

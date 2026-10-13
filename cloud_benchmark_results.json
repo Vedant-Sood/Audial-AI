@@ -1,0 +1,804 @@
+{
+  "environment": "CLOUD DEVELOPMENT / TRAINING",
+  "timestamp_utc": "2026-10-07T08:12:56.605409+00:00",
+  "local_rtx4060_benchmarked": false,
+  "hardware": {
+    "os": "Linux-6.18.44-x86_64-with-glibc2.39",
+    "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+    "cpu": "x86_64",
+    "cpu_logical_cores": 9,
+    "ram_gb": 9.73,
+    "disk_free_gb": 20.84,
+    "nvidia_gpus": [],
+    "cuda_available": false,
+    "torch_version": "2.6.0+cpu",
+    "torch_cuda_build": null,
+    "microphone_error": "PortAudio library not found",
+    "recommended_preset": "FAST",
+    "accurate_preset": "Measure memory before selecting",
+    "cpu_model_kernel_reported": "AMD EPYC 9V74 80-Core Processor",
+    "cpu_allocation_note": "9 logical CPUs exposed; model name does not imply allocation of 80 cores",
+    "disk_free_gb_at_report": 20.84
+  },
+  "automated_tests": {
+    "tests": 41,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 3.828,
+    "status": "PASS",
+    "command": "QT_QPA_PLATFORM=offscreen AAI_TEST_MODEL_ROOT=DOWNLOADED_MODELS HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python -m pytest -q --junitxml=training/experiments/cloud_tests.xml",
+    "junit_file": "training/experiments/cloud_tests.xml",
+    "warning": "One upstream SpeechBrain deprecated-autocast FutureWarning; no test failure"
+  },
+  "training_experiments": {
+    "sign": {
+      "task": "sign",
+      "device": "cpu",
+      "initial_training_loss": 1.4008811541966029,
+      "final_training_loss": 0.03044254788463669,
+      "loss_decreased": true,
+      "test": {
+        "accuracy": 0.9375,
+        "macro_f1": 0.9365079365079365,
+        "confusion_matrix": [
+          [
+            4,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            3,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            4,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            4
+          ]
+        ],
+        "samples": 16
+      },
+      "labels": [
+        "good evening",
+        "good night",
+        "pleased",
+        "thank you"
+      ],
+      "elapsed_seconds": 7.21239192999974,
+      "data_sha256": "4b75149f9841909e99291a0ef4ed93d7f49e708a102778a19f8f4f38fcacc051",
+      "epochs_completed": 26,
+      "best_epoch": 16,
+      "split_counts": {
+        "train": 56,
+        "val": 12,
+        "test": 16
+      },
+      "result_file": "training/experiments/sign_cloud/results.json",
+      "checkpoint": "models/research/sign.pt",
+      "timing_note": "Training loop only; excludes download and preprocessing",
+      "scope": "Four isolated signs; signer independence unverified"
+    },
+    "prosody": {
+      "task": "prosody",
+      "device": "cpu",
+      "initial_training_loss": 2.067384457588196,
+      "final_training_loss": 0.9775008668502172,
+      "loss_decreased": true,
+      "test": {
+        "accuracy": 0.4041666666666667,
+        "macro_f1": 0.3561255463858719,
+        "confusion_matrix": [
+          [
+            2,
+            7,
+            4,
+            1,
+            0,
+            0,
+            2,
+            0
+          ],
+          [
+            2,
+            26,
+            0,
+            4,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            5,
+            6,
+            0,
+            10,
+            1,
+            5,
+            4
+          ],
+          [
+            0,
+            11,
+            3,
+            3,
+            1,
+            3,
+            5,
+            6
+          ],
+          [
+            0,
+            0,
+            5,
+            0,
+            20,
+            0,
+            3,
+            4
+          ],
+          [
+            1,
+            2,
+            7,
+            4,
+            6,
+            9,
+            3,
+            0
+          ],
+          [
+            0,
+            0,
+            4,
+            3,
+            4,
+            2,
+            7,
+            12
+          ],
+          [
+            0,
+            0,
+            2,
+            0,
+            5,
+            0,
+            1,
+            24
+          ]
+        ],
+        "samples": 240
+      },
+      "labels": [
+        "neutral (acted)",
+        "calm (acted)",
+        "happy (acted)",
+        "sad (acted)",
+        "angry (acted)",
+        "fearful (acted)",
+        "disgust (acted)",
+        "surprised (acted)"
+      ],
+      "elapsed_seconds": 0.6609347119999711,
+      "data_sha256": "ffe609198bc279e0ddb0863374399dac9c060cf3517afc0196f4f23532701fb7",
+      "epochs_completed": 13,
+      "best_epoch": 5,
+      "split_counts": {
+        "train": 960,
+        "val": 240,
+        "test": 240
+      },
+      "result_file": "training/experiments/prosody_cloud/results.json",
+      "checkpoint": "models/research/prosody.pt",
+      "timing_note": "Training loop only; excludes download and preprocessing",
+      "scope": "Original acted categories; actor-disjoint; weak research baseline"
+    }
+  },
+  "asr_evaluation": {
+    "samples": 48,
+    "wer": 0.010416666666666666,
+    "edits": 3,
+    "reference_words": 288,
+    "device": "cpu",
+    "mean_real_time_factor": 0.08849852090095707,
+    "model": "Systran/faster-whisper-tiny",
+    "precision": "int8",
+    "scope": "48 neutral RAVDESS clips, 24 actors, only two repeated English statements; not a meeting or Indian-accent benchmark",
+    "detail_file": "training/experiments/asr_cloud.json"
+  },
+  "local_file_integration": {
+    "environment": "CLOUD / NON-WINDOWS",
+    "timestamp": "2026-10-07T08:07:55.989357+00:00",
+    "hardware": {
+      "os": "Linux-6.18.44-x86_64-with-glibc2.39",
+      "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+      "cpu": "x86_64",
+      "cpu_logical_cores": 9,
+      "ram_gb": 9.73,
+      "disk_free_gb": 20.84,
+      "nvidia_gpus": [],
+      "cuda_available": false,
+      "torch_version": "2.6.0+cpu",
+      "torch_cuda_build": null,
+      "microphone_error": "PortAudio library not found",
+      "recommended_preset": "FAST",
+      "accurate_preset": "Measure memory before selecting"
+    },
+    "tests": {
+      "cuda": {
+        "status": "SKIP",
+        "reason": "CUDA unavailable"
+      },
+      "whisper": {
+        "status": "PASS",
+        "seconds": 1.0397577149997232,
+        "details": {
+          "model": "whisper-tiny",
+          "device": "cpu",
+          "load_seconds": 0.5304012259994124,
+          "inference_seconds": 0.508546756999749,
+          "rtf": 0.15395054418852258,
+          "word_count": 6,
+          "nonempty": true
+        },
+        "cpu_seconds": 2.7679802189999996,
+        "ram_rss_mb": 451.3828125,
+        "ram_source": "/proc/self/status"
+      },
+      "diarization": {
+        "status": "PASS",
+        "seconds": 0.4842145790007635,
+        "details": {
+          "load_seconds": 0.33100466399992,
+          "inference_seconds": 0.1524131040005159,
+          "turns": 2,
+          "der": null,
+          "note": "Inference check; DER requires annotated multi-speaker reference"
+        },
+        "cpu_seconds": 0.6739496950000001,
+        "ram_rss_mb": 659.3515625,
+        "ram_source": "/proc/self/status"
+      },
+      "prosody": {
+        "status": "PASS",
+        "seconds": 0.006176283000058902,
+        "details": {
+          "f0_hz": 111.8881118881119,
+          "pitch_std_hz": 15.60082901421265,
+          "pitch_confidence": 0.6296146377927561,
+          "dbfs": -47.96046228442994,
+          "energy": 1.599387906026095e-05,
+          "spectral_centroid_hz": 2600.329795074592,
+          "voiced_fraction": 0.07317073170731707,
+          "pause_count": 4,
+          "pause_seconds": 3.04,
+          "speaking_rate_wpm": null,
+          "rate_source": "Requires ASR word timestamps"
+        },
+        "cpu_seconds": 0.010161824999999958,
+        "ram_rss_mb": 659.44921875,
+        "ram_source": "/proc/self/status"
+      },
+      "sign_recognition": {
+        "status": "PASS",
+        "seconds": 0.009791865000806865,
+        "details": {
+          "label": "good evening",
+          "score": 0.775291383266449,
+          "score_kind": "uncalibrated softmax",
+          "experimental": true,
+          "alternatives": [
+            [
+              "good evening",
+              0.775291383266449
+            ],
+            [
+              "good night",
+              0.22282491624355316
+            ],
+            [
+              "pleased",
+              0.0018167158123105764
+            ]
+          ]
+        },
+        "cpu_seconds": 0.01274393000000007,
+        "ram_rss_mb": 661.4453125,
+        "ram_source": "/proc/self/status"
+      },
+      "webcam_and_pose": {
+        "status": "SKIP",
+        "reason": "Physical device capture disabled"
+      },
+      "microphone": {
+        "status": "SKIP",
+        "reason": "Physical device capture disabled"
+      },
+      "tts": {
+        "status": "SKIP",
+        "reason": "Physical audio output disabled"
+      },
+      "combined_pipeline": {
+        "status": "PASS",
+        "seconds": 0.5245305449998341,
+        "details": {
+          "captions": 1,
+          "rtf": 0.15878554208846013,
+          "f0_hz": 111.8881118881119,
+          "note": "Finite local sample; live devices and sustained latency need their own tests"
+        },
+        "cpu_seconds": 2.151650555,
+        "ram_rss_mb": 668.55859375,
+        "ram_source": "/proc/self/status"
+      }
+    },
+    "local_hardware_benchmarked": false,
+    "cuda_peak_allocated_mb": null,
+    "vram_note": "PyTorch peak excludes CTranslate2; nvidia-smi reports whole-device use, including other processes"
+  },
+  "checkpoint_resume_verification": {
+    "environment": "CLOUD CPU",
+    "dataset": "real bundled RAVDESS features",
+    "comparison_epochs": 3,
+    "stop_saved_epoch": 1,
+    "resume_final_epoch": 3,
+    "weights_bitwise_equal_to_uninterrupted": true,
+    "checkpoint_rotation_count": 2,
+    "checkpoint_rotation_limit": 2,
+    "temporary_test_accuracy_not_used_as_model_result": true
+  },
+  "onnx_conversion": {
+    "sign": {
+      "task": "sign",
+      "labels": [
+        "good evening",
+        "good night",
+        "pleased",
+        "thank you"
+      ],
+      "experimental": true,
+      "schema": "mp_tasks_49x4_shoulder_v1",
+      "input_normalization_embedded": true,
+      "checkpoint_data_sha256": "4b75149f9841909e99291a0ef4ed93d7f49e708a102778a19f8f4f38fcacc051",
+      "samples": 16,
+      "real_test_data": true,
+      "fp32_max_abs_logit_difference": 4.76837158203125e-06,
+      "fp32_bytes": 1200342,
+      "parameter_count": 298660,
+      "int8_note": "Dynamic INT8 applies only to supported operators; recurrent weights may remain FP32",
+      "pytorch_test": {
+        "accuracy": 0.9375,
+        "macro_f1": 0.9365079365079365,
+        "confusion_matrix": [
+          [
+            4,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            3,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            4,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            4
+          ]
+        ],
+        "samples": 16
+      },
+      "onnx_fp32_test": {
+        "accuracy": 0.9375,
+        "macro_f1": 0.9365079365079365,
+        "confusion_matrix": [
+          [
+            4,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            3,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            4,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            4
+          ]
+        ],
+        "samples": 16
+      },
+      "int8_bytes": 1145670,
+      "int8_max_abs_logit_difference": 0.02642679214477539,
+      "int8_prediction_agreement": 1.0,
+      "onnx_dynamic_int8_test": {
+        "accuracy": 0.9375,
+        "macro_f1": 0.9365079365079365,
+        "confusion_matrix": [
+          [
+            4,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            3,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            4,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            4
+          ]
+        ],
+        "samples": 16
+      }
+    },
+    "prosody": {
+      "task": "prosody",
+      "labels": [
+        "neutral (acted)",
+        "calm (acted)",
+        "happy (acted)",
+        "sad (acted)",
+        "angry (acted)",
+        "fearful (acted)",
+        "disgust (acted)",
+        "surprised (acted)"
+      ],
+      "experimental": true,
+      "schema": "mfcc40_mean_std_v1",
+      "input_normalization_embedded": true,
+      "checkpoint_data_sha256": "ffe609198bc279e0ddb0863374399dac9c060cf3517afc0196f4f23532701fb7",
+      "samples": 240,
+      "real_test_data": true,
+      "fp32_max_abs_logit_difference": 1.1920928955078125e-06,
+      "fp32_bytes": 55731,
+      "parameter_count": 13016,
+      "int8_note": "Dynamic INT8 applies only to supported operators; recurrent weights may remain FP32",
+      "pytorch_test": {
+        "accuracy": 0.4041666666666667,
+        "macro_f1": 0.3561255463858719,
+        "confusion_matrix": [
+          [
+            2,
+            7,
+            4,
+            1,
+            0,
+            0,
+            2,
+            0
+          ],
+          [
+            2,
+            26,
+            0,
+            4,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            5,
+            6,
+            0,
+            10,
+            1,
+            5,
+            4
+          ],
+          [
+            0,
+            11,
+            3,
+            3,
+            1,
+            3,
+            5,
+            6
+          ],
+          [
+            0,
+            0,
+            5,
+            0,
+            20,
+            0,
+            3,
+            4
+          ],
+          [
+            1,
+            2,
+            7,
+            4,
+            6,
+            9,
+            3,
+            0
+          ],
+          [
+            0,
+            0,
+            4,
+            3,
+            4,
+            2,
+            7,
+            12
+          ],
+          [
+            0,
+            0,
+            2,
+            0,
+            5,
+            0,
+            1,
+            24
+          ]
+        ],
+        "samples": 240
+      },
+      "onnx_fp32_test": {
+        "accuracy": 0.4041666666666667,
+        "macro_f1": 0.3561255463858719,
+        "confusion_matrix": [
+          [
+            2,
+            7,
+            4,
+            1,
+            0,
+            0,
+            2,
+            0
+          ],
+          [
+            2,
+            26,
+            0,
+            4,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            5,
+            6,
+            0,
+            10,
+            1,
+            5,
+            4
+          ],
+          [
+            0,
+            11,
+            3,
+            3,
+            1,
+            3,
+            5,
+            6
+          ],
+          [
+            0,
+            0,
+            5,
+            0,
+            20,
+            0,
+            3,
+            4
+          ],
+          [
+            1,
+            2,
+            7,
+            4,
+            6,
+            9,
+            3,
+            0
+          ],
+          [
+            0,
+            0,
+            4,
+            3,
+            4,
+            2,
+            7,
+            12
+          ],
+          [
+            0,
+            0,
+            2,
+            0,
+            5,
+            0,
+            1,
+            24
+          ]
+        ],
+        "samples": 240
+      },
+      "int8_bytes": 22019,
+      "int8_max_abs_logit_difference": 0.06010860204696655,
+      "int8_prediction_agreement": 0.9958333333333333,
+      "onnx_dynamic_int8_test": {
+        "accuracy": 0.4083333333333333,
+        "macro_f1": 0.35925168731321766,
+        "confusion_matrix": [
+          [
+            2,
+            7,
+            4,
+            1,
+            0,
+            0,
+            2,
+            0
+          ],
+          [
+            1,
+            27,
+            0,
+            4,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            5,
+            6,
+            0,
+            10,
+            1,
+            5,
+            4
+          ],
+          [
+            0,
+            11,
+            3,
+            3,
+            1,
+            3,
+            5,
+            6
+          ],
+          [
+            0,
+            0,
+            5,
+            0,
+            20,
+            0,
+            3,
+            4
+          ],
+          [
+            1,
+            2,
+            7,
+            4,
+            6,
+            9,
+            3,
+            0
+          ],
+          [
+            0,
+            0,
+            4,
+            3,
+            4,
+            2,
+            7,
+            12
+          ],
+          [
+            0,
+            0,
+            2,
+            0,
+            5,
+            0,
+            1,
+            24
+          ]
+        ],
+        "samples": 240
+      }
+    }
+  },
+  "source_media_inspection": "datasets/inspection.json",
+  "dependency_inventory": "dependency_inventory.json",
+  "not_measured": [
+    "Local Windows setup/install/build",
+    "RTX 4060 CUDA performance and memory",
+    "Physical microphone/webcam/SAPI output",
+    "Sustained live latency",
+    "Meeting DER and overlap precision/recall/F1",
+    "Community-1 gated runtime",
+    "Continuous ISL translation or learned generation",
+    "ASR small/medium and alternative stack performance"
+  ],
+  "ui_verification": {
+    "all_12_pages": "PASS",
+    "platform": "Linux headless offscreen Qt",
+    "actual_screenshot": "assets/desktop-preview.png",
+    "environment": "CLOUD / Linux Qt offscreen",
+    "real_background_file_pipeline": "PASS",
+    "network_connections_blocked_during_inference": true,
+    "public_sample": "assets/evaluation_sample.wav",
+    "source": "RAVDESS / Livingstone & Russo, CC-BY-NC-SA-4.0",
+    "caption_lines": 1,
+    "transcript": "Kids are talking by the door.",
+    "all_12_pages_previously_tested": true,
+    "qprocess_hardware_check_launch": "PASS",
+    "windows_worker_launch": "NOT_RUN",
+    "screenshot_home": "assets/desktop-preview.png",
+    "screenshot_combined": "assets/combined-preview.png",
+    "single_actor_sample_speaker_count": 1,
+    "trailing_word_regression": "PASS"
+  },
+  "accessibility_contrast_test": {
+    "status": "PASS",
+    "speaker_colors_tested": 100,
+    "white_text_background_minimum_ratio": 4.5,
+    "note": "Caption hue contrast check, not a full accessibility audit"
+  }
+}

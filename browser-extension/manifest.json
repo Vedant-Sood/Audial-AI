@@ -1,0 +1,8 @@
+{
+  "manifest_version": 3,
+  "name": "AccessibilityAI · page text to ISL",
+  "version": "0.2.0",
+  "description": "Open selected page text in your local AccessibilityAI light-sign companion.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "action": {"default_title": "Open text in AccessibilityAI", "default_popup": "popup.html"}
+}

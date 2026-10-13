@@ -1,0 +1,20 @@
+data: datasets/sign.npz
+output: training/experiments/sign_lights_upgrade
+seed: 42
+device: cpu
+epochs: 45
+batch_size: 8
+gradient_accumulation: 1
+workers: 0
+precision: fp32
+learning_rate: 0.001
+patience: 10
+checkpoint_interval: 5
+keep_checkpoints: 2
+tensorboard: false
+model:
+  input_dim: 196
+  hidden_size: 96
+  dropout: 0.2
+  layers: 2
+  sequence_length: 48

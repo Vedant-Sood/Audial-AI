@@ -1,0 +1,18 @@
+{
+  "environment": "LOCAL WINDOWS RTX 4060 TARGET",
+  "status": "NOT_RUN",
+  "local_hardware_benchmarked": false,
+  "timestamp": null,
+  "target_supplied_by_user": {
+    "computer": "Dell Inspiron 16 Plus 7630",
+    "os": "Windows 11 x64",
+    "cpu": "Intel Core i7 13th generation",
+    "ram_gb": 32,
+    "gpu": "RTX 4060 Laptop GPU",
+    "vram_gb_approximate": 8
+  },
+  "actual_hardware": null,
+  "tests": {},
+  "cuda_peak_allocated_mb": null,
+  "note": "No cloud numbers substituted. Run Diagnostics > Run local validation, or python -m scripts.local_validation --output . on the target computer."
+}

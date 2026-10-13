@@ -1,0 +1,32 @@
+{
+  "dataset": "cfahlgren1/crema-d",
+  "revision": "b7d5beded69285eb5eb6a1c6894a5b0ad17cab92",
+  "upstream": "https://github.com/CheyneyComputerScience/CREMA-D",
+  "license": "ODbL-1.0 (database); DbCL-1.0 (individual contents)",
+  "files": [
+    {
+      "filename": "train-00000-of-00004.parquet",
+      "url": "https://huggingface.co/datasets/cfahlgren1/crema-d/resolve/b7d5beded69285eb5eb6a1c6894a5b0ad17cab92/data/train-00000-of-00004.parquet",
+      "bytes": 159698655,
+      "sha256": "81dad418a2fd01476db64d4a20ae05c7ddaf7012f96e32d86a8a54f87667c41e"
+    },
+    {
+      "filename": "train-00001-of-00004.parquet",
+      "url": "https://huggingface.co/datasets/cfahlgren1/crema-d/resolve/b7d5beded69285eb5eb6a1c6894a5b0ad17cab92/data/train-00001-of-00004.parquet",
+      "bytes": 148487378,
+      "sha256": "37b872cf04bd872f13ea97d5207ecf321b4e96e073378b3f16bc43635e7bf399"
+    },
+    {
+      "filename": "train-00002-of-00004.parquet",
+      "url": "https://huggingface.co/datasets/cfahlgren1/crema-d/resolve/b7d5beded69285eb5eb6a1c6894a5b0ad17cab92/data/train-00002-of-00004.parquet",
+      "bytes": 146108080,
+      "sha256": "692d2946928ebe0f9c1b7856326c87a6c5d4a7ce742a2352955bde37a9c50819"
+    },
+    {
+      "filename": "train-00003-of-00004.parquet",
+      "url": "https://huggingface.co/datasets/cfahlgren1/crema-d/resolve/b7d5beded69285eb5eb6a1c6894a5b0ad17cab92/data/train-00003-of-00004.parquet",
+      "bytes": 151556054,
+      "sha256": "38e6235e73dccefdee567b94bf148d49050ade9f2a9ed90b0f17be50c62ef226"
+    }
+  ]
+}

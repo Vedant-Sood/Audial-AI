@@ -1,0 +1,59 @@
+{
+  "version": "0.3.0",
+  "recorded_at_utc": "2026-10-13T05:19:51.429508+00:00",
+  "host": "Linux x64 CPU",
+  "python_tests": {
+    "tests": 36,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "javascript_tests": {
+    "tests": 8,
+    "passed": 8,
+    "failed": 0
+  },
+  "pip_check": "PASS",
+  "native_startup": "PASS",
+  "native_isl_playback": "PASS",
+  "silence_abstention": "PASS",
+  "real_file_voice_pipeline": {
+    "wav": {
+      "functional": "PASS",
+      "emotion_estimate": "uncertain",
+      "confidence": 0.3807
+    },
+    "m4a": {
+      "functional": "PASS",
+      "emotion_estimate": "uncertain",
+      "confidence": 0.3818
+    }
+  },
+  "new_indian_model_trained": false,
+  "indian_voice_target_accuracy_measured": false,
+  "bundled_emotion_weights": "Unchanged CREMA-D baseline; historical 51.6% full-test accuracy",
+  "isl_scope": "Four bundled phrases, Hindi aliases, licensed vocabulary import, ordered explicit text fallback",
+  "caption_model_download": "Blocked by current cloud egress policy; required domain additions saved in configuration draft",
+  "caption_recognition_reproduced_in_this_run": false,
+  "windows_native_execution": "Not run on a real Windows host in this cloud; Windows release workflow provided",
+  "wine_compatibility": "Blocked by Wine 10 unimplemented ucrtbase.dll.crealf; no Windows success claim",
+  "windows_device_capture": "Not run",
+  "packages": {
+    "torch": "2.8.0+cpu",
+    "torchaudio": "2.8.0+cpu",
+    "PySide6": "6.8.3",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0",
+    "scikit-learn": "1.8.0",
+    "faster-whisper": "1.2.1",
+    "ctranslate2": "4.8.2",
+    "av": "16.1.0",
+    "speechbrain": "1.0.3",
+    "mediapipe": "1.1.0",
+    "soundfile": "0.14.0",
+    "sounddevice": "0.5.6",
+    "joblib": "1.6.0",
+    "pyarrow": "23.0.1",
+    "huggingface-hub": "0.34.4"
+  }
+}

@@ -1,0 +1,9 @@
+# Windows x64 portable distribution; the same core versions as development.
+-r requirements.txt
+torch==2.8.0
+torchaudio==2.8.0
+# Cross-platform pip resolves markers on its host, so explicitly include Windows TTS dependencies.
+pywin32>=306
+comtypes>=1.4,<2
+colorama>=0.4,<1
+pypiwin32==223

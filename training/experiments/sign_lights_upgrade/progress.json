@@ -1,0 +1,15 @@
+{
+  "status": "completed",
+  "task": "sign",
+  "epoch": 28,
+  "loss": 0.003379456399540816,
+  "validation_loss": 0.4622744958226879,
+  "validation_macro_f1": 0.8375,
+  "validation_accuracy": 0.8333333333333334,
+  "elapsed_seconds": 15.411974623000788,
+  "eta_seconds": 9.357270306821906,
+  "device": "cpu",
+  "vram_mb": 0,
+  "gpu_utilization_percent": null,
+  "gpu_usage_note": "Whole device utilization sampled at epoch end; includes other processes"
+}

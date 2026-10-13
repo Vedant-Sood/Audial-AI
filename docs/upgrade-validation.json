@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "verified_at_utc": "2026-10-07T13:38:57.656367+00:00",
+  "environment": "Cloud Linux CPU / PySide6 offscreen / Chromium",
+  "python_tests": {
+    "passed": 29,
+    "failed": 0
+  },
+  "javascript_tests": {
+    "passed": 7,
+    "failed": 0
+  },
+  "source_compilation": "PASS",
+  "CLI_help": "PASS",
+  "desktop_smoke": {
+    "pages": 12,
+    "shared_light_canvases": 3,
+    "raw_pose_shape": [
+      49,
+      4
+    ]
+  },
+  "browser_end_to_end": "docs/upgrade-browser-validation.json",
+  "page_text_handoff": "PASS: selected text and known ISL lights, unknown words, removed URL fragment",
+  "extension_validation": "Manifest and JavaScript syntax checked; companion handoff verified. Installation in user Chrome/Edge is not tested.",
+  "unmeasured": [
+    "Windows hardware, CUDA and executable packaging",
+    "System loopback on the user computer",
+    "Sustained multi-speaker meeting caption/overlap performance",
+    "Natural-meeting emotion recognition",
+    "Full ISL sentence translation"
+  ]
+}

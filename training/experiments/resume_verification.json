@@ -1,0 +1,11 @@
+{
+  "environment": "CLOUD CPU",
+  "dataset": "real bundled RAVDESS features",
+  "comparison_epochs": 3,
+  "stop_saved_epoch": 1,
+  "resume_final_epoch": 3,
+  "weights_bitwise_equal_to_uninterrupted": true,
+  "checkpoint_rotation_count": 2,
+  "checkpoint_rotation_limit": 2,
+  "temporary_test_accuracy_not_used_as_model_result": true
+}

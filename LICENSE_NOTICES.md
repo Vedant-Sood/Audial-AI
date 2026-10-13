@@ -1,0 +1,15 @@
+# Third-party and dataset notices
+
+The app source is covered by the included MIT `LICENSE`. Third-party datasets, derived assets and pretrained models retain their own terms. Preserve these notices when redistributing the package.
+
+| Material | Source and terms |
+|---|---|
+| INCLUDE feature NPZ, sign manifest, original ISL media/poses and derived light poses | [INCLUDE dataset, Zenodo record 4010759](https://zenodo.org/records/4010759), CC-BY-4.0. The dataset release authors retain attribution. `thank_you.npy` was newly extracted from the uploaded source-labelled video; the other three replay poses were restored. New sign weights were trained on the declared 84-clip subset. |
+| CREMA-D emotion data/model | [CREMA-D upstream](https://github.com/CheyneyComputerScience/CREMA-D), database ODbL-1.0 and individual contents DbCL-1.0. Full upstream license is in `models/emotion/CREMA-D-LICENSE.txt`; pinned mirror revision and downloaded shard hashes are in `provenance.json`. The distributed model is a derived research artifact, not a relicensing of the source database or recordings. Raw recordings are excluded. |
+| Supplied evaluation speech and legacy prosody research artifacts | [RAVDESS, Zenodo record 1188976](https://zenodo.org/records/1188976), CC-BY-NC-SA-4.0. Livingstone, S. R. & Russo, F. A. (2018), DOI [10.1371/journal.pone.0196391](https://doi.org/10.1371/journal.pone.0196391). `assets/evaluation_sample.json` identifies the source recording. Its noncommercial/share-alike terms remain applicable to those assets. |
+| Whisper / faster-whisper | [OpenAI Whisper](https://github.com/openai/whisper), MIT; [faster-whisper](https://github.com/SYSTRAN/faster-whisper), MIT; locally downloaded weights retain the selected model's terms. |
+| SpeechBrain ECAPA-TDNN | [speechbrain/spkrec-ecapa-voxceleb](https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb), model card lists Apache-2.0. Speaker embeddings are experimental session clustering features. |
+| MediaPipe and landmarker tasks | [MediaPipe](https://github.com/google-ai-edge/mediapipe), Apache-2.0 and accompanying model notices. Downloaded hand/body assets are documented by the model manager. |
+| Optional pyannote Community-1 | [speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1), CC-BY-4.0 with upstream access conditions. It was not downloaded or evaluated for this update. |
+
+Dependencies such as PySide6/Qt, FFmpeg, Torch, NumPy, SciPy, scikit-learn, SoundCard and Chromium retain their licenses. Follow the notices shipped by those projects when distributing a built binary. The source ZIP does not bundle these dependency binaries or the separately downloaded Whisper/ECAPA/MediaPipe model directories.

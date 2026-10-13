@@ -1,0 +1,6 @@
+{
+  "name": "accessibilityai-browser-companion",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node tests/browser.test.js" }
+}

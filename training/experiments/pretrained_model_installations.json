@@ -1,0 +1,88 @@
+{
+  "whisper-tiny": {
+    "id": "whisper-tiny",
+    "name": "Whisper tiny (multilingual)",
+    "task": "ASR",
+    "source": "Systran/faster-whisper-tiny",
+    "license": "MIT",
+    "size": "~75 MB",
+    "required": [
+      "model.bin",
+      "config.json",
+      "tokenizer.json"
+    ],
+    "gated": false,
+    "notes": "",
+    "revision": "d90ca5fe260221311c53c58e660288d3deb8d356",
+    "sha256": {
+      "vocabulary.txt": "34ce3fe1c5041027b3f8d42912270993f986dbc4bb34cf27f951e34a1e453913",
+      ".gitattributes": "db7c0371f46f0840b8f25794c1e3321c9b5820a8cb6ba9694a46fc64b8fae5a6",
+      "config.json": "a73a28cdfe1c43ccc7202fa333d1f89c202477271407ae9a7f19afa52039cac8",
+      "model.bin": "dcb76c6586fc06cbdac6dd21f14cfd129cc4cdd9dce19bf4ffa62e59cbe6e6d1",
+      "README.md": "29fb8444a02c1f133ab7e538525aa478ff68845964f21cf42500842b0e4a7b20",
+      "tokenizer.json": "fb7b63191e9bb045082c79fd742a3106a12c99513ab30df4a0d47fa6cb6fd0ab"
+    }
+  },
+  "ecapa": {
+    "id": "ecapa",
+    "name": "SpeechBrain ECAPA-TDNN",
+    "task": "Speaker embeddings",
+    "source": "speechbrain/spkrec-ecapa-voxceleb",
+    "license": "Apache-2.0",
+    "size": "~90 MB",
+    "required": [
+      "embedding_model.ckpt",
+      "mean_var_norm_emb.ckpt",
+      "hyperparams.yaml"
+    ],
+    "gated": false,
+    "notes": "Cosine similarity is not calibrated identity confidence; online clustering is experimental.",
+    "revision": "0f99f2d0ebe89ac095bcc5903c4dd8f72b367286",
+    "sha256": {
+      ".gitattributes": "bb9fec3ce9791904de25ddf190a3cee1ffd9f937884db166676f2cc0287a6bef",
+      "example1.wav": "bf2dde5cb516939ff619d62fc07d4f4bec5b5d521aee3d07ae51828c9d93be0b",
+      "embedding_model.ckpt": "0575cb64845e6b9a10db9bcb74d5ac32b326b8dc90352671d345e2ee3d0126a2",
+      "example2.flac": "0bf6c0ab8a2a9e8cbf89486c33aab80b608a5033d72214436e0557e085484bc9",
+      "config.json": "15ff7afad09adec0936c31493a7397c13f855914f4579a8393fe82649778a664",
+      "label_encoder.txt": "e13c3a167bb4112685670ee896d20e2b565af16b3a4ceeaa8689fa4d22adb8b9",
+      "hyperparams.yaml": "6f78854fa04ba59e761437b76a2575d3aba5e5016de3e9b69f0c9a5077fb1a41",
+      "README.md": "00f58c3cbd7a7510de9374080da0e82a4c4e8f4df567f7338fe6efe108be705a",
+      "mean_var_norm_emb.ckpt": "cd70225b05b37be64fc5a95e24395d804231d43f74b2e1e5a513db7b69b34c33",
+      "classifier.ckpt": "fd9e3634fe68bd0a427c95e354c0c677374f62b3f434e45b78599950d860d535"
+    }
+  },
+  "hand-pose": {
+    "id": "hand-pose",
+    "name": "MediaPipe Hand Landmarker",
+    "task": "Hand tracking",
+    "source": "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+    "license": "Apache-2.0 (MediaPipe)",
+    "size": "~8 MB",
+    "required": [
+      "model.task"
+    ],
+    "gated": false,
+    "notes": "",
+    "revision": null,
+    "sha256": {
+      "model.task": "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1"
+    }
+  },
+  "body-pose": {
+    "id": "body-pose",
+    "name": "MediaPipe Pose Landmarker lite",
+    "task": "Body tracking",
+    "source": "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+    "license": "Apache-2.0 (MediaPipe)",
+    "size": "~6 MB",
+    "required": [
+      "model.task"
+    ],
+    "gated": false,
+    "notes": "",
+    "revision": null,
+    "sha256": {
+      "model.task": "59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a"
+    }
+  }
+}

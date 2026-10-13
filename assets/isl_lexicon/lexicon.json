@@ -1,0 +1,40 @@
+{
+  "language": "ISL",
+  "entries": [
+    {
+      "gloss": "good evening",
+      "aliases": ["शुभ संध्या"],
+      "path": "good_evening.npy",
+      "fps": 15,
+      "source_url": "https://zenodo.org/records/4010759",
+      "license": "CC-BY-4.0",
+      "attribution": "INCLUDE: Indian Sign Language Understanding dataset authors; source-labelled pose asset restored from the upload."
+    },
+    {
+      "gloss": "good night",
+      "aliases": ["goodnight", "शुभ रात्रि"],
+      "path": "good_night.npy",
+      "fps": 15,
+      "source_url": "https://zenodo.org/records/4010759",
+      "license": "CC-BY-4.0",
+      "attribution": "INCLUDE: Indian Sign Language Understanding dataset authors; source-labelled pose asset restored from the upload."
+    },
+    {
+      "gloss": "pleased",
+      "path": "pleased.npy",
+      "fps": 15,
+      "source_url": "https://zenodo.org/records/4010759",
+      "license": "CC-BY-4.0",
+      "attribution": "INCLUDE: Indian Sign Language Understanding dataset authors; source-labelled pose asset restored from the upload."
+    },
+    {
+      "gloss": "thank you",
+      "aliases": ["thanks", "thankyou", "धन्यवाद", "शुक्रिया"],
+      "path": "thank_you.npy",
+      "fps": 15.0,
+      "source_url": "https://zenodo.org/records/4010759",
+      "license": "CC-BY-4.0",
+      "attribution": "INCLUDE dataset authors; landmarks extracted from the uploaded source-labelled thank_you.mp4."
+    }
+  ]
+}

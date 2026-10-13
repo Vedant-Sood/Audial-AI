@@ -1,0 +1,3 @@
+# Optional Community-1 backend. Gated model terms must be accepted upstream.
+# This adapter is not part of the validated default configuration.
+pyannote.audio>=4.0,<5

@@ -1,0 +1,18 @@
+data: datasets/diarization.npz
+output: training/experiments/diarization_local
+seed: 42
+device: auto
+epochs: 30
+batch_size: 16
+gradient_accumulation: 2
+workers: 0
+precision: fp16
+learning_rate: 0.001
+patience: 8
+checkpoint_interval: 5
+keep_checkpoints: 2
+tensorboard: true
+model:
+  input_dim: 192
+  hidden_size: 96
+  dropout: 0.2

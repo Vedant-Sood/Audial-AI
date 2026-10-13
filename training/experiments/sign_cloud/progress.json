@@ -1,0 +1,13 @@
+{
+  "status": "running",
+  "task": "sign",
+  "epoch": 23,
+  "loss": 0.006534545881939786,
+  "validation_loss": 0.6802726540869722,
+  "validation_macro_f1": 0.8375,
+  "validation_accuracy": 0.8333333333333334,
+  "elapsed_seconds": 6.245040269999663,
+  "eta_seconds": 5.973516779999677,
+  "device": "cpu",
+  "vram_mb": 0
+}

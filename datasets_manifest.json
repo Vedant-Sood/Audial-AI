@@ -1,0 +1,57 @@
+{
+  "version": "0.2.0",
+  "resources": [
+    {
+      "name": "CREMA-D",
+      "source": "https://github.com/CheyneyComputerScience/CREMA-D",
+      "mirror": "https://huggingface.co/datasets/cfahlgren1/crema-d",
+      "revision": "b7d5beded69285eb5eb6a1c6894a5b0ad17cab92",
+      "license": "ODbL-1.0 database / DbCL-1.0 individual contents",
+      "status": "downloaded and newly trained",
+      "clips": 7442,
+      "actors": 91,
+      "split": "actor-disjoint train, validation, calibration-fit, calibration-policy, test",
+      "raw_data_redistributed": false,
+      "records": "models/emotion/provenance.json"
+    },
+    {
+      "name": "INCLUDE",
+      "source": "https://zenodo.org/records/4010759",
+      "license": "CC-BY-4.0",
+      "status": "restored 84-clip features, retrained four-label model, restored/generated raw replay poses",
+      "classes": [
+        "good evening",
+        "good night",
+        "pleased",
+        "thank you"
+      ],
+      "split": "56 train / 12 validation / 16 test; clip-disjoint only, unknown signer independence",
+      "records": "datasets/sign.json"
+    },
+    {
+      "name": "RAVDESS",
+      "source": "https://zenodo.org/records/1188976",
+      "license": "CC-BY-NC-SA-4.0",
+      "status": "supplied speech sample and legacy artifacts only; raw training set not restored or retrained in this update",
+      "records": "assets/evaluation_sample.json"
+    },
+    {
+      "name": "AMI Meeting Corpus",
+      "source": "https://groups.inf.ed.ac.uk/ami/download/",
+      "status": "candidate for meeting evaluation; not downloaded",
+      "license": "Review current upstream terms before use"
+    },
+    {
+      "name": "IEMOCAP",
+      "source": "https://sail.usc.edu/iemocap/",
+      "status": "candidate for emotion evaluation; not downloaded",
+      "license": "USC access agreement; review current terms"
+    },
+    {
+      "name": "MSP-Podcast",
+      "source": "https://ecs.utdallas.edu/research/researchlabs/msp-lab/MSP-Podcast.html",
+      "status": "candidate for natural emotion evaluation; not downloaded",
+      "license": "Provider research/access agreement; review current terms"
+    }
+  ]
+}

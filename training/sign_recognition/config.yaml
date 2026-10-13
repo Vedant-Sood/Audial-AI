@@ -1,0 +1,20 @@
+data: datasets/sign.npz
+output: training/experiments/sign_local
+seed: 42
+device: auto
+epochs: 30
+batch_size: 16
+gradient_accumulation: 2
+workers: 0
+precision: fp16
+learning_rate: 0.001
+patience: 8
+checkpoint_interval: 5
+keep_checkpoints: 2
+tensorboard: true
+model:
+  input_dim: 196
+  hidden_size: 96
+  dropout: 0.2
+  layers: 2
+  sequence_length: 48

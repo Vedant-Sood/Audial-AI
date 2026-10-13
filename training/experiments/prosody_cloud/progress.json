@@ -1,0 +1,13 @@
+{
+  "status": "completed",
+  "task": "prosody",
+  "epoch": 13,
+  "loss": 0.5318070789178212,
+  "validation_loss": 1.8137866814931234,
+  "validation_macro_f1": 0.39389396440459845,
+  "validation_accuracy": 0.4166666666666667,
+  "elapsed_seconds": 0.6424107610000647,
+  "eta_seconds": 1.087156672461648,
+  "device": "cpu",
+  "vram_mb": 0
+}

@@ -1,0 +1,40 @@
+{
+  "environment": "CLOUD",
+  "include": {
+    "clips": 84,
+    "classes": {
+      "good evening": 21,
+      "good night": 21,
+      "pleased": 21,
+      "thank you": 21
+    },
+    "resolution_counts": {
+      "1920x1080": 84
+    },
+    "fps_counts": {
+      "25.0": 84
+    },
+    "duration_min_seconds": 1.76,
+    "duration_max_seconds": 3.8,
+    "signer_count": null,
+    "signer_note": "Not verified from source clip names",
+    "isolated_or_continuous": "isolated",
+    "source_url": "https://zenodo.org/records/4010759",
+    "license": "CC-BY-4.0"
+  },
+  "ravdess": {
+    "audio_speech_clips": 1440,
+    "sample_rates": {
+      "48000": 1440
+    },
+    "channels": {
+      "1": 1435,
+      "2": 5
+    },
+    "duration_min_seconds": 2.9362708333333334,
+    "duration_max_seconds": 5.2719375,
+    "actors": 24,
+    "source_url": "https://zenodo.org/records/1188976",
+    "license": "CC-BY-NC-SA-4.0"
+  }
+}
