@@ -1,11 +1,7 @@
 # Run on Windows: .venv\Scripts\python -m PyInstaller packaging\AccessibilityAI.spec
 from pathlib import Path
-import sys
 from importlib.util import find_spec
 from PyInstaller.utils.hooks import collect_all, collect_submodules
-# Torch/SpeechBrain create a deep import graph. PyInstaller's analysis needs
-# more recursion depth than ordinary inference; this affects the build only.
-sys.setrecursionlimit(max(sys.getrecursionlimit(), 5000))
 project = Path(SPECPATH).parent
 datas, binaries, hiddenimports = [], [], []
 for package in ['faster_whisper', 'ctranslate2', 'mediapipe', 'speechbrain', 'sounddevice', 'pyttsx3', 'torchaudio', 'onnxruntime']:
@@ -22,7 +18,9 @@ datas += [(str(project / 'assets'), 'assets'), (str(project / 'training'), 'trai
 icon_path = project / 'assets' / 'icon.ico'
 icon = str(icon_path) if icon_path.is_file() else None
 a = Analysis([str(project / 'launcher.py')], pathex=[str(project)], binaries=binaries,
-             datas=datas, hiddenimports=hiddenimports, excludes=['tkinter', 'IPython', 'notebook'], noarchive=False)
+             datas=datas, hiddenimports=hiddenimports,
+             hookspath=[str(project / 'packaging' / 'hooks')],
+             excludes=['tkinter', 'IPython', 'notebook'], noarchive=False)
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='AccessibilityAI', debug=False,
           bootloader_ignore_signals=False, strip=False, upx=False, console=False,
