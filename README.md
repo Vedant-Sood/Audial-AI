@@ -3,7 +3,13 @@
 A Windows desktop workspace for local captions, Indian Sign Language (ISL) phrase
 playback, and optional voice emotion estimates with customizable colors.
 
-## Start the portable Windows app
+## Portable Windows prototype
+
+Windows CI regression checks currently fail. The native executable build is
+skipped, so Windows readiness is not established. The portable ZIP is assembled
+and integrity-checked; use it as a prototype while the CI failure is diagnosed.
+See [the current run](https://github.com/Vedant-Sood/Audial-AI/actions/runs/38354724640)
+and `docs/validation-0.3.json`.
 
 1. Extract the **entire Windows x64 ZIP** to a writable folder.
 2. Double-click **Start AccessibilityAI.bat**. Python and native dependencies are

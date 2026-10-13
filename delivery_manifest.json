@@ -16,8 +16,8 @@
   ],
   "files": {
     ".github/workflows/windows-release.yml": {
-      "bytes": 2740,
-      "sha256": "d6c0d8c962cbf47545137dfa4348bfe61faeaf24bb8cead2444df98eb2d857ae"
+      "bytes": 4688,
+      "sha256": "f35c4c5c4b677b19e103969b694f77e92532439a97b7544fe3f55e6b9ecfd71a"
     },
     ".gitignore": {
       "bytes": 143,
@@ -40,8 +40,8 @@
       "sha256": "50b967cc2359c05fb03c4807341f00a2c16cc6a8ba3fc5fd29e99ee9c4c36344"
     },
     "README.md": {
-      "bytes": 5167,
-      "sha256": "60c6201ac1c448f5f40dccf36d6ce6063befe8a3e3e2de71ebdac63891b3fb42"
+      "bytes": 5521,
+      "sha256": "e9172363a4e730a066271d721deee3180601d7a751c310332d37dc6567f8e02a"
     },
     "accessibilityai_upgrade/__init__.py": {
       "bytes": 106,
@@ -431,6 +431,10 @@
       "bytes": 1028,
       "sha256": "7f7f2d078ebbb3d70e11e0195242bbe0d6b1aad13e8d7a5f06f991e918bdb1e1"
     },
+    "docs/upgrade_notes-0.3.md": {
+      "bytes": 2033,
+      "sha256": "d15eecc98d744629dd7ae362038e4a6461a6c402d04065fc9022ca3ba00b2aff"
+    },
     "docs/upgrade_notes.md": {
       "bytes": 4538,
       "sha256": "2793e32954a0c82440da0f84ef15a807427f303c1ea32f14b72ce9dd4da0e7f3"
@@ -444,8 +448,8 @@
       "sha256": "9f99a53b4727a4544e3e7d5fb709ceac5f3a0a10c59601f43b9034b984a70a7d"
     },
     "docs/validation-0.3.json": {
-      "bytes": 1842,
-      "sha256": "9189eddfbb096308ab0f26224f57f34772e29fb5cfc1623e975b20c2486a0063"
+      "bytes": 2462,
+      "sha256": "57138e0dc95eabdc75ed12809d6d61f1c8bf3f3735279e1729fe17e681ea7fe8"
     },
     "launcher.py": {
       "bytes": 865,

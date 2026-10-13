@@ -35,7 +35,7 @@
   "isl_scope": "Four bundled phrases, Hindi aliases, licensed vocabulary import, ordered explicit text fallback",
   "caption_model_download": "Blocked by current cloud egress policy; required domain additions saved in configuration draft",
   "caption_recognition_reproduced_in_this_run": false,
-  "windows_native_execution": "Not run on a real Windows host in this cloud; Windows release workflow provided",
+  "windows_native_execution": "Windows CI regression checks failed; native executable build was skipped. The portable archive is a prototype and Windows readiness is not established.",
   "wine_compatibility": "Blocked by Wine 10 unimplemented ucrtbase.dll.crealf; no Windows success claim",
   "windows_device_capture": "Not run",
   "packages": {
@@ -55,5 +55,13 @@
     "joblib": "1.6.0",
     "pyarrow": "23.0.1",
     "huggingface-hub": "0.34.4"
+  },
+  "windows_ci": {
+    "status": "FAILED",
+    "run_url": "https://github.com/Vedant-Sood/Audial-AI/actions/runs/38354724640",
+    "failing_stage": "Run Windows regression and startup checks",
+    "details": "GitHub requires login to view logs; API host is denied by current cloud network policy. Standard validation artifact is available to the repository user.",
+    "native_executable_build": "SKIPPED because validation failed",
+    "user_action": "Provide the failing test/traceback from Windows-validation-results to continue diagnosis."
   }
 }
