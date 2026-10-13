@@ -89,7 +89,10 @@ class AudioEngine:
             preset = PRESETS[self.settings.preset]
             device = choose_device(self.settings.device)
             self.asr = self.diarizer = self.prosody_model = self.emotion_model = None
-            if self._mode != "tone":
+            caption_ready = self.manager.installed(preset["asr"])
+            if self._mode == "tone" and self.settings.auto_sign and not caption_ready:
+                self.emit("warning", "ISL from voice needs a caption model. Install " + preset["asr"] + " in Models; voice measurements remain available.")
+            if self._mode != "tone" or (self.settings.auto_sign and caption_ready):
                 model_id = preset["asr"]
                 if not self.manager.installed(model_id):
                     raise FileNotFoundError(f"Install {model_id} on the Models page, or select a preset with an installed ASR model.")

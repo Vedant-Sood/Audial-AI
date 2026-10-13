@@ -6,7 +6,7 @@ import sys
 import time
 import numpy as np
 import yaml
-from PySide6.QtCore import Qt, QTimer, QProcess, QProcessEnvironment, QUrl
+from PySide6.QtCore import Qt, QTimer, QProcess, QProcessEnvironment, QUrl, QSignalBlocker
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QListWidget, QStackedWidget, QPushButton, QLineEdit, QComboBox, QCheckBox,
@@ -18,7 +18,7 @@ from app.utils.config import Settings, PRESETS
 from app.models.manager import ModelManager, REGISTRY
 from app.storage.transcript import Session
 from app.services.engine import AudioEngine, CameraEngine
-from app.services.lexicon import SignLexicon
+from app.services.isl import ISLVocabulary, load_pose_frames
 from app.services.tts import LocalTTS
 from app.ui.widgets import button, card, TonePanel, CaptionPanel, PoseCanvas, rgb_pixmap
 from app.ui.sign_lights import SignLightCanvas, FloatingSignWindow
@@ -42,6 +42,7 @@ class MainWindow(QMainWindow):
         except ValueError:
             self.settings = Settings()
         self.manager = ModelManager()
+        self.isl = ISLVocabulary()
         self.engine = AudioEngine(self.settings, self.manager)
         self.camera = CameraEngine(self.settings, self.manager, self.engine.emit)
         self.session = Session()
@@ -53,6 +54,7 @@ class MainWindow(QMainWindow):
         self.training_output = None
         self.media_queue = []
         self.media_player = None
+        self.current_sign_step = None
         self.pose_frames = None
         self.pose_frame_index = 0
         self.last_sign = ""
@@ -90,7 +92,7 @@ class MainWindow(QMainWindow):
         self.show_advanced.toggled.connect(self.toggle_advanced)
         sidebar.addWidget(self.show_advanced)
         self.toggle_advanced(False)
-        bottom = QLabel("Local processing\nVersion 0.3.0")
+        bottom = QLabel("Local processing\nVersion 0.3.1")
         bottom.setObjectName("sideNote")
         sidebar.addWidget(bottom)
         outer.addWidget(side)
@@ -101,6 +103,11 @@ class MainWindow(QMainWindow):
         self.heading = QLabel("Home")
         self.heading.setObjectName("heading")
         header.addWidget(self.heading, 1)
+        self.auto_sign = QCheckBox("ISL with captions")
+        self.auto_sign.setChecked(self.settings.auto_sign)
+        self.auto_sign.setToolTip("Use Indian Sign Language with captions from every audio source. Unknown content stays as text.")
+        self.auto_sign.toggled.connect(self.change_auto_sign)
+        header.addWidget(self.auto_sign)
         self.chip = QLabel("LOCAL INFERENCE")
         self.chip.setObjectName("chip")
         header.addWidget(self.chip)
@@ -170,7 +177,7 @@ class MainWindow(QMainWindow):
         grid = QGridLayout()
         for i, (title, sub, target) in enumerate([
             ("Live captions", "Readable speech, timestamps and speaker colours. Speaker assignment is experimental.", 1),
-            ("Indian Sign Language", "Record an isolated sign, or play source-labelled ISL clips and pose sequences.", 2),
+            ("Indian Sign Language", "Text, documents, subtitles and recordings share the default ISL display.", 2),
             ("Voice & emotion", "See voice measurements and optional emotion estimates with your chosen colors.", 3)]):
             frame, inner = card(title, sub)
             inner.addStretch()
@@ -216,11 +223,16 @@ class MainWindow(QMainWindow):
         layout.addLayout(row)
 
     def captions_page(self):
-        p, layout = self.page("Listen to speech or open a recording. Completed captions appear below and can be saved or exported.")
+        p, layout = self.page("Listen to speech or open a recording. ISL accompanies completed captions by default; words without a loaded sign stay readable.")
         self.live_controls(layout, "captions")
         panel = CaptionPanel()
         self.caption_panels.append(panel)
-        layout.addWidget(panel, 1)
+        row = QHBoxLayout()
+        row.addWidget(panel, 2)
+        lights = SignLightCanvas()
+        self.sign_canvases.append(lights)
+        row.addWidget(lights, 1)
+        layout.addLayout(row, 1)
         self.session_controls(layout)
         return p
 
@@ -230,6 +242,9 @@ class MainWindow(QMainWindow):
         panel = TonePanel()
         self.tone_panels.append(panel)
         layout.addWidget(panel)
+        lights = SignLightCanvas()
+        self.sign_canvases.append(lights)
+        layout.addWidget(lights)
         layout.addStretch()
         return p
 
@@ -249,15 +264,13 @@ class MainWindow(QMainWindow):
         self.sign_canvases.append(lights)
         display_row.addWidget(lights, 1)
         layout.addLayout(display_row, 1)
-        self.auto_sign = QCheckBox("Show ISL signs with captions (unknown words stay as text)")
-        self.auto_sign.setChecked(True)
-        layout.addWidget(self.auto_sign)
         layout.addWidget(button("Open ISL workspace", lambda: self.nav.setCurrentRow(2)))
         self.session_controls(layout)
         return p
 
     def sign_page(self):
-        p, layout = self.page("Type or paste text, or open subtitles. Known ISL phrases play here; words without a loaded sign appear as readable text. This is phrase support, not fluent sentence translation.")
+        p, layout = self.page("Indian Sign Language is the default for every supported input. Type, paste, open a document or recording, or listen live. Loaded signs and readable text play in order.")
+        self.live_controls(layout, "combined")
         camera_tools = QWidget()
         camera_layout = QVBoxLayout(camera_tools)
         top = QHBoxLayout()
@@ -294,12 +307,13 @@ class MainWindow(QMainWindow):
         self.sign_text.setAccessibleName("Text to display with ISL phrase support")
         inner.addWidget(self.sign_text)
         row = QHBoxLayout()
-        row.addWidget(button("Display text", lambda: self.play_signs(self.sign_text.toPlainText()), True))
-        row.addWidget(button("Open text / subtitles", self.open_sign_text))
+        row.addWidget(button("Display in ISL", lambda: self.play_signs(self.sign_text.toPlainText()), True))
+        row.addWidget(button("Open document / subtitles / media", self.open_sign_input))
         row.addWidget(button("Use clipboard", self.clipboard_signs))
         inner.addLayout(row)
         more = QHBoxLayout()
         more.addWidget(button("Add an ISL vocabulary", self.import_lexicon))
+        more.addWidget(button("Use bundled vocabulary", self.reset_lexicon))
         more.addWidget(button("Stop playback", self.stop_playback))
         more.addWidget(button("Float sign display", self.open_floating))
         inner.addLayout(more)
@@ -316,10 +330,11 @@ class MainWindow(QMainWindow):
         motion.addWidget(self.sign_speed)
         self.reduce_motion = QCheckBox("Reduced motion (manual frames)")
         self.reduce_motion.setChecked(self.settings.reduced_motion)
-        self.reduce_motion.toggled.connect(lambda enabled: self.pose_timer.stop() if enabled and hasattr(self, "pose_timer") else None)
+        self.reduce_motion.toggled.connect(self.change_reduced_motion)
         motion.addWidget(self.reduce_motion)
         inner.addLayout(motion)
         self.lexicon_label = QLabel("No lexicon loaded. Import a lexicon and its media folder.")
+        self.lexicon_label.setTextFormat(Qt.PlainText)
         self.lexicon_label.setWordWrap(True)
         inner.addWidget(self.lexicon_label)
         self.sign_fallback = QLabel("")
@@ -328,11 +343,6 @@ class MainWindow(QMainWindow):
         self.sign_fallback.setObjectName("partial")
         self.sign_fallback.setAccessibleName("Original text without a loaded ISL sign")
         inner.addWidget(self.sign_fallback)
-        from PySide6.QtMultimediaWidgets import QVideoWidget
-        self.video_output = QVideoWidget()
-        self.video_output.setMinimumHeight(180)
-        self.video_output.hide()
-        inner.addWidget(self.video_output)
         layout.addWidget(output)
         reveal_camera = QCheckBox("Show experimental webcam sign recognition")
         camera_tools.setVisible(False)
@@ -340,17 +350,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(reveal_camera)
         layout.addWidget(camera_tools)
         layout.addStretch()
-        self.lexicon_path = data_root() / "lexicon" / "lexicon.json"
-        bundled = project_root() / "assets" / "isl_lexicon" / "lexicon.json"
-        if bundled.exists():
-            self.lexicon_path = bundled
-            self.lexicon_label.setText("Four bundled ISL phrases: good evening, good night, pleased, thank you. Add a licensed vocabulary to extend coverage.")
-        saved = data_root() / "lexicon_selection.json"
-        if saved.exists():
-            try:
-                self.lexicon_path = Path(json.loads(saved.read_text())["path"])
-            except (ValueError, KeyError):
-                pass
+        self.refresh_lexicon_summary()
         return p
 
     def models_page(self):
@@ -538,7 +538,7 @@ class MainWindow(QMainWindow):
         return p
 
     def about_page(self):
-        p, layout = self.page("ACCESSIBILITY AI · version 0.3.0")
+        p, layout = self.page("ACCESSIBILITY AI · version 0.3.1")
         for title, sub in [
             ("WORKING", "Desktop interface, local audio feature analysis, transcript/session export, model installation, WAV input, training/evaluation scripts and local hardware checks. Inference requires the appropriate models."),
             ("EXPERIMENTAL", "Chunked live ASR, online speaker clustering, optional overlap annotation, isolated ISL recognition with imported checkpoints, acted-speech classification, local clip lookup and skeleton pose replay."),
@@ -803,35 +803,72 @@ class MainWindow(QMainWindow):
         path, _ = QFileDialog.getOpenFileName(self, "Select local ISL lexicon", "", "JSON (*.json)")
         if path:
             try:
-                lexicon = SignLexicon(path)
-                self.lexicon_path = Path(path)
-                atomic_json(data_root() / "lexicon_selection.json", {"path": str(self.lexicon_path)})
-                self.lexicon_label.setText(f"Loaded {len(lexicon.entries)} source-attributed entries. Keep the JSON beside its media folder.")
+                self.isl.select(path)
+                self.stop_playback()
+                self.refresh_lexicon_summary()
+                self.engine.emit("isl_vocabulary", self.isl.summary())
             except Exception as exc:
                 self.alert(exc)
 
+    def refresh_lexicon_summary(self):
+        info = self.isl.summary()
+        self.lexicon_label.setText(f"Indian Sign Language · {info['entries']} loaded signs. Add a licensed pack to extend coverage.\n" + info["warning"])
+
+    def reset_lexicon(self):
+        self.isl.use_bundled()
+        self.stop_playback()
+        self.refresh_lexicon_summary()
+        self.engine.emit("isl_vocabulary", self.isl.summary())
+
+    def change_auto_sign(self, enabled):
+        self.settings.auto_sign = enabled
+        self.settings.save()
+        self.engine.emit("isl_settings", {"language": "ISL", "auto_sign": enabled})
+        if not enabled:
+            self.stop_playback()
+
     def stop_playback(self):
         self.media_queue = []
+        self.current_sign_step = None
         self.pose_frames = None
         self.text_step_pending = False
         self.pose_timer.stop()
         if self.media_player:
             self.media_player.stop()
         self.publish_pose(None)
+        self.sign_fallback.clear()
 
-    def publish_pose(self, points):
+    def publish_pose(self, points, message=None):
         for canvas in self.sign_canvases:
             canvas.points = points
+            canvas.image = None
+            if message is not None:
+                canvas.message = message
+            elif points is None:
+                canvas.message = "Indian Sign Language\nWaiting for the next input"
             if points is None:
-                canvas.setAccessibleName("ISL light display: waiting for a known sign")
+                canvas.setAccessibleName(canvas.message)
             canvas.update()
 
-    def pause_signs(self):
-        if self.media_player and self.media_player.isPlaying():
-            self.media_player.pause()
+    def publish_video(self, frame):
+        step = self.current_sign_step
+        if not step or step.get("kind") != "sign" or step["entry"]["path"].suffix == ".npy":
             return
-        if self.media_player and self.media_player.playbackState().name == "PausedState" and self.pose_frames is None:
-            self.media_player.play()
+        image = frame.toImage()
+        if not image.isNull():
+            for canvas in self.sign_canvases:
+                canvas.points = None
+                canvas.image = image
+                canvas.setAccessibleName("Indian Sign Language video: " + step["entry"]["gloss"])
+                canvas.update()
+
+    def pause_signs(self):
+        if (self.media_player and self.current_sign_step and self.current_sign_step.get("kind") == "sign"
+                and self.current_sign_step["entry"]["path"].suffix.lower() != ".npy"):
+            if self.media_player.isPlaying():
+                self.media_player.pause()
+            elif not self.reduce_motion.isChecked():
+                self.media_player.play()
             return
         if self.pose_timer.isActive():
             self.pose_timer.stop()
@@ -845,6 +882,12 @@ class MainWindow(QMainWindow):
         self.next_pose_frame()
         self.pose_timer.stop()
 
+    def change_reduced_motion(self, enabled):
+        if enabled and hasattr(self, "pose_timer"):
+            self.pose_timer.stop()
+            if self.media_player:
+                self.media_player.pause()
+
     def change_sign_speed(self, value):
         if self.media_player:
             self.media_player.setPlaybackRate(value)
@@ -856,6 +899,8 @@ class MainWindow(QMainWindow):
             self.floating_display = FloatingSignWindow(self)
             self.sign_canvases.append(self.floating_display.canvas)
         self.floating_display.canvas.points = self.pose.points
+        self.floating_display.canvas.image = self.pose.image
+        self.floating_display.canvas.message = self.pose.message
         if self.session.captions:
             caption = self.session.captions[-1]
             self.floating_display.caption.setText(self.session.speakers[caption.speaker]["name"] + ": " + caption.text)
@@ -868,7 +913,7 @@ class MainWindow(QMainWindow):
         try:
             if self.browser_service is None:
                 from app.services.browser import BrowserService
-                self.browser_service = BrowserService(self.engine, self.settings)
+                self.browser_service = BrowserService(self.engine, self.settings, vocabulary=self.isl)
                 self.browser_service.start()
             import webbrowser
             webbrowser.open(self.browser_service.url)
@@ -878,19 +923,19 @@ class MainWindow(QMainWindow):
 
     def play_signs(self, text, append=False):
         try:
-            lexicon = SignLexicon(self.lexicon_path)
-            known, missing = lexicon.lookup(text)
-            plan = lexicon.plan(text)
-            self.lexicon_label.setText(f"ISL phrases: {', '.join(k['gloss'] for k in known) or 'none'}\nWords shown as text: {', '.join(missing) or 'none'}")
+            plan = self.isl.plan(text)
+            signs = sum(s["kind"] == "sign" for s in plan)
+            fallback = sum(s["kind"] == "text" for s in plan)
+            preview = "; ".join(s["text"] for s in plan if s["kind"] == "text")
+            if len(preview) > 240:
+                preview = preview[:240] + "… (full text remains in playback)"
+            self.lexicon_label.setText(f"ISL · {signs} sign steps · {fallback} text passages without a loaded sign.\nText passages: {preview or 'none'}\n" + self.isl.warning)
             if not append:
                 self.stop_playback()
                 if self.floating_display:
                     self.floating_display.caption.setText(text)
-            remaining = max(0, 100 - len(self.media_queue))
-            self.media_queue.extend(plan[:remaining])
-            if len(plan) > remaining:
-                self.lexicon_label.setText(self.lexicon_label.text() + "\nSign playback queue is full. Captions retain all spoken words.")
-            if self.pose_frames is None and not getattr(self, "text_step_pending", False) and not (self.media_player and self.media_player.isPlaying()):
+            self.media_queue.extend(plan)
+            if self.current_sign_step is None:
                 self.next_media()
         except Exception as exc:
             self.alert(exc)
@@ -906,10 +951,21 @@ class MainWindow(QMainWindow):
         self.sign_text.setPlainText(text)
         self.play_signs(text)
 
-    def open_sign_text(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Open text or subtitles", "",
-                "Text and subtitles (*.txt *.md *.srt *.vtt *.json)")
+    def open_sign_input(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Open input for Indian Sign Language", "",
+                "Supported input (*.txt *.md *.csv *.html *.htm *.docx *.pdf *.srt *.vtt *.json *.wav *.flac *.ogg *.mp3 *.m4a *.mp4 *.webm *.mkv)")
         if path:
+            self.display_sign_file(path)
+
+    def open_sign_text(self):
+        # Compatibility with the previous public UI action.
+        self.open_sign_input()
+
+    def display_sign_file(self, path):
+        if Path(path).suffix.lower() in {".wav", ".flac", ".ogg", ".mp3", ".m4a", ".mp4", ".webm", ".mkv"}:
+            self.auto_sign.setChecked(True)
+            self.start_audio("combined", path)
+        else:
             try:
                 text = read_text(path)
                 if len(text) > 20000:
@@ -920,35 +976,30 @@ class MainWindow(QMainWindow):
                 self.alert(error)
 
     def next_media(self):
+        self.current_sign_step = None
+        self.text_step_pending = False
+        self.pose_frames = None
+        self.pose_timer.stop()
         if not self.media_queue:
             self.publish_pose(None)
             return
         step = self.media_queue.pop(0)
+        self.current_sign_step = step
         if step.get("kind") == "text":
-            self.publish_pose(None)
-            self.sign_fallback.setText("Text · no loaded ISL sign\n" + step["text"])
-            if self.floating_display:
-                self.floating_display.detail.setText("Text fallback: " + step["text"])
-            self.pose_frames = None
-            if self.reduce_motion.isChecked():
-                self.text_step_pending = True
-            else:
-                self.text_step_pending = True
-                self.pose_timer.start(max(1200, min(4500, len(step["text"]) * 65)))
+            self.show_text_step(step["text"])
             return
         self.text_step_pending = False
         entry = step.get("entry", step)
-        self.sign_fallback.setText("ISL phrase: " + entry["gloss"])
+        self.sign_fallback.setText("ISL: " + entry["gloss"] + " · " + step.get("text", entry["gloss"]))
         if self.floating_display:
             self.floating_display.detail.setText("ISL phrase: " + entry["gloss"])
         path = entry["path"]
         if path.suffix.lower() == ".npy":
-            self.pose_frames = np.load(path, allow_pickle=False)
-            if self.pose_frames.ndim != 3 or self.pose_frames.shape[1:] != (49, 4) or not np.isfinite(self.pose_frames).all():
-                self.pose_frames = None
-                self.alert("Pose replay requires raw normalized-camera coordinates [frames,49,4], not the training tensor.")
+            try:
+                self.pose_frames = load_pose_frames(entry)
+            except (OSError, ValueError, TypeError) as error:
+                self.show_text_step(step["text"], "The loaded ISL pose could not play: " + str(error))
                 return
-            self.video_output.hide()
             self.pose_fps = entry.get("fps", 15)
             self.pose_frame_index = 0
             for canvas in self.sign_canvases:
@@ -957,18 +1008,37 @@ class MainWindow(QMainWindow):
             if not self.reduce_motion.isChecked():
                 self.pose_timer.start(round(1000 / (self.pose_fps * self.sign_speed.value())))
         else:
-            self.video_output.show()
-            self.publish_pose(None)
-            from PySide6.QtMultimedia import QMediaPlayer
+            self.publish_pose(None, "Indian Sign Language video\n" + entry["gloss"])
+            from PySide6.QtMultimedia import QMediaPlayer, QVideoSink
             if self.media_player is None:
                 self.media_player = QMediaPlayer(self)
-                self.media_player.setVideoOutput(self.video_output)
+                self.video_sink = QVideoSink(self)
+                self.video_sink.videoFrameChanged.connect(self.publish_video)
+                self.media_player.setVideoSink(self.video_sink)
                 self.media_player.mediaStatusChanged.connect(lambda status: self.next_media() if status == QMediaPlayer.EndOfMedia else None)
-                self.media_player.errorOccurred.connect(lambda error, text: self.alert("ISL clip playback: " + text))
+                self.media_player.errorOccurred.connect(self.sign_video_error)
             # Dictionary videos are intentionally silent.
             self.media_player.setSource(QUrl.fromLocalFile(str(path)))
             self.media_player.setPlaybackRate(self.sign_speed.value())
-            self.media_player.play()
+            if not self.reduce_motion.isChecked():
+                self.media_player.play()
+
+    def show_text_step(self, text, reason="Text · no loaded ISL sign"):
+        self.current_sign_step = {"kind": "text", "text": text}
+        self.publish_pose(None, reason + "\n" + text)
+        self.sign_fallback.setText(reason + "\n" + text)
+        if self.floating_display:
+            self.floating_display.detail.setText(reason + "\n" + text)
+        self.pose_frames = None
+        self.text_step_pending = True
+        if not self.reduce_motion.isChecked():
+            self.pose_timer.start(round(max(1200, min(4500, len(text) * 65)) / self.sign_speed.value()))
+
+    def sign_video_error(self, error, message):
+        if self.current_sign_step and self.current_sign_step.get("kind") == "sign":
+            original = self.current_sign_step["text"]
+            self.media_player.stop()
+            self.show_text_step(original, "ISL clip could not play: " + message)
 
     def next_pose_frame(self):
         if getattr(self, "text_step_pending", False):
@@ -977,6 +1047,13 @@ class MainWindow(QMainWindow):
             self.next_media()
             return
         if self.pose_frames is None:
+            if self.current_sign_step and self.current_sign_step.get("kind") == "sign" and self.media_player:
+                position = self.media_player.position() + round(1000 / self.current_sign_step["entry"].get("fps", 15))
+                if self.media_player.duration() and position >= self.media_player.duration():
+                    self.media_player.stop()
+                    self.next_media()
+                else:
+                    self.media_player.setPosition(position)
             return
         if self.pose_frame_index >= len(self.pose_frames):
             self.pose_timer.stop()
@@ -1082,6 +1159,11 @@ class MainWindow(QMainWindow):
         self.launch_process(["--validate-local"] if validation else ["--hardware-check"], self.diagnostics_log)
 
     def poll(self):
+        if self.auto_sign.isChecked() != self.settings.auto_sign:
+            with QSignalBlocker(self.auto_sign):
+                self.auto_sign.setChecked(self.settings.auto_sign)
+            if not self.settings.auto_sign:
+                self.stop_playback()
         for _ in range(100):
             try:
                 kind, data = self.engine.events.get_nowait()
@@ -1106,7 +1188,7 @@ class MainWindow(QMainWindow):
                     panel.update_features(data)
             elif kind == "frame":
                 self.camera_label.setPixmap(rgb_pixmap(data, self.camera_label.size()))
-            elif kind == "pose" and self.pose_frames is None:
+            elif kind == "pose" and self.current_sign_step is None:
                 self.publish_pose(data)
             elif kind == "camera_status":
                 self.camera_status.setText(data)

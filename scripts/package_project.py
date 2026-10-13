@@ -15,7 +15,7 @@ def package(output):
         and p.suffix not in {".pyc", ".tmp", ".zip"}
         and not p.match("epoch_*.pt")
         and p.name not in {"delivery_manifest.json", "features.npz"} and p.resolve() != output]
-    manifest = {"project": "ACCESSIBILITY AI", "version": "0.3.0", "kind": "source and research checkpoints",
+    manifest = {"project": "ACCESSIBILITY AI", "version": "0.3.1", "kind": "source and research checkpoints",
         "contains_prebuilt_windows_executable": False, "excluded": sorted(excluded), "files": {}}
     manifest["excluded_patterns"] = ["epoch_*.pt", "features.npz"]
     for p in files:

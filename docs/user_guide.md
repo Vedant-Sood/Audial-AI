@@ -19,16 +19,32 @@ session after saving.
 
 ## Native Indian Sign Language
 
-Open **Indian Sign Language**, enter text, then click **Display text**. You can
-paste from the clipboard or open text, subtitles or transcript JSON. Text input
-is limited to 20,000 characters per playback request; file input accepts UTF-8.
+Open **Indian Sign Language**, enter text, then click **Display in ISL**. Paste
+from the clipboard or click **Open document / subtitles / media**. Text, Markdown,
+CSV, HTML, DOCX, text PDF, SRT, VTT and transcript JSON share the same ISL pathway.
+Choose a recording to transcribe its audio track into the same display; a caption
+model must be installed. You can also listen live on this page.
+
+ISL is the sign-language default regardless of your speech language setting.
+**ISL with captions** is enabled at startup and visible on every page. Changing
+it persists your preference; explicit typed/document requests still play.
+Desktop and browser share the preference and any added vocabulary pack.
+Voice & emotion also supplies captions for ISL if a caption model is installed;
+otherwise it explains that installation is needed while keeping measurements available.
+
+Use extracts up to 20,000 characters or documents up to 2 MB. Text files must be
+UTF-8; DOCX and PDF use their normal formats. Encrypted PDFs and scans need text
+copied or extracted by another tool. Oversized input is rejected with a clear
+message rather than silently shortened. Longer valid plans retain every step.
 
 Known phrases use the included hand/body poses. For example, **धन्यवाद** and
 **शुक्रिया** use the thank-you phrase; **शुभ रात्रि** uses good night. Unknown
 content is displayed as **Text · no loaded ISL sign**, in order with known signs.
 It remains visible in the input and caption. This is a coverage fallback, not an
-ISL translation. You can add an appropriately licensed vocabulary using **Add
-an ISL vocabulary**. Keep its JSON and media folder together.
+ISL translation. Add an appropriately licensed vocabulary using **Add an ISL
+vocabulary**. Keep its JSON and media folder together. It extends the bundled
+signs; **Use bundled vocabulary** resets the selection. Both displays use the
+same pack. [The pack format](isl.md) documents media, sources, licenses and aliases.
 
 Pause, change speed, or enable Reduced motion and advance one frame at a time.
 **Float sign display** keeps captions and signs visible above other windows.

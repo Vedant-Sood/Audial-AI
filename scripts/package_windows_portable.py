@@ -112,7 +112,7 @@ def build(output, cache):
         '@echo off\r\ncd /d "%~dp0"\r\n'
         '"%~dp0runtime\\python.exe" -E "%~dp0app-source\\launcher.py" %*\r\npause\r\n', encoding="ascii")
     (staging / "README-WINDOWS.txt").write_text(
-        "AccessibilityAI 0.3.0 - Windows 10/11 x64\n\n"
+        "AccessibilityAI 0.3.1 - Windows 10/11 x64\n\n"
         "Extract the entire ZIP to a writable folder and double-click Start AccessibilityAI.bat.\n"
         "Python and native Windows dependencies are included; setup.bat is unnecessary.\n"
         "ISL playback and the bundled experimental emotion model are local.\n"
@@ -124,7 +124,7 @@ def build(output, cache):
         "The included model has not met 85-90% accuracy on Indian voices.\n"
         "This archive is assembled with Windows binaries; validation results accompany the release.\n",
         encoding="utf-8")
-    inventory = {"version": "0.3.0", "platform": "Windows x64", "python_url": PYTHON_URL,
+    inventory = {"version": "0.3.1", "platform": "Windows x64", "python_url": PYTHON_URL,
                  "python_sha512": PYTHON_SHA512, "windows_execution_verified": False,
                  "wheels": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in wheels.glob("*.whl")}}
     (staging / "runtime_inventory.json").write_text(json.dumps(inventory, indent=2) + "\n")

@@ -31,6 +31,14 @@ def card(title, subtitle):
     return f, layout
 
 
+def draw_sign_image(painter, rect, image):
+    """Fit original signer video frames without cropping hands or face."""
+    size = image.size().scaled(rect.size(), Qt.KeepAspectRatio)
+    target = QRectF((rect.width() - size.width()) / 2, (rect.height() - size.height()) / 2,
+                    size.width(), size.height())
+    painter.drawImage(target, image)
+
+
 class Plot(QWidget):
     def __init__(self, kind="line", color="#008c7f", minimum=None, maximum=None):
         super().__init__()
@@ -214,15 +222,20 @@ class PoseCanvas(QWidget):
     def __init__(self):
         super().__init__()
         self.points = None
+        self.image = None
+        self.message = "Indian Sign Language\nWaiting for the next input"
         self.setMinimumSize(280, 200)
         self.setAccessibleName("ISL pose replay: experimental skeleton view")
 
     def paintEvent(self, event):
         p = QPainter(self)
         p.fillRect(self.rect(), QColor("#112b35"))
+        if self.image is not None:
+            draw_sign_image(p, self.rect(), self.image)
+            return
         if self.points is None:
             p.setPen(QColor("#bfdbd9"))
-            p.drawText(self.rect(), Qt.AlignCenter, "ISL pose view\nLoad a source-attributed local pose clip")
+            p.drawText(self.rect().adjusted(12, 12, -12, -12), Qt.AlignCenter | Qt.TextWordWrap, self.message)
             return
         points = np.asarray(self.points).reshape(49, 4)
         hand_edges = [(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (5, 6), (6, 7), (7, 8),

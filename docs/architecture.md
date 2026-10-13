@@ -36,7 +36,13 @@ captions and optional voice metadata and exports independent transcript formats.
 
 `app/services/lexicon.py` validates source/license metadata and local media paths,
 keeps Indic combining marks in aliases, and builds an ordered sign/text plan.
-`app/services/text_input.py` reads plain text, subtitles and transcript JSON.
+`app/services/isl.py` owns the fixed ISL language, selected local pack, bundled
+pack extension, cache and common pose validation. `Settings.auto_sign` defaults
+to true, and `Settings.sign_language` accepts ISL only; the independent speech
+language controls Whisper. Desktop and browser share this vocabulary service.
+`app/services/text_input.py` reads text, subtitles, transcript JSON, HTML, Word
+and text PDF documents. It preserves numeric subtitle lines and rejects input
+above the documented limits instead of truncating it.
 Known signs use attributed poses or local videos. Text fallback is visible and
 explicit, preserving unknown content without claiming it is translated ISL.
 
@@ -51,6 +57,14 @@ and Origin. Session IDs prevent one browser tab controlling another tab's captur
 `browser/emotion.js` renders labeled colors; `/api/palette` persists validated
 preferences. The existing browser extension opens selected page text on explicit
 user action.
+
+`POST /api/signs` and `POST /api/document?filename=...` return all ordered pose,
+video and text steps. Repeated poses share one serialized sequence. Dictionary
+video URLs reference only validated pack entries and support byte-range playback.
+`browser/isl-playback.js` manages text timing, pause, manual stepping and queue
+order. It accepts only ISL plans. Native `QVideoSink` frames render in every sign
+canvas; dictionary audio is silent. Unreadable media falls back to original text
+and leaves subsequent signs usable.
 
 ## Training and packaging
 

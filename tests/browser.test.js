@@ -5,6 +5,7 @@ import { BrowserAudioCapture, encodeWav } from "../browser/capture.js";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { foreground, displayEmotion } from "../browser/emotion.js";
+import { expandISLPlan, ISLPlayback } from "../browser/isl-playback.js";
 
 test("emotion indicators preserve a label and use readable foreground colors",()=>{
   const element={style:{},setAttribute(){}};
@@ -16,6 +17,39 @@ test("emotion indicators preserve a label and use readable foreground colors",()
 });
 
 const pose={gloss:"renderer fixture (not a sign)",frames:[{timeMs:0,face:[[.2,.2]]},{timeMs:100,face:[[.4,.4]]}]};
+
+function playbackFixture(reducedMotion = false) {
+  const shown=[], timers=new Map();let counter=0;
+  const playback=new ISLPlayback({show:step=>shown.push(step.text),start:()=>{},pause:()=>{},advanceFrame:()=>true,remaining:()=>100,
+    setTimer:fn=>{timers.set(++counter,fn);return counter;},clearTimer:id=>timers.delete(id),reducedMotion});
+  return {playback, shown, timers, tick:()=>{const [id,fn]=timers.entries().next().value;timers.delete(id);fn();}};
+}
+const mixedPlan={language:"ISL",sequences:[pose],steps:[{kind:"text",text:"unknown first"},{kind:"pose",text:"known middle",sequence_index:0},{kind:"text",text:"unknown last"}]};
+test("ISL playback preserves text before and after signs and rejects other sign languages",()=>{
+  const {playback,shown,tick}=playbackFixture();playback.enqueue(mixedPlan);tick();tick();
+  assert.deepEqual(shown,["unknown first","known middle","unknown last"]);
+  assert.throws(()=>expandISLPlan({...mixedPlan,language:"ASL"}),/Indian Sign Language/);
+});
+test("long ISL plans keep every step and encode repeated poses once",()=>{
+  const {playback,shown}=playbackFixture(true);
+  playback.enqueue({language:"ISL",sequences:[pose],steps:Array.from({length:150},(_,i)=>({kind:"pose",text:String(i),sequence_index:0}))});
+  assert.equal(playback.queue.length,149);
+  for(let i=0;i<150;i++)playback.step();
+  assert.equal(shown.length,150);assert.equal(shown.at(-1),"149");assert.equal(playback.current,null);
+});
+test("reduced motion and pause stop text timers without skipping newly appended input",()=>{
+  const {playback,shown,timers,tick}=playbackFixture();playback.enqueue(mixedPlan);
+  playback.pause();assert.equal(timers.size,0);
+  playback.enqueue({language:"ISL",sequences:[],steps:[{kind:"text",text:"later caption"}]},{append:true});
+  assert.deepEqual(shown,["unknown first"]);playback.play();tick();
+  playback.setReducedMotion(true);assert.equal(timers.size,0);playback.step();playback.step();
+  assert.deepEqual(shown,["unknown first","known middle","unknown last","later caption"]);
+});
+test("ISL video sources must reference validated local vocabulary media",()=>{
+  const valid={language:"ISL",sequences:[],steps:[{kind:"video",text:"Thank you",url:"/api/sign-media/"+"a".repeat(64)}]};
+  assert.equal(expandISLPlan(valid)[0].kind,"video");
+  assert.throws(()=>expandISLPlan({...valid,steps:[{...valid.steps[0],url:"https://unrelated.example/video"}]}));
+});
 test("the audio worklet flushes the final short packet with its capture timestamp",()=>{
   let Collector;const sent=[];
   const environment={sampleRate:16000,Float32Array,AudioWorkletProcessor:class{constructor(){this.port={postMessage:message=>sent.push(message)};}},registerProcessor:(_,value)=>{Collector=value;}};

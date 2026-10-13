@@ -67,7 +67,7 @@ def main():
         silence = model.predict(np.zeros(16000, dtype=np.float32))
         if silence["tone"] != "uncertain":
             raise RuntimeError("Silence must not receive an emotion label.")
-        print(json.dumps({"version": "0.3.0", "platform": platform.system(),
+        print(json.dumps({"version": "0.3.1", "platform": platform.system(),
                           "native_ui": "PASS", "isl_playback": "PASS", "silence_abstention": "PASS",
                           "microphone_started": window.engine.running,
                           "caption_model_installed": window.manager.installed("whisper-tiny")}), flush=True)

@@ -3,11 +3,14 @@ from collections import deque
 from dataclasses import asdict, is_dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
+import hashlib
 import json
+import mimetypes
 from pathlib import Path
 import tempfile
 import threading
 import uuid
+import re
 from urllib.parse import parse_qs, urlsplit
 
 import numpy as np
@@ -15,7 +18,9 @@ import numpy as np
 from app.audio.features import mono_resample
 from app.models.manager import ModelManager
 from app.services.engine import AudioEngine
-from app.services.lexicon import SignLexicon
+from app.services.isl import ISLVocabulary, load_pose_frames
+from app.services.lexicon import ISL_LANGUAGE, SignLexicon
+from app.services.text_input import read_text_bytes
 from app.storage.transcript import Session
 from app.utils.config import PRESETS, Settings
 from app.utils.paths import project_root
@@ -33,9 +38,7 @@ def json_default(value):
 
 
 def pose_sequence(entry):
-    frames = np.load(entry["path"], allow_pickle=False)
-    if frames.ndim != 3 or frames.shape[1:] != (49,4) or len(frames) > 1500 or not np.isfinite(frames).all():
-        raise ValueError("Invalid raw ISL pose sequence.")
+    frames = load_pose_frames(entry)
     body_indexes = [0,11,12,13,14,15,16]
     output = []
     for index, frame in enumerate(frames):
@@ -49,10 +52,12 @@ def pose_sequence(entry):
 
 
 class BrowserService:
-    def __init__(self, engine=None, settings=None, port=0):
+    def __init__(self, engine=None, settings=None, port=0, vocabulary=None):
         self.settings = settings or Settings.load()
         self.engine = engine or AudioEngine(self.settings)
         self.owns_engine = engine is None
+        self.vocabulary = vocabulary or ISLVocabulary()
+        self.sign_media = {}
         self.port = port
         self.session = Session(title="Browser meeting")
         self.events = deque(maxlen=400)
@@ -65,13 +70,53 @@ class BrowserService:
         self.unsubscribe = self.engine.subscribe(self.on_event)
 
     def on_event(self, kind, data):
-        if kind not in {"caption","partial","status","warning","error","prosody","performance"}:
+        if kind not in {"caption","partial","status","warning","error","prosody","performance","isl_settings","isl_vocabulary"}:
             return
         with self.lock:
             if kind == "caption":
                 self.session.add(data)
             self.id += 1
             self.events.append({"id": self.id,"kind": kind,"data": data})
+
+    def sign_plan(self, text):
+        """Return every ordered step; each distinct pose is encoded only once.
+
+        Video URLs are opaque identifiers for validated vocabulary media, never
+        caller-supplied paths. Desktop and browser use the same selected pack.
+        """
+        plan = self.vocabulary.plan(text)
+        steps, sequences, indexes, missing = [], [], {}, []
+        for step in plan:
+            if step["kind"] == "text":
+                steps.append(step.copy())
+                missing.extend(SignLexicon.tokens(step["text"]))
+                continue
+            entry = step["entry"]
+            item = {"text": step["text"], "gloss": entry["gloss"], "source": entry["source_url"],
+                    "license": entry["license"], "attribution": entry.get("attribution", "")}
+            if entry["path"].suffix.lower() == ".npy":
+                identity = (str(entry["path"]), entry.get("fps", 15), entry["gloss"])
+                if identity not in indexes:
+                    try:
+                        sequence = pose_sequence(entry)
+                    except (OSError, ValueError, TypeError) as error:
+                        steps.append({"kind": "text", "text": step["text"], "reason": "The loaded sign media could not be read: " + str(error)})
+                        missing.extend(SignLexicon.tokens(step["text"]))
+                        continue
+                    indexes[identity] = len(sequences)
+                    sequences.append(sequence)
+                item.update(kind="pose", sequence_index=indexes[identity])
+            else:
+                stat = entry["path"].stat()
+                identity = f"{entry['path']}:{stat.st_size}:{stat.st_mtime_ns}"
+                media_id = hashlib.sha256(identity.encode()).hexdigest()
+                with self.lock:
+                    self.sign_media[media_id] = entry["path"]
+                item.update(kind="video", url="/api/sign-media/" + media_id, fps=entry.get("fps", 15))
+            steps.append(item)
+        return {"language": ISL_LANGUAGE, "text": text, "steps": steps, "sequences": sequences,
+                "missing": missing, "vocabulary": self.vocabulary.summary(),
+                "note": "Local vocabulary in input order with explicit text fallback; this is not fluent ISL sentence translation."}
 
     @property
     def url(self):
@@ -107,6 +152,51 @@ class BrowserService:
                     return False
                 return True
 
+            def serve_sign_media(self, media_id):
+                with service.lock:
+                    path = service.sign_media.get(media_id)
+                if path is None:
+                    self.respond(404, {"error": "No such vocabulary clip."})
+                    return
+                size = path.stat().st_size
+                start, end, status = 0, size - 1, 200
+                requested = self.headers.get("Range")
+                if requested:
+                    match = re.fullmatch(r"bytes=(\d*)-(\d*)", requested)
+                    if not match or not any(match.groups()):
+                        raise ValueError("Use a single byte range.")
+                    first, last = match.groups()
+                    if first:
+                        start = int(first)
+                        end = min(int(last), size - 1) if last else size - 1
+                    else:
+                        start = max(0, size - int(last))
+                    if start > end or start >= size:
+                        self.send_response(416)
+                        self.send_header("Content-Range", f"bytes */{size}")
+                        self.send_header("Content-Length", "0")
+                        self.end_headers()
+                        return
+                    status = 206
+                self.send_response(status)
+                self.send_header("Content-Type", mimetypes.guess_type(path.name)[0] or "video/mp4")
+                self.send_header("Content-Length", str(end - start + 1))
+                self.send_header("Accept-Ranges", "bytes")
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.send_header("Cache-Control", "no-store")
+                if status == 206:
+                    self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+                self.end_headers()
+                with path.open("rb") as clip:
+                    clip.seek(start)
+                    remaining = end - start + 1
+                    while remaining:
+                        chunk = clip.read(min(remaining, 256 * 1024))
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
+                        remaining -= len(chunk)
+
             def do_GET(self):
                 if not self.allowed():return
                 parsed = urlsplit(self.path)
@@ -116,7 +206,8 @@ class BrowserService:
                         selected = PRESETS[service.settings.preset]["asr"]
                         self.respond(200,{"running":service.engine.running,"source":service.engine.source,
                             "asr_model":selected,"asr_installed":service.engine.manager.installed(selected),
-                            "language":service.settings.language,"sign_language":"ISL",
+                            "language":service.settings.language,"sign_language":ISL_LANGUAGE,
+                            "auto_sign":service.settings.auto_sign,"vocabulary":service.vocabulary.summary(),
                             "emotion_enabled":service.settings.prosody_classifier,"cursor":service.id})
                     elif parsed.path == "/api/palette":
                         self.respond(200, {"colors": service.settings.emotion_colors,
@@ -128,12 +219,11 @@ class BrowserService:
                             gap = bool(service.events and cursor and cursor < service.events[0]["id"]-1)
                             self.respond(200,{"events":events,"cursor":service.id,"gap":gap})
                     elif parsed.path == "/api/signs":
-                        text = query.get("text",[""])[0][:2000]
-                        lexicon = SignLexicon(project_root()/"assets/isl_lexicon/lexicon.json")
-                        known,missing = lexicon.lookup(text)
-                        sequences = [pose_sequence(entry) for entry in known[:12] if entry["path"].suffix==".npy"]
-                        self.respond(200,{"language":"ISL","sequences":sequences,"missing":missing,
-                            "note":"Known phrase lookup in spoken order; detailed facial cues are absent."})
+                        self.respond(200, service.sign_plan(query.get("text", [""])[0]))
+                    elif parsed.path.startswith("/api/sign-media/"):
+                        self.serve_sign_media(parsed.path.removeprefix("/api/sign-media/"))
+                    elif parsed.path == "/api/isl":
+                        self.respond(200, {**service.vocabulary.summary(), "auto_sign": service.settings.auto_sign})
                     elif parsed.path == "/api/export":
                         kind = query.get("format",["vtt"])[0]
                         if kind not in {"vtt","srt","json","txt","csv"}:raise ValueError("Unsupported export format.")
@@ -142,7 +232,7 @@ class BrowserService:
                             service.session.export(target,kind)
                             self.respond(200,target.read_bytes(),"text/vtt; charset=utf-8" if kind=="vtt" else "application/octet-stream","transcript."+kind)
                     else:
-                        allowed = {"index.html","app.js","styles.css","light-box.js","capture.js","pcm-worklet.js","emotion.js"}
+                        allowed = {"index.html","app.js","styles.css","light-box.js","capture.js","pcm-worklet.js","emotion.js","isl-playback.js"}
                         filename = parsed.path.lstrip("/") or "index.html"
                         if filename not in allowed:
                             self.respond(404,{"error":"Not found."});return
@@ -158,7 +248,25 @@ class BrowserService:
                     if not 0 <= size <= 4*1024*1024:raise ValueError("Request is too large.")
                     body = self.rfile.read(size)
                     if len(body)!=size:raise ValueError("Incomplete request.")
-                    if self.path == "/api/palette":
+                    parsed = urlsplit(self.path)
+                    if parsed.path == "/api/signs":
+                        options = json.loads(body or b"{}")
+                        if not isinstance(options, dict):
+                            raise ValueError("Send a JSON object with text.")
+                        self.respond(200, service.sign_plan(options.get("text")))
+                    elif parsed.path == "/api/document":
+                        filename = parse_qs(parsed.query).get("filename", [""])[0]
+                        self.respond(200, service.sign_plan(read_text_bytes(filename, body)))
+                    elif parsed.path == "/api/isl/settings":
+                        options = json.loads(body or b"{}")
+                        if not isinstance(options, dict) or not isinstance(options.get("auto_sign"), bool) or options.get("language", ISL_LANGUAGE) != ISL_LANGUAGE:
+                            raise ValueError("Use ISL and a boolean auto_sign preference.")
+                        with service.control_lock:
+                            service.settings.auto_sign = options["auto_sign"]
+                            service.settings.save()
+                        service.engine.emit("isl_settings", {"language": ISL_LANGUAGE, "auto_sign": service.settings.auto_sign})
+                        self.respond(200, {"language": ISL_LANGUAGE, "auto_sign": service.settings.auto_sign})
+                    elif self.path == "/api/palette":
                         options = json.loads(body or b"{}")
                         if not isinstance(options, dict):
                             raise ValueError("Send a JSON object.")

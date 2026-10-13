@@ -24,12 +24,16 @@ class Settings:
     partial_updates: bool = True
     prosody_classifier: bool = False
     auto_speak_sign: bool = False
+    sign_language: str = "ISL"
+    auto_sign: bool = True
     reduced_motion: bool = False
     sign_speed: float = 1.0
     intensity_colors: list = field(default_factory=lambda: ["#2263ac", "#087f75", "#b75a17"])
     emotion_colors: dict = field(default_factory=lambda: DEFAULT_EMOTION_COLORS.copy())
 
     def validate(self):
+        if self.sign_language != "ISL" or not isinstance(self.auto_sign, bool):
+            raise ValueError("The supported sign language is Indian Sign Language (ISL).")
         if self.preset not in PRESETS or self.device not in {"auto", "cpu", "cuda"}:
             raise ValueError("Unknown performance preset or device.")
         if self.diarization not in {"off", "ecapa", "pyannote"}:

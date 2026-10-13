@@ -1,15 +1,14 @@
-# AccessibilityAI 0.3.0
+# AccessibilityAI 0.3.1
 
 A Windows desktop workspace for local captions, Indian Sign Language (ISL) phrase
 playback, and optional voice emotion estimates with customizable colors.
 
 ## Portable Windows prototype
 
-Windows CI regression checks currently fail. The native executable build is
-skipped, so Windows readiness is not established. The portable ZIP is assembled
-and integrity-checked; use it as a prototype while the CI failure is diagnosed.
-See [the current run](https://github.com/Vedant-Sood/Audial-AI/actions/runs/38354724640)
-and `docs/validation-0.3.json`.
+The portable ZIP is assembled from Windows binaries and integrity-checked.
+Windows execution for 0.3.1 still requires its Windows CI checks; the previous
+0.3.0 Windows regression run failed. Treat the archive as a prototype until the
+current [validation report](docs/validation-0.3.1.json) records a Windows pass.
 
 1. Extract the **entire Windows x64 ZIP** to a writable folder.
 2. Double-click **Start AccessibilityAI.bat**. Python and native dependencies are
@@ -17,7 +16,8 @@ and `docs/validation-0.3.json`.
 3. Open **Advanced tools → Models** and install **Whisper tiny** once for captions.
    After downloading, transcription runs locally. ISL playback uses included assets.
 4. Open **Conversation**, choose Microphone or Computer / app audio, and click
-   **Start listening**. Nothing records automatically when the app launches.
+   **Start listening**. **ISL with captions** is enabled by default for all audio
+   sources. Nothing records automatically when the app launches.
 5. In **Settings**, enable optional voice emotion estimates, choose an emotion
    color pool, and save. Stop active capture before saving desktop settings.
 
@@ -26,7 +26,7 @@ For a source checkout, install Python 3.11/3.12 x64, run `setup.bat --cpu`, then
 portable ZIP and source ZIP are different packages; do not mix their launchers.
 
 [User guide](docs/user_guide.md) · [Development](CONTRIBUTING.md) ·
-[Architecture](docs/architecture.md) · [Validation](docs/validation-0.3.json)
+[Architecture](docs/architecture.md) · [Validation](docs/validation-0.3.1.json)
 
 ## What changed
 
@@ -35,10 +35,18 @@ portable ZIP and source ZIP are different packages; do not mix their launchers.
 - Readable audio-source and language choices replace technical input codes.
 - **Voice & emotion** shows a text label, your chosen color, confidence and
   uncertainty. All six emotion colors and the uncertain color persist locally.
-- Native ISL playback supports multiline text, clipboard input, TXT/Markdown,
-  SRT/VTT and transcript JSON. Included Hindi aliases match their English phrases.
+- **ISL is the fixed default for every supported input**, independently of the
+  speech language. Text, clipboard, page selection, documents, subtitles and
+  completed speech captions use one shared local vocabulary and playback plan.
+- TXT, Markdown, CSV, HTML, DOCX, text PDFs, SRT/VTT and transcript JSON are
+  supported. Included Hindi aliases match their English phrases. Scanned PDFs
+  need OCR text; arbitrary image/binary files are not interpreted as speech.
 - Known signs and explicit text fallbacks play in input order. Unknown words and
-  symbols are retained; they are never turned into fabricated signs.
+  symbols are retained. Long plans no longer stop at 12/30/100 signs. The same
+  explicit limits apply across text inputs: 20,000 characters and 2 MB documents.
+- Added ISL packs extend the bundled vocabulary for desktop and browser together.
+  Silent dictionary videos can show the original signer in every native display;
+  invalid media becomes readable text and subsequent signs continue.
 - Audio/video file input can decode WAV, FLAC, OGG, MP3, M4A, MP4, WebM and MKV
   locally using SoundFile/PyAV. Existing caption processing is retained.
 - A portable Windows packager verifies the official Python checksum and wheel
@@ -68,7 +76,7 @@ See [Indian voice training](docs/indian_voice_training.md),
 Run `python -m pytest -q`, `npm test`, and `python -m app.main --smoke-test`.
 On headless Linux, use `QT_QPA_PLATFORM=offscreen`. Startup checks exercise native
 UI, bundled ISL playback and silence abstention without recording devices.
-Current-run results are in `docs/validation-0.3.json`; original benchmark and
+Current-run results are in `docs/validation-0.3.1.json`; original benchmark and
 training records are historical and are not presented as measurements of this
 release or your Windows laptop.
 
@@ -93,3 +101,5 @@ uploaded manifest hashes; provenance is in `docs/source_import.json`. The origin
 Application code retains the included MIT licenses. Models, derived signs,
 evaluation speech, Python and dependency binaries retain their own licenses;
 preserve [LICENSE_NOTICES.md](LICENSE_NOTICES.md) and the runtime license files.
+
+See [ISL input behavior and vocabulary format](docs/isl.md) for the exact scope.

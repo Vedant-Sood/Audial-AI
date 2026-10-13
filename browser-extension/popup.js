@@ -10,10 +10,11 @@ button.addEventListener("click",async()=>{
     if(!tab?.id)throw new Error("Open a normal browser page first.");
     const [result]=await chrome.scripting.executeScript({target:{tabId:tab.id},func:()=>{
       const selected=globalThis.getSelection()?.toString().trim();
-      return (selected||document.querySelector("main")?.innerText||document.body?.innerText||"").slice(0,2000);
+      return selected||document.querySelector("main")?.innerText||document.body?.innerText||"";
     }});
     const text=result?.result?.trim();
     if(!text)throw new Error("No readable page text was found. Select some text and try again.");
+    if(text.length>20000)throw new Error("Select an extract up to 20,000 characters. The page is too long to open in one playback request.");
     await chrome.storage.local.set({companionPort:port});
     await chrome.tabs.create({url:`http://127.0.0.1:${port}/#text=${encodeURIComponent(text)}`});
     window.close();

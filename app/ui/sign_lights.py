@@ -3,22 +3,27 @@ from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QWidget, QDialog, QVBoxLayout, QLabel, QPushButton
 
 from app.services.sign_lights import rasterize
+from app.ui.widgets import draw_sign_image
 
 
 class SignLightCanvas(QWidget):
     def __init__(self):
         super().__init__()
         self.points = None
-        self.message = "ISL light display\nWaiting for a known sign"
+        self.image = None
+        self.message = "Indian Sign Language\nWaiting for the next input"
         self.setMinimumSize(280, 210)
         self.setAccessibleName("Indian Sign Language: hand and body motion displayed as on/off lights")
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor("#101b28"))
+        if self.image is not None:
+            draw_sign_image(painter, self.rect(), self.image)
+            return
         if self.points is None:
             painter.setPen(QColor("#d4e8e0"))
-            painter.drawText(self.rect(), Qt.AlignCenter, self.message)
+            painter.drawText(self.rect().adjusted(12, 12, -12, -12), Qt.AlignCenter | Qt.TextWordWrap, self.message)
             return
         grid = rasterize(self.points)
         size = min(self.width()/128, self.height()/96)
