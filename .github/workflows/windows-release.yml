@@ -80,7 +80,7 @@ jobs:
               Get-Content $report_file | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
               '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
               if ('${{ job.status }}' -ne 'success') {
-                $failure_excerpt = (Get-Content $report_file | Select-Object -Last 70) -join [System.Environment]::NewLine
+                $failure_excerpt = (Get-Content $report_file | Select-Object -Last 20) -join [System.Environment]::NewLine
                 $annotation = $failure_excerpt.Replace('%', '%25').Replace([string][char]13, '%0D').Replace([string][char]10, '%0A')
                 Write-Output ("::error title=Windows validation output::" + $annotation)
               }
