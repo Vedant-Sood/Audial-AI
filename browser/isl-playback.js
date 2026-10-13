@@ -19,7 +19,8 @@ export function expandISLPlan(plan) {
 
 export class ISLPlayback {
   constructor({show, start, pause, advanceFrame, remaining, idle = () => {},
-               setTimer = setTimeout, clearTimer = clearTimeout, reducedMotion = false}) {
+               setTimer = (fn, delay) => globalThis.setTimeout(fn, delay),
+               clearTimer = id => globalThis.clearTimeout(id), reducedMotion = false}) {
     Object.assign(this, {show, start, pauseMedia: pause, advanceFrame, remaining, idle, setTimer, clearTimer});
     this.queue = []; this.current = null; this.timer = null;
     this.paused = false; this.speed = 1; this.reducedMotion = reducedMotion;
@@ -40,6 +41,11 @@ export class ISLPlayback {
     if (!append) this.stop();
     this.queue.push(...steps);
     if (!this.current) this.next(!this.paused);
+  }
+
+  stopCaptions() {
+    this.queue = this.queue.filter(step => !step.from_captions);
+    if (this.current?.from_captions) this.next(!this.paused);
   }
 
   next(play = true) {

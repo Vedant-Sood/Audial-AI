@@ -83,7 +83,7 @@ video.addEventListener("ended", () => {if (signPlayback.current?.kind === "video
 video.addEventListener("error", () => {
   if (signPlayback.current?.kind !== "video") return;
   const original = signPlayback.current.text, wasPaused = signPlayback.paused;
-  signPlayback.current = {kind: "text", text: original};
+  signPlayback.current = {kind: "text", text: original, from_captions: signPlayback.current.from_captions};
   signPlayback.show(signPlayback.current); if (!wasPaused) signPlayback.play();
   showError("This ISL clip could not play. Its original text remains visible.");
 });
@@ -149,12 +149,12 @@ function displayPlan(result, append = false) {
   if (result.vocabulary.warning) showError(result.vocabulary.warning);
   const unavailable = result.steps.find(step => step.reason);
   if (unavailable) showError(unavailable.reason);
-  signPlayback.enqueue(result, {append});
+  signPlayback.enqueue({...result, steps: result.steps.map(step => ({...step, from_captions: append}))}, {append});
 }
 async function loadSigns(text,append=false,current=signGeneration){
   if(!text.trim()||current!==signGeneration)return;
   const result=await request("/api/signs", {text});
-  if(current!==signGeneration)return;
+  if(current!==signGeneration || (append && !$("auto-sign").checked))return;
   displayPlan(result, append);
 }
 async function poll(){
@@ -178,7 +178,7 @@ async function poll(){
       }else if(event.kind==="warning"||event.kind==="error")showError(data);
       else if(event.kind==="isl_settings") {
         $("auto-sign").checked = data.auto_sign;
-        if (!data.auto_sign) {signGeneration++; signPlayback.stop();}
+        if (!data.auto_sign) signPlayback.stopCaptions();
       }else if(event.kind==="isl_vocabulary") {
         signGeneration++; signPlayback.stop(); $("unknown").textContent = `ISL vocabulary updated: ${data.entries} loaded signs.`;
       }
@@ -204,7 +204,7 @@ $("reduced-motion").addEventListener("change",event=>{lights.setReducedMotion(ev
 $("speed").addEventListener("input",event=>{$("speed-label").textContent=event.target.value+"×";signPlayback.setSpeed(Number(event.target.value));});
 $("auto-sign").addEventListener("change",async event => {
   try {await request("/api/isl/settings", {language: "ISL", auto_sign: event.target.checked});
-    if (!event.target.checked) {signGeneration++; signPlayback.stop();}}
+    if (!event.target.checked) signPlayback.stopCaptions();}
   catch(error) {showError(error.message);}
 });
 $("document-file").addEventListener("change", async event => {

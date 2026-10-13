@@ -25,6 +25,17 @@ function playbackFixture(reducedMotion = false) {
   return {playback, shown, timers, tick:()=>{const [id,fn]=timers.entries().next().value;timers.delete(id);fn();}};
 }
 const mixedPlan={language:"ISL",sequences:[pose],steps:[{kind:"text",text:"unknown first"},{kind:"pose",text:"known middle",sequence_index:0},{kind:"text",text:"unknown last"}]};
+test("default playback timers keep the browser global receiver",()=>{
+  const savedSet=globalThis.setTimeout,savedClear=globalThis.clearTimeout;
+  let scheduled=0,cleared=0;
+  globalThis.setTimeout=function(){assert.equal(this,globalThis);scheduled++;return 1;};
+  globalThis.clearTimeout=function(){assert.equal(this,globalThis);cleared++;};
+  try {
+    const playback=new ISLPlayback({show:()=>{},start:()=>{},pause:()=>{},advanceFrame:()=>true,remaining:()=>100});
+    playback.enqueue(mixedPlan);playback.pause();
+    assert.equal(scheduled,1);assert.equal(cleared,1);
+  }finally{globalThis.setTimeout=savedSet;globalThis.clearTimeout=savedClear;}
+});
 test("ISL playback preserves text before and after signs and rejects other sign languages",()=>{
   const {playback,shown,tick}=playbackFixture();playback.enqueue(mixedPlan);tick();tick();
   assert.deepEqual(shown,["unknown first","known middle","unknown last"]);
@@ -36,6 +47,13 @@ test("long ISL plans keep every step and encode repeated poses once",()=>{
   assert.equal(playback.queue.length,149);
   for(let i=0;i<150;i++)playback.step();
   assert.equal(shown.length,150);assert.equal(shown.at(-1),"149");assert.equal(playback.current,null);
+});
+test("turning off automatic captions preserves explicit text and document playback",()=>{
+  const {playback,shown}=playbackFixture(true);playback.enqueue(mixedPlan);
+  playback.enqueue({language:"ISL",sequences:[],steps:[{kind:"text",text:"automatic caption",from_captions:true}]},{append:true});
+  playback.stopCaptions();playback.step();playback.step();playback.step();
+  assert.deepEqual(shown,["unknown first","known middle","unknown last"]);
+  assert.equal(playback.current,null);
 });
 test("reduced motion and pause stop text timers without skipping newly appended input",()=>{
   const {playback,shown,timers,tick}=playbackFixture();playback.enqueue(mixedPlan);

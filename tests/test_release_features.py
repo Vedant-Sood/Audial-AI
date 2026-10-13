@@ -77,7 +77,7 @@ def test_native_unknown_text_can_be_stepped_to_the_next_sign():
 
 def test_subtitles_and_saved_transcripts_become_plain_text(tmp_path):
     path = tmp_path / "captions.vtt"
-    path.write_text("WEBVTT\n\n00:00:01.000 --> 00:00:02.000\n<b>धन्यवाद</b> team\n\nNOTE Metadata\nnot a caption\n")
+    path.write_text("WEBVTT\n\n00:00:01.000 --> 00:00:02.000\n<b>धन्यवाद</b> team\n\nNOTE Metadata\nnot a caption\n", encoding="utf-8")
     assert read_text(path) == "धन्यवाद team"
     path = tmp_path / "session.json"
     path.write_text(json.dumps({"captions": [{"text": "Thank you!"}]}))

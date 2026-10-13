@@ -195,11 +195,31 @@ def test_unreadable_pose_becomes_text_instead_of_stalling_other_signs(tmp_path):
     try:
         window.reduce_motion.setChecked(True)
         window.play_signs("thank you good night")
-        assert window.current_sign_step == {"kind": "text", "text": "thank you"}
+        assert window.current_sign_step["kind"] == "text" and window.current_sign_step["text"] == "thank you"
         window.step_sign()
         assert window.current_sign_step["entry"]["gloss"] == "good night"
         assert window.pose.points is not None
     finally:
+        window.close(); app.processEvents()
+
+
+def test_caption_preference_does_not_cancel_explicit_native_input():
+    from PySide6.QtWidgets import QApplication
+    from app.ui.main_window import MainWindow
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow()
+    try:
+        window.reduce_motion.setChecked(True)
+        window.play_signs("typed text thanks")
+        window.engine.emit("caption", Caption(0, 1, "good night"))
+        window.poll()
+        window.auto_sign.setChecked(False)
+        assert window.current_sign_step["text"] == "typed text"
+        assert [step["entry"]["gloss"] for step in window.media_queue] == ["thank you"]
+        window.step_sign()
+        assert window.current_sign_step["entry"]["gloss"] == "thank you"
+    finally:
+        window.session_dirty = False
         window.close(); app.processEvents()
 
 

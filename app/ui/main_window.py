@@ -825,7 +825,16 @@ class MainWindow(QMainWindow):
         self.settings.save()
         self.engine.emit("isl_settings", {"language": "ISL", "auto_sign": enabled})
         if not enabled:
+            self.stop_caption_signs()
+
+    def stop_caption_signs(self):
+        """Disabling automatic captions must preserve explicit document requests."""
+        self.media_queue = [step for step in self.media_queue if not step.get("from_captions")]
+        if self.current_sign_step and self.current_sign_step.get("from_captions"):
+            remaining = self.media_queue
             self.stop_playback()
+            self.media_queue = remaining
+            self.next_media()
 
     def stop_playback(self):
         self.media_queue = []
@@ -924,6 +933,8 @@ class MainWindow(QMainWindow):
     def play_signs(self, text, append=False):
         try:
             plan = self.isl.plan(text)
+            for step in plan:
+                step["from_captions"] = append
             signs = sum(s["kind"] == "sign" for s in plan)
             fallback = sum(s["kind"] == "text" for s in plan)
             preview = "; ".join(s["text"] for s in plan if s["kind"] == "text")
@@ -1024,7 +1035,8 @@ class MainWindow(QMainWindow):
                 self.media_player.play()
 
     def show_text_step(self, text, reason="Text · no loaded ISL sign"):
-        self.current_sign_step = {"kind": "text", "text": text}
+        origin = bool(self.current_sign_step and self.current_sign_step.get("from_captions"))
+        self.current_sign_step = {"kind": "text", "text": text, "from_captions": origin}
         self.publish_pose(None, reason + "\n" + text)
         self.sign_fallback.setText(reason + "\n" + text)
         if self.floating_display:
@@ -1163,7 +1175,7 @@ class MainWindow(QMainWindow):
             with QSignalBlocker(self.auto_sign):
                 self.auto_sign.setChecked(self.settings.auto_sign)
             if not self.settings.auto_sign:
-                self.stop_playback()
+                self.stop_caption_signs()
         for _ in range(100):
             try:
                 kind, data = self.engine.events.get_nowait()
