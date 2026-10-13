@@ -56,6 +56,8 @@ jobs:
           & .\dist\AccessibilityAI\AccessibilityAIWorker.exe --smoke-test 2>&1 | Tee-Object -FilePath windows-native-startup-output.txt
           $native_startup_status = $LASTEXITCODE
           if ($native_startup_status -ne 0) { exit $native_startup_status }
+          Copy-Item README.md, LICENSE, LICENSE_UPLOADED, LICENSE_NOTICES.md -Destination dist\AccessibilityAI
+          Copy-Item docs -Destination dist\AccessibilityAI\docs -Recurse
           try {
             Compress-Archive -Path dist\AccessibilityAI -DestinationPath dist\AccessibilityAI-Windows-x64-native.zip -ErrorAction Stop
           } catch {
