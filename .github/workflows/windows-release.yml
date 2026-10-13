@@ -50,11 +50,18 @@ jobs:
       - name: Build native executable directory
         shell: pwsh
         run: |
-          python -m PyInstaller packaging/AccessibilityAI.spec --noconfirm
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          & .\dist\AccessibilityAI\AccessibilityAIWorker.exe --smoke-test
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          Compress-Archive -Path dist\AccessibilityAI -DestinationPath dist\AccessibilityAI-Windows-x64-native.zip
+          python -m PyInstaller packaging/AccessibilityAI.spec --noconfirm 2>&1 | Tee-Object -FilePath windows-native-build-output.txt
+          $native_build_status = $LASTEXITCODE
+          if ($native_build_status -ne 0) { exit $native_build_status }
+          & .\dist\AccessibilityAI\AccessibilityAIWorker.exe --smoke-test 2>&1 | Tee-Object -FilePath windows-native-startup-output.txt
+          $native_startup_status = $LASTEXITCODE
+          if ($native_startup_status -ne 0) { exit $native_startup_status }
+          try {
+            Compress-Archive -Path dist\AccessibilityAI -DestinationPath dist\AccessibilityAI-Windows-x64-native.zip -ErrorAction Stop
+          } catch {
+            $_ | Out-File -FilePath windows-native-zip-output.txt -Encoding utf8
+            throw
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: AccessibilityAI-Windows-x64-native
@@ -66,7 +73,7 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          foreach ($report_file in @('windows-test-output.txt', 'windows-startup-output.txt')) {
+          foreach ($report_file in @('windows-test-output.txt', 'windows-startup-output.txt', 'windows-native-build-output.txt', 'windows-native-startup-output.txt', 'windows-native-zip-output.txt')) {
             if (Test-Path $report_file) {
               ('## ' + $report_file) | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
               '```text' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
@@ -87,6 +94,9 @@ jobs:
             windows-tests.xml
             windows-test-output.txt
             windows-startup-output.txt
+            windows-native-build-output.txt
+            windows-native-startup-output.txt
+            windows-native-zip-output.txt
           retention-days: 14
   release:
     if: startsWith(github.ref, 'refs/tags/v')
