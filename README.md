@@ -3,16 +3,18 @@
 A Windows desktop workspace for local captions, Indian Sign Language (ISL) phrase
 playback, and optional voice emotion estimates with customizable colors.
 
-## Portable Windows prototype
+## Windows desktop ZIP
 
-The portable ZIP is assembled from Windows binaries and integrity-checked.
-Windows execution for 0.3.1 still requires its Windows CI checks; the previous
-0.3.0 Windows regression run failed. Treat the archive as a prototype until the
-current [validation report](docs/validation-0.3.1.json) records a Windows pass.
+Windows CI passes 54 Python tests, 14 browser tests, source startup, and startup
+of the packaged native executable. Use the native Windows ZIP from the
+[GitHub release](https://github.com/Vedant-Sood/Audial-AI/releases/tag/v0.3.1).
+The alternative portable Python ZIP is integrity-checked but was not separately
+executed on Windows. See the [validation report](docs/validation-0.3.1.json).
 
 1. Extract the **entire Windows x64 ZIP** to a writable folder.
-2. Double-click **Start AccessibilityAI.bat**. Python and native dependencies are
-   included; you do not need a separate Python installation or `setup.bat`.
+2. In the native ZIP, double-click **AccessibilityAI.exe**. In the alternative
+   portable ZIP, use **Start AccessibilityAI.bat**. Python and native dependencies
+   are included; a separate Python installation or `setup.bat` is unnecessary.
 3. Open **Advanced tools → Models** and install **Whisper tiny** once for captions.
    After downloading, transcription runs locally. ISL playback uses included assets.
 4. Open **Conversation**, choose Microphone or Computer / app audio, and click

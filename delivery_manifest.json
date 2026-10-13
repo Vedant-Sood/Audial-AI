@@ -16,8 +16,8 @@
   ],
   "files": {
     ".github/workflows/windows-release.yml": {
-      "bytes": 5104,
-      "sha256": "94727c865f9bd50a57c3b2bfaae6b9b4679d862ee6ab616cbed03c4146ac89dc"
+      "bytes": 5758,
+      "sha256": "448ae76453ed75a1d90287fdd624dc1fddc239f20aa1934900c4d102376ae647"
     },
     ".gitignore": {
       "bytes": 143,
@@ -40,8 +40,8 @@
       "sha256": "50b967cc2359c05fb03c4807341f00a2c16cc6a8ba3fc5fd29e99ee9c4c36344"
     },
     "README.md": {
-      "bytes": 6264,
-      "sha256": "6dd6dc18cc7f08930ee795445be47b785f6b133f77c0991de206a333d0067be9"
+      "bytes": 6416,
+      "sha256": "d4e2cde16882dfe1e27d2c4cd3abc259ab2e539d81e04ea1326ae0a68704a9f7"
     },
     "accessibilityai_upgrade/__init__.py": {
       "bytes": 106,
@@ -304,8 +304,8 @@
       "sha256": "8255567e0d2ad14edcd1d4fbc78b449e9f2be34470dafe9401568ff90ce8eaaa"
     },
     "browser/styles.css": {
-      "bytes": 4589,
-      "sha256": "a09046b3f4cd325a3669a8f27851cb7c9c33b719cdb7ed15f4d14e026da35d73"
+      "bytes": 4651,
+      "sha256": "d12b1efa8c8d3ab40f3bbbe2d719d697164a42ae1a03d577d10a326be2e77f98"
     },
     "browser-extension/manifest.json": {
       "bytes": 345,
@@ -320,8 +320,8 @@
       "sha256": "8401adbc8c808d5250fe97bd921cfb35f56e1d9e4d9b1b8f46d0e7f2d6ee0608"
     },
     "browser-extension/popup.js": {
-      "bytes": 1554,
-      "sha256": "63e320fbb4aae853b84c86dace1fa0e4b64978e0061bd50418166c7f3740dbb6"
+      "bytes": 1566,
+      "sha256": "a29fe69f2f70737d7384f9e3728ff93cf9b820eb24286e3c943c77b78bc5697f"
     },
     "build_windows.bat": {
       "bytes": 325,
@@ -436,8 +436,8 @@
       "sha256": "d9cd8f3cbd0da315abc2a8f0e5bbf02cc8bc5f4be1f933ba0d1ca55f8eacc8ba"
     },
     "docs/ui-0.3.1-browser.png": {
-      "bytes": 224569,
-      "sha256": "6b36967560a2e56664b956cd2c397c1af7293c98701b14948e76d267c8a414a4"
+      "bytes": 225064,
+      "sha256": "c3a35fee235e0da0473f9e47da94a47f0e5335573292a8ae6b482eba887f046f"
     },
     "docs/ui-0.3.1-isl-video.png": {
       "bytes": 143945,
@@ -450,6 +450,10 @@
     "docs/upgrade-validation.json": {
       "bytes": 1028,
       "sha256": "7f7f2d078ebbb3d70e11e0195242bbe0d6b1aad13e8d7a5f06f991e918bdb1e1"
+    },
+    "docs/upgrade_notes-0.3.1.md": {
+      "bytes": 1561,
+      "sha256": "c9f0085222c30386c04156b60f23050427ac325a6ec53b7884f1ae108c28469a"
     },
     "docs/upgrade_notes-0.3.md": {
       "bytes": 2033,
@@ -472,8 +476,8 @@
       "sha256": "b522cdaf212aaca458e1ec6af1a4c78f42d6652e173fc98fe5452a950836ca35"
     },
     "docs/validation-0.3.1.json": {
-      "bytes": 2801,
-      "sha256": "d29eea2b94b44741e6462a6153949f93725228aa0c9363907225f16fd88cf247"
+      "bytes": 3488,
+      "sha256": "9d5631fee378376a6a0d7712805a4ee9d7d818f8ff5386b0fa6a94c6de87c183"
     },
     "docs/validation-0.3.json": {
       "bytes": 2462,
@@ -548,8 +552,12 @@
       "sha256": "b2405aa129bb5757fb7a9df78273e7f0bb2773b61b628ec5991ed3ff1e966ab6"
     },
     "packaging/AccessibilityAI.spec": {
-      "bytes": 1837,
-      "sha256": "d64486ea43a27c1693cbe2818ce8c93ee4ef6d4f0ff1091f5be2e834b0e4ac93"
+      "bytes": 1913,
+      "sha256": "c2f6cb60032e83a0746ed1524c307c26508987c1026a288f12352d9e1e03fc62"
+    },
+    "packaging/hooks/hook-webrtcvad.py": {
+      "bytes": 436,
+      "sha256": "3a2fbe7e8515175119ae4b0e46bcbcc4794a21b0e1879291059223a07e4527e8"
     },
     "pytest.ini": {
       "bytes": 42,
