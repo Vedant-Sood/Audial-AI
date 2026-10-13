@@ -1,6 +1,7 @@
 name: Windows desktop validation and release
 on:
   push:
+    branches: [main]
     tags: ['v*']
   workflow_dispatch:
 permissions:
@@ -30,10 +31,20 @@ jobs:
       - name: Run Windows regression and startup checks
         shell: pwsh
         run: |
-          python -m pytest -q --junitxml=windows-tests.xml
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -m app.main --smoke-test
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pytest -q --junitxml=windows-tests.xml 2>&1 | Tee-Object -FilePath windows-test-output.txt
+          $regression_status = $LASTEXITCODE
+          '## Windows regression tests' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```text' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          Get-Content windows-test-output.txt | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          if ($regression_status -ne 0) { exit $regression_status }
+          python -m app.main --smoke-test 2>&1 | Tee-Object -FilePath windows-startup-output.txt
+          $startup_status = $LASTEXITCODE
+          '## Native startup check' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```text' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          Get-Content windows-startup-output.txt | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          if ($startup_status -ne 0) { exit $startup_status }
           node tests/browser.test.js
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Build native executable directory
