@@ -62,6 +62,27 @@ jobs:
             dist/AccessibilityAI-Windows-x64-native.zip
             windows-tests.xml
           retention-days: 30
+      - name: Report Windows checks
+        if: always()
+        shell: pwsh
+        run: |
+          foreach ($report_file in @('windows-test-output.txt', 'windows-startup-output.txt')) {
+            if (Test-Path $report_file) {
+              ('## ' + $report_file) | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+              '```text' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+              Get-Content $report_file | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+              '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            }
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Windows-validation-results
+          path: |
+            windows-tests.xml
+            windows-test-output.txt
+            windows-startup-output.txt
+          retention-days: 14
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: windows
