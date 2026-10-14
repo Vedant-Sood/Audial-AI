@@ -18,6 +18,7 @@ def main():
     p.add_argument("--open-browser", action="store_true")
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--smoke-test", action="store_true", help="Validate native startup and bundled models without recording")
+    p.add_argument("--verify-emotion", action="store_true", help="Run the installed WavLM model on the supplied speech recording without capturing audio")
     args = p.parse_args()
     if args.install_model:
         os.environ["HF_HUB_OFFLINE"] = "0"
@@ -26,6 +27,23 @@ def main():
         return
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
+    if args.verify_emotion:
+        import json
+        import math
+        from app.inference.emotion import VoiceEmotion
+        from accessibilityai_upgrade.audio import read_wav
+        from app.utils.paths import project_root
+        model = VoiceEmotion()
+        if model.model.bundle["feature_version"] != "wavlm-layer-mean-std-v1":
+            raise RuntimeError("Install WavLM voice emotion from Advanced tools → Models first.")
+        prediction = model.predict(read_wav(project_root() / "assets" / "evaluation_sample.wav"))
+        values = list(prediction["probabilities"].values())
+        if len(values) != 6 or not all(math.isfinite(p) for p in values) or abs(sum(values)-1) > .001:
+            raise RuntimeError("The installed emotion model returned invalid probabilities.")
+        print(json.dumps({"voice_emotion_inference":"PASS", "model":model.source_name,
+                          "tone":prediction["tone"],"confidence":prediction["confidence"],
+                          "class_count":len(values),"microphone_started":False}),flush=True)
+        return
     if args.browser:
         from app.services.browser import main as browser_main
         browser_main(args.port, args.open_browser)
@@ -67,7 +85,7 @@ def main():
         silence = model.predict(np.zeros(16000, dtype=np.float32))
         if silence["tone"] != "uncertain":
             raise RuntimeError("Silence must not receive an emotion label.")
-        print(json.dumps({"version": "0.4.0", "platform": platform.system(),
+        print(json.dumps({"version": "0.4.1", "platform": platform.system(),
                           "native_ui": "PASS", "isl_playback": "PASS", "silence_abstention": "PASS",
                           "microphone_started": window.engine.running,
                           "caption_model_installed": window.manager.installed("whisper-tiny")}), flush=True)

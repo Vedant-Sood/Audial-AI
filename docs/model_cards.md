@@ -19,7 +19,7 @@ sentences, with no natural-meeting or Indian-language validation.
 
 Weights, calibration, confusion matrix, class metrics, actor results and software
 versions are in [models/emotion-wavlm/evaluation.json](../models/emotion-wavlm/evaluation.json).
-The original 1.2 GB encoder is downloaded explicitly and checked against SHA-256.
+The original 1.3 GB encoder is downloaded explicitly and checked against SHA-256.
 Extraction and inference share BF16 precision and the recorded four-thread CPU
 setting. This is classifier transfer learning; the encoder was not fine-tuned.
 

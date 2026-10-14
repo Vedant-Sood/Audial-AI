@@ -154,4 +154,4 @@ GitHub and delivery archives. WavLM's upstream Microsoft MIT license is retained
 in [WAVLM-LICENSE.txt](voice_emotion/WAVLM-LICENSE.txt); the pretrained checkpoint
 comes from PyTorch's official Torchaudio distribution. Its SHA-256 is
 `8c1e5637ae88657f1c54b60ec6b0e0277482b3a071d4be57cdc5715b7921d36e`.
-The checkpoint is approximately 1.2 GB and is stored outside Git's normal files.
+The checkpoint is approximately 1.3 GB and is stored outside Git's normal files.

@@ -1,4 +1,4 @@
-# AccessibilityAI 0.4.0
+# AccessibilityAI 0.4.1
 
 A Windows desktop workspace for local captions, Indian Sign Language (ISL) phrase
 playback, and optional voice emotion estimates with customizable colors.
@@ -6,7 +6,7 @@ playback, and optional voice emotion estimates with customizable colors.
 ## Windows desktop ZIP
 
 Use the native Windows ZIP from the
-[GitHub release](https://github.com/Vedant-Sood/Audial-AI/releases/tag/v0.4.0).
+[GitHub release](https://github.com/Vedant-Sood/Audial-AI/releases/tag/v0.4.1).
 Release publication is gated on Windows regression, source startup, native build
 and packaged-executable startup checks.
 The alternative portable Python ZIP is integrity-checked but was not separately
@@ -24,8 +24,8 @@ executed on Windows. See the [validation report](docs/validation-0.3.1.json).
 5. In **Settings**, enable optional voice emotion estimates, choose an emotion
    color pool, and save. Stop active capture before saving desktop settings.
 6. For the new model, install **WavLM voice emotion (CREMA-D)** in **Advanced
-   tools → Models**. This downloads its verified ~1.2 GB encoder once and selects
-   the trained classifier for the next session. It needs about 2.4 GB disk space;
+   tools → Models**. This downloads its verified ~1.3 GB encoder once and selects
+   the trained classifier for the next session. It needs about 2.7 GB disk space;
    subsequent inference runs locally. The original small baseline stays available.
 
 For a source checkout, install Python 3.11/3.12 x64, run `setup.bat --cpu`, then
@@ -33,7 +33,7 @@ For a source checkout, install Python 3.11/3.12 x64, run `setup.bat --cpu`, then
 portable ZIP and source ZIP are different packages; do not mix their launchers.
 
 [User guide](docs/user_guide.md) · [Development](CONTRIBUTING.md) ·
-[Architecture](docs/architecture.md) · [Validation](docs/validation-0.4.0.json)
+[Architecture](docs/architecture.md) · [Validation](docs/validation-0.4.1.json)
 
 ## What changed
 
@@ -89,7 +89,7 @@ uncertainty intervals, and verified activation of larger pretrained models.
 Run `python -m pytest -q`, `npm test`, and `python -m app.main --smoke-test`.
 On headless Linux, use `QT_QPA_PLATFORM=offscreen`. Startup checks exercise native
 UI, bundled ISL playback and silence abstention without recording devices.
-Current-run results are in `docs/validation-0.4.0.json`; original benchmark and
+Current-run results are in `docs/validation-0.4.1.json`; original benchmark and
 training records are historical and are not presented as measurements of this
 release or your Windows laptop.
 

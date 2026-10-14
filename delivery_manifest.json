@@ -1,6 +1,6 @@
 {
   "project": "ACCESSIBILITY AI",
-  "version": "0.3.1",
+  "version": "0.4.1",
   "kind": "source and research checkpoints",
   "contains_prebuilt_windows_executable": false,
   "excluded": [
@@ -16,12 +16,12 @@
   ],
   "files": {
     ".github/workflows/windows-release.yml": {
-      "bytes": 5942,
-      "sha256": "898b3e5355ffc2cc442a7eeb8695d20cc29c7ff59c4c2cbd4a67e74525618985"
+      "bytes": 6675,
+      "sha256": "2bbea2dc0a2d740768c881c54acef824a816c339576501d1582f3493d8a9d07a"
     },
     ".gitignore": {
-      "bytes": 143,
-      "sha256": "8c3e07bd10751b2977d9991e11c9c6db5f412fa1f1bd165482d0d449b8ca6b5a"
+      "bytes": 218,
+      "sha256": "ca90f293e8fafa41376c3eef4f864c22cf8e84363466b4d614991e6f7291de6a"
     },
     "CONTRIBUTING.md": {
       "bytes": 1599,
@@ -32,16 +32,16 @@
       "sha256": "7f19979ab78b3cee4c9f5b99364e07fca565d94f57e23e9c033272bcba00d1fe"
     },
     "LICENSE_NOTICES.md": {
-      "bytes": 2949,
-      "sha256": "09e53869fe835d275f19cf459262cb37da6c29035b466a6981e2a0bee454ec3e"
+      "bytes": 3368,
+      "sha256": "de907349f51af7182119c81bfa572858db2d1e59b084a1efae55257f2233c68c"
     },
     "LICENSE_UPLOADED": {
       "bytes": 1086,
       "sha256": "50b967cc2359c05fb03c4807341f00a2c16cc6a8ba3fc5fd29e99ee9c4c36344"
     },
     "README.md": {
-      "bytes": 6416,
-      "sha256": "d4e2cde16882dfe1e27d2c4cd3abc259ab2e539d81e04ea1326ae0a68704a9f7"
+      "bytes": 7135,
+      "sha256": "a77a7ae5eee61087926837b661b889e7d1ce4865c520b5358ee95b9651be3ad4"
     },
     "accessibilityai_upgrade/__init__.py": {
       "bytes": 106,
@@ -59,13 +59,21 @@
       "bytes": 2181,
       "sha256": "c54d8977c03740f8b19f99a0990399b0aa51665c191eadefd9c5e9ac855dd50b"
     },
+    "accessibilityai_upgrade/emotion_heads.py": {
+      "bytes": 4508,
+      "sha256": "940cb7a7da33a6963c917f3a2daad0f89de10bd8baee8f6251a32c543fd51c86"
+    },
     "accessibilityai_upgrade/predict.py": {
-      "bytes": 2214,
-      "sha256": "9f6c67f0f9bdfd97eb69962229bbff19a0b92d65d19789d1f7c61986dd29cc4a"
+      "bytes": 3322,
+      "sha256": "293744c0a041e986caf6bd92e9d4f69a23add5f0f36b8330eb49ddf08a8bbca8"
     },
     "accessibilityai_upgrade/serve.py": {
       "bytes": 309,
       "sha256": "6b817af36011f127b8dfd2a8228c0aef74cecb66688ea68ebf6958081437571f"
+    },
+    "accessibilityai_upgrade/ssl_features.py": {
+      "bytes": 4402,
+      "sha256": "21b6fb5b7799836eb6b1938d55bd1e73e6a5f7abbb0fee4c7944b360cc00239e"
     },
     "accessibilityai_upgrade/train.py": {
       "bytes": 10894,
@@ -73,7 +81,7 @@
     },
     "app/__init__.py": {
       "bytes": 318,
-      "sha256": "2c9076465572ac176c9c7902124aa22eba4bfbc478ce97c798716ed3bd870237"
+      "sha256": "96544594401823c1265af569285d2288b9a6f547448dbd84e44b44e4e2e8502e"
     },
     "app/audio/__init__.py": {
       "bytes": 0,
@@ -108,16 +116,16 @@
       "sha256": "fd07cebb3a54c7eddc92238a32756a00e475bdb89a5bd36c39ba8f6ae8c2e46d"
     },
     "app/main.py": {
-      "bytes": 3223,
-      "sha256": "8dffdc8c1b7ca1222bc33cae9031cfe22335f341fc8f68bd87e12b2c37b4a7b0"
+      "bytes": 4460,
+      "sha256": "60c54cbce16d3ccf762909e6b8586805068360b4650ab98defba2a8595702ea2"
     },
     "app/models/__init__.py": {
       "bytes": 0,
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "app/models/manager.py": {
-      "bytes": 5247,
-      "sha256": "b3f0902b72f43a3f495daeec518d3ffbfb861330e940772456bc27e3ed6e7da4"
+      "bytes": 6788,
+      "sha256": "49e7c1a785834558208303e075e41f388e00763f73d9121718fbddd4e2f26b11"
     },
     "app/services/__init__.py": {
       "bytes": 0,
@@ -388,8 +396,8 @@
       "sha256": "de3a18737e0b4eca7f638efea7ea32cbb7a9d66bdb0f0916bf5385a14604e20d"
     },
     "docs/limitations.md": {
-      "bytes": 1993,
-      "sha256": "5c4bdb30b03cb43d536b12b6fe43c48ee2e58d91b2327e86b3305ef7d9743cb1"
+      "bytes": 2062,
+      "sha256": "f58f5f318354961fe4afed8f1a71736c63d1bc414d81e4c698cd7daf81a9d319"
     },
     "docs/local_installation.md": {
       "bytes": 2290,
@@ -400,16 +408,16 @@
       "sha256": "6589f2b3035889d7809cc7163cf378e142f6af6bd0a0ad769f6345c3cdcf2e80"
     },
     "docs/model_cards.md": {
-      "bytes": 2033,
-      "sha256": "3d4b68f3e755fb8abf167233b14d493565789da1a7f484026ddbe4e4f92d5013"
+      "bytes": 3828,
+      "sha256": "d31d50740e3fb89c8883e253c37cd4fdda94ec97045ab2ef11981e768131e6ee"
     },
     "docs/privacy.md": {
       "bytes": 2690,
       "sha256": "9666476484e342fd71d40d9093fefd7aace243d82f371226e50cfb426f9f820a"
     },
     "docs/release_notes.md": {
-      "bytes": 1340,
-      "sha256": "646047619e06534f4c8e881d858297378a716e821e00f909910516f30341add1"
+      "bytes": 1261,
+      "sha256": "e17a881623b932edc3ccdd88d5baef04afd98699dc177c2f3dcd482774fb8426"
     },
     "docs/source_import.json": {
       "bytes": 314,
@@ -483,6 +491,50 @@
       "bytes": 2462,
       "sha256": "57138e0dc95eabdc75ed12809d6d61f1c8bf3f3735279e1729fe17e681ea7fe8"
     },
+    "docs/validation-0.4.0.json": {
+      "bytes": 902,
+      "sha256": "ad5a4a3a4ea5dbd1dac117d1778100f1a80f6dc6f30733c2e721c98dfe3ee2c4"
+    },
+    "docs/validation-0.4.1.json": {
+      "bytes": 902,
+      "sha256": "a11e8888c52a522a33f6c79a60b97a654282e6432301f3c06a4d1f9ac2d44d67"
+    },
+    "docs/voice_emotion/WAVLM-LICENSE.txt": {
+      "bytes": 1104,
+      "sha256": "904dc4d8749877f1dba1cda48200d2462dccbeb7c134d5e4ef6fa75e0198c8fe"
+    },
+    "docs/voice_emotion/data_quality.json": {
+      "bytes": 1173,
+      "sha256": "8a3449f21735f94313b3e1c0094d2fd12561b8cf7557f852db87c2c57ace81f3"
+    },
+    "docs/voice_emotion/dataset_inventory.json": {
+      "bytes": 1599931,
+      "sha256": "41c024c9116eb0ac918bd6b98339f8fe6417a47e4bc8420b0ec6ee5972d14f4d"
+    },
+    "docs/voice_emotion/evaluation.png": {
+      "bytes": 141319,
+      "sha256": "67320b6d6ecb1a4330872353b91323e8b55ad18f39c99116507f39258c21b804"
+    },
+    "docs/voice_emotion/evaluation.svg": {
+      "bytes": 85417,
+      "sha256": "01a673637437d1e2ca14ad70a424a57d301cd00a0dd644e909de36421d97359c"
+    },
+    "docs/voice_emotion/feature_parity.json": {
+      "bytes": 1307,
+      "sha256": "bff6ca1c6aec185473c30437783a121b3438a79b0b383297eeeeae358d56b035"
+    },
+    "docs/voice_emotion/reproduced_baseline.json": {
+      "bytes": 2043,
+      "sha256": "ac9effb570a3a54fa7b5383993501173d55451d7698bb8d454afaff1583faa1b"
+    },
+    "docs/voice_emotion/runtime_validation.json": {
+      "bytes": 329,
+      "sha256": "2f45b09245d91a37d5218450158524ebb2f90149641cb5eda24f9ec1e468cbe8"
+    },
+    "docs/voice_emotion_training.md": {
+      "bytes": 9407,
+      "sha256": "f4798ce097d5befd40f8cfa001be4ce0a944092c253c1dda3708744b31fdb93e"
+    },
     "launcher.py": {
       "bytes": 865,
       "sha256": "2140fcf6d114a6cc33665060e2f2b06c775049279634f69521dab62112982d55"
@@ -519,9 +571,49 @@
       "bytes": 218021,
       "sha256": "6f67e1a57d4033526478475fdb24ebcbad4697bbf36ddcff4c6c1c166e27ac3d"
     },
+    "models/emotion-wavlm/CREMA-D-LICENSE.txt": {
+      "bytes": 312,
+      "sha256": "e76747a4efa4b338914bb3f930b5d3d3c3ac15b886bbabf897f6a19731f987f8"
+    },
+    "models/emotion-wavlm/emotion.joblib": {
+      "bytes": 53993826,
+      "sha256": "9153731dc0eb1253b43001b635c735b415f1f09eaa4292875c6d7e7ea6439b01"
+    },
+    "models/emotion-wavlm/evaluation.json": {
+      "bytes": 36360,
+      "sha256": "3125a4ae8cf38feec69db274d1cce087580acf121068bb23f6e176897878425c"
+    },
+    "models/emotion-wavlm/provenance.json": {
+      "bytes": 691,
+      "sha256": "e28643c49eff26d14892b471dd27e98105c78b7e0cf585f920ad510413a7d723"
+    },
+    "models/emotion-wavlm/selection.json": {
+      "bytes": 25287,
+      "sha256": "927d7e7f293f27249513c49b6e44ae7ff3ee78f78c18cc6872354b61f5866708"
+    },
+    "models/emotion-wavlm/test_predictions.json": {
+      "bytes": 122969,
+      "sha256": "9224b4ca197d8f5578589dec9395c44328a9026f90326d3777157a1d1bb8535e"
+    },
     "models/research/README.md": {
       "bytes": 997,
       "sha256": "68bea1c840bdfa589db80744f70c551257b3501c5385ffb5fc27479aa8845499"
+    },
+    "models/research/emotion-listener/CREMA-D-LICENSE.txt": {
+      "bytes": 312,
+      "sha256": "e76747a4efa4b338914bb3f930b5d3d3c3ac15b886bbabf897f6a19731f987f8"
+    },
+    "models/research/emotion-listener/emotion.joblib": {
+      "bytes": 140038,
+      "sha256": "bc669bd6b92eac68c7a82081cae5cfbe122743beedaa9c48ecc1028816116018"
+    },
+    "models/research/emotion-listener/evaluation.json": {
+      "bytes": 12457,
+      "sha256": "0575f2aa0d657cf2dad96a20eae054b67f7dd243d6fb542d3889a76a28529e27"
+    },
+    "models/research/emotion-listener/selection.json": {
+      "bytes": 6084,
+      "sha256": "10bdef70a508b93d1b73afd8bcd0096cc364a28dab5ae64475d59f26557f0f52"
     },
     "models/research/prosody.int8.onnx": {
       "bytes": 22019,
@@ -552,8 +644,8 @@
       "sha256": "b2405aa129bb5757fb7a9df78273e7f0bb2773b61b628ec5991ed3ff1e966ab6"
     },
     "packaging/AccessibilityAI.spec": {
-      "bytes": 1913,
-      "sha256": "c2f6cb60032e83a0746ed1524c307c26508987c1026a288f12352d9e1e03fc62"
+      "bytes": 1976,
+      "sha256": "aabda5888ae0f8311670c1fcaefcc30d6c4bdb3d5a2cb9ff5264b1107cd1455b"
     },
     "packaging/hooks/hook-webrtcvad.py": {
       "bytes": 436,
@@ -600,8 +692,8 @@
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "scripts/activate_emotion.py": {
-      "bytes": 2142,
-      "sha256": "4a8f0414b6b2c63fe228c8eff570b322eebe11e586fa52d82d76c01e3a16b385"
+      "bytes": 3794,
+      "sha256": "6d399088638425a26741fbb30db5444fae80785718c3c5c03c77b9924e35c965"
     },
     "scripts/download_datasets.py": {
       "bytes": 3941,
@@ -620,8 +712,8 @@
       "sha256": "2e0e399b4c2d8d08d8bd91959c8b9a8f1586de34139016bd15e1d6d3a6c16adc"
     },
     "scripts/package_project.py": {
-      "bytes": 2406,
-      "sha256": "38d0a2badb4bb304b758bbb0cfeba6c14ccfbcea5586c5fbc3633617868836f1"
+      "bytes": 2506,
+      "sha256": "4d5b1b065bb35594021e45831cb927ce66dd9ebf983ac3cfbe4ddd3f7fddd670"
     },
     "scripts/package_windows_portable.py": {
       "bytes": 8388,
@@ -634,6 +726,14 @@
     "scripts/train_indian_emotion.py": {
       "bytes": 8515,
       "sha256": "81ed1d82ef74176e150e62e0c2c36ff38adb9e0f8a7a9be0f28c7f021e472148"
+    },
+    "scripts/train_listener_emotion.py": {
+      "bytes": 10761,
+      "sha256": "68a70354db0be75f290cf5a2ad35c7b9748eb3630a934629a9b741dbfcb06a02"
+    },
+    "scripts/train_ssl_emotion.py": {
+      "bytes": 26114,
+      "sha256": "9e86f0cbd80c1cf8c638ee2f3fa67dddd259f25fe9932a2f28d94a5d8cdeacd1"
     },
     "setup.bat": {
       "bytes": 701,
@@ -682,6 +782,10 @@
     "tests/test_sign_model.py": {
       "bytes": 1060,
       "sha256": "4ac7f54959cafcb49735ad582de6938d43f66ba8a3415da1d3a2f4eac5acafa1"
+    },
+    "tests/test_ssl_emotion.py": {
+      "bytes": 8519,
+      "sha256": "fc895dd7d885f5be339d3d5ceb749d597143ea3c1c70ca319132f1a1a3769663"
     },
     "tests/test_ui.py": {
       "bytes": 1509,
@@ -858,6 +962,9 @@
   },
   "excluded_patterns": [
     "epoch_*.pt",
-    "features.npz"
+    "features.npz",
+    "features.npy",
+    "encoder.pth",
+    "selected.joblib"
   ]
 }

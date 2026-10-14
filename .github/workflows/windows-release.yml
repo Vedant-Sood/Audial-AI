@@ -56,6 +56,12 @@ jobs:
           & .\dist\AccessibilityAI\AccessibilityAIWorker.exe --smoke-test 2>&1 | Tee-Object -FilePath windows-native-startup-output.txt
           $native_startup_status = $LASTEXITCODE
           if ($native_startup_status -ne 0) { exit $native_startup_status }
+          & .\dist\AccessibilityAI\AccessibilityAIWorker.exe --install-model emotion-wavlm 2>&1 | Tee-Object -FilePath windows-emotion-install-output.txt
+          $emotion_install_status = $LASTEXITCODE
+          if ($emotion_install_status -ne 0) { exit $emotion_install_status }
+          & .\dist\AccessibilityAI\AccessibilityAIWorker.exe --verify-emotion 2>&1 | Tee-Object -FilePath windows-emotion-inference-output.txt
+          $emotion_inference_status = $LASTEXITCODE
+          if ($emotion_inference_status -ne 0) { exit $emotion_inference_status }
           Copy-Item README.md, LICENSE, LICENSE_UPLOADED, LICENSE_NOTICES.md -Destination dist\AccessibilityAI
           Copy-Item docs -Destination dist\AccessibilityAI\docs -Recurse
           try {
@@ -75,7 +81,7 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          foreach ($report_file in @('windows-test-output.txt', 'windows-startup-output.txt', 'windows-native-build-output.txt', 'windows-native-startup-output.txt', 'windows-native-zip-output.txt')) {
+          foreach ($report_file in @('windows-test-output.txt', 'windows-startup-output.txt', 'windows-native-build-output.txt', 'windows-native-startup-output.txt', 'windows-emotion-install-output.txt', 'windows-emotion-inference-output.txt', 'windows-native-zip-output.txt')) {
             if (Test-Path $report_file) {
               ('## ' + $report_file) | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
               '```text' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
@@ -98,6 +104,8 @@ jobs:
             windows-startup-output.txt
             windows-native-build-output.txt
             windows-native-startup-output.txt
+            windows-emotion-install-output.txt
+            windows-emotion-inference-output.txt
             windows-native-zip-output.txt
           retention-days: 14
   release:

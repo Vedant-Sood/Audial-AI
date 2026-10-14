@@ -30,7 +30,7 @@ REGISTRY = {
     "body-pose": ModelSpec("body-pose", "MediaPipe Pose Landmarker lite", "Body tracking", "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task", "Apache-2.0 (MediaPipe)", "~6 MB", ("model.task",)),
     "emotion-wavlm": ModelSpec("emotion-wavlm", "WavLM voice emotion (CREMA-D)", "Voice emotion",
         "https://download.pytorch.org/torchaudio/models/wavlm_large.pth", "Microsoft MIT / CREMA-D ODbL-1.0, DbCL-1.0",
-        "~1.2 GB download; ~2.4 GB installed", ("encoder.pth", "emotion.joblib", "evaluation.json"),
+        "~1.3 GB download; ~2.7 GB installed", ("encoder.pth", "emotion.joblib", "evaluation.json"),
         notes="Acted English benchmark. Installing selects the evaluated model for the next session; enable voice emotion in Settings."),
 }
 
