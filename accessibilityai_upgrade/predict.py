@@ -16,7 +16,7 @@ class EmotionModel:
         self.directory = Path(model_path).resolve().parent
         self.bundle = joblib.load(model_path)
         self.encoder = None
-        if self.bundle["feature_version"] not in {FEATURE_VERSION, "wavlm-layer-mean-std-v1"}:
+        if self.bundle["feature_version"] not in {FEATURE_VERSION, "wavlm-layer-mean-std-v1", "ssl-global-temporal-v1", "ssl-acoustic-stack-v1"}:
             raise ValueError("Model and acoustic feature versions differ.")
 
     def predict_samples(self, samples):
@@ -38,8 +38,20 @@ class EmotionModel:
                     self.bundle["encoder_sha256"], precision=self.bundle["precision"],
                     cpu_threads=self.bundle.get("cpu_threads", 4)
                 )
-            features = self.encoder.extract(samples, max_layer=max(self.bundle["layers"]))
+            if self.bundle["feature_version"] == "ssl-global-temporal-v1":
+                features,temporal = self.encoder.extract_with_temporal(
+                    samples,max_layer=max(self.bundle["layers"]),
+                    temporal_layers=self.bundle["temporal_layers"],bins=self.bundle["temporal_bins"])
+            else:
+                features = self.encoder.extract(samples, max_layer=max(self.bundle["layers"]))
             vector = pool_layers(features, self.bundle["layers"], self.bundle.get("aggregation", "mean"))
+            if self.bundle["feature_version"] == "ssl-global-temporal-v1":
+                import numpy as np
+                vector = np.concatenate([vector,temporal.astype(np.float32).ravel()])
+            elif self.bundle["feature_version"] == "ssl-acoustic-stack-v1":
+                import numpy as np
+                acoustic,_ = extract_features(samples)
+                vector = np.concatenate([vector,acoustic])
         if len(vector) != self.bundle["feature_count"]:
             raise ValueError("Model feature count differs.")
         logits = raw_logits(self.bundle["model"], vector[None, :])

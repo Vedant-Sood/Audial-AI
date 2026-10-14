@@ -20,13 +20,13 @@ def activate(folder, download_encoder=False):
     model = folder / "emotion.joblib"
     digest = hashlib.sha256(model.read_bytes()).hexdigest()
     version = report.get("feature_version")
-    if report.get("model_sha256") != digest or version not in {FEATURE_VERSION, "wavlm-layer-mean-std-v1"}:
+    if report.get("model_sha256") != digest or version not in {FEATURE_VERSION, "wavlm-layer-mean-std-v1", "ssl-global-temporal-v1", "ssl-acoustic-stack-v1"}:
         raise ValueError("Model checksum or feature version differs from its training report.")
     if not report.get("split_summary") or not isinstance(report.get("test", {}).get("accuracy"), (int, float)):
         raise ValueError("A speaker-disjoint training and test report is required.")
     target = data_root() / "models" / "emotion-user" / digest / "emotion.joblib"
     target.parent.mkdir(parents=True, exist_ok=True)
-    if version == "wavlm-layer-mean-std-v1":
+    if version != FEATURE_VERSION:
         from accessibilityai_upgrade.ssl_features import ENCODERS, file_sha256
         encoder_name, encoder_sha = report["encoder"], report["encoder_sha256"]
         encoder = folder / "encoder.pth"

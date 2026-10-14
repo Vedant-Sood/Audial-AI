@@ -1,4 +1,4 @@
-"""Frozen WavLM features shared by emotion training and desktop inference.
+"""Frozen speech features shared by emotion training and desktop inference.
 
 Checkpoints are downloaded explicitly by the training command. Inference never
 downloads weights or audio. Layer numbers in model metadata are one-based.
@@ -13,7 +13,13 @@ import torchaudio
 from .audio import SAMPLE_RATE, prepare
 
 FEATURE_VERSION = "wavlm-layer-mean-std-v1"
+# The original format name remains compatible with published 0.4 heads. The
+# pinned encoder ID distinguishes WavLM and XLS-R; both use the same statistics.
 ENCODERS = {
+    "WAV2VEC2_XLSR_300M": {
+        "url": "https://download.pytorch.org/torchaudio/models/wav2vec2_xlsr_300m.pth",
+        "sha256": "2ad6f8ff9711c7acc72fbc6ffcdba6bc2582fba92c6b056d71de8a4ed77b6b22",
+    },
     "WAVLM_BASE_PLUS": {
         "url": "https://download.pytorch.org/torchaudio/models/wavlm_base_plus.pth",
         "sha256": "136a3e720c04f2c77bf7a4dc6a3868b14d5a2c145a988114b733cb1a8428be98",
@@ -60,7 +66,8 @@ class PooledEncoder:
             raise ValueError("Emotion encoder checksum differs from training metadata.")
         bundle = getattr(torchaudio.pipelines, name)
         # Construction avoids get_model(), which implicitly downloads weights.
-        self.model = torchaudio.models.wavlm_model(**bundle._params)
+        factory = torchaudio.models.wavlm_model if name.startswith("WAVLM_") else torchaudio.models.wav2vec2_model
+        self.model = factory(**bundle._params)
         state = torch.load(checkpoint, map_location="cpu", weights_only=True)
         self.model.load_state_dict(state, strict=True)
         self.model.eval().requires_grad_(False).to(device)
@@ -80,6 +87,15 @@ class PooledEncoder:
         self.width = bundle._params["encoder_embed_dim"]
 
     def extract(self, samples, max_layer=None):
+        return self.extract_with_temporal(samples,max_layer=max_layer)[0]
+
+    def extract_with_temporal(self,samples,max_layer=None,temporal_layers=None,bins=64):
+        """Return pooled statistics and optional fixed-length temporal features.
+
+        Temporal features average the specified one-based layers and adaptively
+        pool time into bins. FP16 storage is applied in both caching and runtime;
+        no audio or other utterances from a speaker affect this calculation.
+        """
         samples = prepare(samples, SAMPLE_RATE).astype(np.float32)
         waveform = torch.from_numpy(samples).unsqueeze(0).to(self.device)
         if self.normalize:
@@ -92,4 +108,11 @@ class PooledEncoder:
             frames, _ = self.model.extract_features(waveform, num_layers=max_layer)
             pooled = [torch.stack((f[0].mean(0), f[0].std(0, unbiased=False)))
                       for f in frames]
-            return torch.stack(pooled).float().cpu().numpy().astype(np.float32)
+            statistics = torch.stack(pooled).float().cpu().numpy().astype(np.float32)
+            temporal = None
+            if temporal_layers:
+                if min(temporal_layers)<1 or max(temporal_layers)>len(frames) or bins<1:
+                    raise ValueError("Invalid temporal layer or bin selection.")
+                sequence = torch.stack([frames[k-1][0].float() for k in temporal_layers]).mean(0)
+                temporal = torch.nn.functional.adaptive_avg_pool1d(sequence.T,bins).T.half().cpu().numpy()
+            return statistics,temporal

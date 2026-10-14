@@ -34,7 +34,7 @@ def main():
         from accessibilityai_upgrade.audio import read_wav
         from app.utils.paths import project_root
         model = VoiceEmotion()
-        if model.model.bundle["feature_version"] != "wavlm-layer-mean-std-v1":
+        if model.model.bundle["feature_version"] not in {"wavlm-layer-mean-std-v1","ssl-global-temporal-v1","ssl-acoustic-stack-v1"}:
             raise RuntimeError("Install WavLM voice emotion from Advanced tools → Models first.")
         prediction = model.predict(read_wav(project_root() / "assets" / "evaluation_sample.wav"))
         values = list(prediction["probabilities"].values())

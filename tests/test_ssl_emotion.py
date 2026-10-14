@@ -116,6 +116,37 @@ class FixedHead:
         return np.tile(self.logits, (len(X), 1))
 
 
+class RecordingHead:
+    classes_ = np.array(["angry","disgust","fear","happy","neutral","sad"])
+
+    def decision_function(self,X):
+        self.seen=np.asarray(X).copy()
+        return np.tile(np.arange(6),(len(X),1))
+
+
+def test_fusion_runtime_appends_exact_training_acoustic_features(tmp_path,monkeypatch):
+    from accessibilityai_upgrade import ssl_features
+    from accessibilityai_upgrade.audio import extract_features
+    global_values=np.arange(192,dtype=np.float32).reshape(24,2,4)
+    class Encoder:
+        def __init__(self,*args,**kwargs):pass
+        def extract(self,samples,max_layer=None):
+            assert max_layer==24
+            return global_values
+    monkeypatch.setattr(ssl_features,"PooledEncoder",Encoder)
+    path=tmp_path/"emotion.joblib"
+    joblib.dump({"feature_version":"ssl-acoustic-stack-v1","encoder":"WAVLM_LARGE",
+        "encoder_file":"encoder.pth","encoder_sha256":"0"*64,"precision":"bfloat16","cpu_threads":4,
+        "layers":list(range(1,25)),"aggregation":"concat","model":RecordingHead(),"temperature":1,
+        "classes":RecordingHead.classes_.tolist(),"threshold":0,"feature_count":192+183},path)
+    samples=(0.2*np.sin(2*np.pi*220*np.arange(16000)/16000)).astype(np.float32)
+    model=EmotionModel(path);prediction=model.predict_samples(samples)
+    acoustic,_=extract_features(samples)
+    expected=np.concatenate([global_values.ravel(),acoustic])
+    np.testing.assert_array_equal(model.bundle["model"].seen[0],expected)
+    assert prediction["tone"]=="sad" and len(prediction["probabilities"])==6
+
+
 def test_voting_serialization_preserves_class_order_and_predictions(tmp_path):
     members = [{"model": FixedHead([3, -1]), "layers": [1], "aggregation": "mean"},
                {"model": FixedHead([2, 1]), "layers": [2], "aggregation": "mean"}]
@@ -150,6 +181,68 @@ def test_neural_early_stopping_accepts_real_string_emotion_labels():
         model=NumericMLPHead(max_iter=2).fit(X,labels)
     assert set(model.predict(X[:10])).issubset(set(labels))
     assert model.predict_proba(X[:10]).shape == (10,6)
+
+
+def test_layer_mixture_survives_serialization_with_identical_logits(tmp_path):
+    import torch
+    from accessibilityai_upgrade.layer_mix import LayerMixNetwork, LayerMixHead
+    torch.manual_seed(7)
+    net = LayerMixNetwork((24,2,4),hidden=16,dropout=0.5).eval()
+    state = {k:v.detach().numpy().copy() for k,v in net.state_dict().items()}
+    mean = np.arange(192,dtype=np.float32)/100
+    scale = np.linspace(0.5,2,192,dtype=np.float32)
+    classes = ["angry","disgust","fear","happy","neutral","sad"]
+    head = LayerMixHead((24,2,4),mean,scale,state,16,0.5,2,classes)
+    X = np.random.default_rng(9).normal(size=(5,192)).astype(np.float32)
+    with torch.inference_mode():
+        expected = net(torch.from_numpy((X-mean)/scale)).numpy()
+    path = tmp_path/"layer-mix.joblib"
+    joblib.dump(head,path)
+    restored = joblib.load(path)
+    np.testing.assert_allclose(restored.decision_function(X),expected,atol=1e-6)
+    np.testing.assert_allclose(restored.predict_proba(X).sum(1),1,atol=1e-6)
+    np.testing.assert_array_equal(restored.classes_,classes)
+    np.testing.assert_allclose(restored.decision_function(X),restored.decision_function(X),atol=0)
+
+
+def test_cached_kernel_predictions_equal_full_kernel_with_only_support_vectors(tmp_path):
+    from sklearn.svm import SVC
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.metrics.pairwise import euclidean_distances
+    from accessibilityai_upgrade.kernel_head import CachedRBFHead
+    rng=np.random.default_rng(8)
+    X=rng.normal(size=(120,12)).astype(np.float32)
+    y=np.repeat(["angry","disgust","fear","happy","neutral","sad"],20)
+    pre=StandardScaler().fit(X)
+    A=pre.transform(X).astype(np.float32)
+    gamma=0.02
+    model=SVC(C=10,kernel="precomputed",break_ties=True).fit(np.exp(-gamma*euclidean_distances(A,squared=True)),y)
+    head=CachedRBFHead(pre,model,A[model.support_],gamma,len(A))
+    unseen=rng.normal(size=(10,12)).astype(np.float32)
+    expected=model.decision_function(np.exp(-gamma*euclidean_distances(pre.transform(unseen),A,squared=True)))
+    path=tmp_path/"kernel.joblib"
+    joblib.dump(head,path)
+    restored=joblib.load(path)
+    np.testing.assert_allclose(restored.decision_function(unseen),expected,atol=1e-6)
+    assert restored.predict(unseen).tolist()==model.classes_[expected.argmax(1)].tolist()
+
+
+def test_temporal_head_uses_matching_global_and_frame_preprocessing_after_serialization(tmp_path):
+    import torch
+    from accessibilityai_upgrade.temporal_head import TemporalNetwork,TemporalHead
+    torch.manual_seed(8)
+    shape,bins=(24,2,4),8
+    net=TemporalNetwork(shape,bins,width=16,dropout=0.5).eval()
+    state={k:v.detach().numpy().copy() for k,v in net.state_dict().items()}
+    gm=np.arange(192,dtype=np.float32)/10;gs=np.linspace(1,2,192,dtype=np.float32)
+    fm=np.arange(4,dtype=np.float32);fs=np.linspace(1,2,4,dtype=np.float32)
+    classes=["angry","disgust","fear","happy","neutral","sad"]
+    head=TemporalHead(shape,bins,gm,gs,fm,fs,state,16,0.5,classes)
+    X=np.random.default_rng(8).normal(size=(3,192+32)).astype(np.float32)
+    with torch.inference_mode():
+        expected=net(torch.from_numpy((X[:,:192]-gm)/gs),torch.from_numpy((X[:,192:].reshape(3,8,4)-fm)/fs)).numpy()
+    path=tmp_path/"temporal.joblib";joblib.dump(head,path)
+    np.testing.assert_allclose(joblib.load(path).decision_function(X),expected,atol=1e-6)
 
 
 def test_model_page_install_verifies_and_selects_the_evaluated_head(tmp_path, monkeypatch):

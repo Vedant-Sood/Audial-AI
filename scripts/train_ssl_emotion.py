@@ -331,6 +331,18 @@ def evaluate(manifest_path, features_path, output, checkpoint, target=0.85):
     if file_sha256(checkpoint) != metadata["encoder_sha256"]:
         raise ValueError("Encoder checkpoint differs from extracted features.")
     X = pool_layers(features, bundle["layers"], bundle.get("aggregation", "mean"))
+    if bundle["feature_version"] == "ssl-global-temporal-v1":
+        from scripts.train_temporal_emotion import temporal_cache
+        temporal,tm = temporal_cache(features_path,manifest_path,len(features))
+        if tm["layers"] != bundle["temporal_layers"] or tm["bins"] != bundle["temporal_bins"]:
+            raise ValueError("Temporal feature settings differ from the selected model.")
+        X = np.concatenate([X,np.asarray(temporal,dtype=np.float32).reshape(len(features),-1)],axis=1)
+    elif bundle["feature_version"] == "ssl-acoustic-stack-v1":
+        from scripts.train_fusion_stack import acoustic_cache
+        acoustic = acoustic_cache(manifest_path)
+        if acoustic.shape != (len(features),bundle["acoustic_count"]):
+            raise ValueError("Acoustic feature dimensions differ from the selected model.")
+        X = np.concatenate([X,acoustic],axis=1)
     classes = bundle["model"].classes_
     fit, policy, test = (splits[k] for k in ["calibration_fit", "calibration_policy", "test"])
     # Positive temperature scaling calibrates confidence without changing labels.
@@ -346,9 +358,11 @@ def evaluate(manifest_path, features_path, output, checkpoint, target=0.85):
         if mask.sum() >= 30 and correct[mask].mean() >= target:
             threshold = float(value)
             break
+    scope = ("Acted English six-label speech from CREMA-D and RAVDESS."
+             if manifest.get("source_corpora") else "Acted English CREMA-D speech.")
     bundle.update({"classes": classes.tolist(), "temperature": temperature, "threshold": threshold,
                    "feature_count": X.shape[1], "encoder_file": "encoder.pth",
-                   "scope": "Acted English CREMA-D speech; no natural conversation validation."})
+                   "scope": scope + " No natural conversation validation."})
     joblib.dump(bundle, output / "emotion.joblib", compress=3)
     # The selected head and all confidence settings are now fixed.
     probabilities = softmax(raw_logits(bundle["model"], X[test]) / temperature, axis=1)
@@ -359,10 +373,18 @@ def evaluate(manifest_path, features_path, output, checkpoint, target=0.85):
     result["displayed_label_accuracy"] = float(np.mean((predicted == y[test]) & accepted))
     result["speaker_bootstrap_95_interval"] = cluster_interval(y[test], predicted, speakers)
     result["per_speaker_accuracy"] = {s: float(accuracy_score(y[test][speakers == s], predicted[speakers == s])) for s in np.unique(speakers)}
+    corpus = np.array([manifest["clips"][int(i)].get("corpus",manifest["dataset"]) for i in test])
+    result["per_corpus"] = {}
+    for name in np.unique(corpus):
+        mask = corpus == name
+        details = metrics(y[test][mask],probabilities[mask],classes,threshold)
+        details["speaker_bootstrap_95_interval"] = cluster_interval(y[test][mask],predicted[mask],speakers[mask])
+        details["speakers"] = np.unique(speakers[mask]).tolist()
+        result["per_corpus"][str(name)] = details
     report = {"trained_at_utc": datetime.now(timezone.utc).isoformat(),
               "dataset": manifest["dataset"], "language": manifest["language"],
               "label_source": manifest["label_source"], "labels": classes.tolist(),
-              "feature_version": FEATURE_VERSION, "encoder": metadata["encoder"],
+              "feature_version": bundle["feature_version"], "encoder": metadata["encoder"],
               "encoder_sha256": metadata["encoder_sha256"], "precision": metadata["precision"],
               "cpu_threads": metadata.get("cpu_threads", 4),
               "model_sha256": file_sha256(output / "emotion.joblib"),
@@ -372,14 +394,17 @@ def evaluate(manifest_path, features_path, output, checkpoint, target=0.85):
               "target_accuracy": target, "target_met": result["accuracy"] >= target,
               "target_basis": "All test clips, including clips rejected by the confidence policy",
               "selection": json.loads((output / "selection.json").read_text(encoding="utf-8")),
+              "fit_partitions": ["train","validation"] if bundle.get("refit_training_and_validation") else ["train"],
+              "test_status": manifest.get("test_status",{"CREMA-D":"Previously published baseline test actors"}),
+              "source_corpora": manifest.get("source_corpora",[]),
               "calibration_policy": metrics(y[policy], policy_probabilities, classes, threshold),
               "test": result, "split_summary": manifest["splits"],
               "manifest_sha256": file_sha256(manifest_path),
               "versions": {"python": platform.python_version(), "torch": torch.__version__,
                            "torchaudio": torchaudio.__version__, "numpy": np.__version__,
                            "scikit_learn": sklearn.__version__, "platform": platform.platform()},
-              "limitations": ["Acted English, twelve sentences and six classes; not Indian or natural meeting validation.",
-                              "Test actors are the previously published baseline benchmark, reused for comparison only.",
+              "limitations": [scope + " Not Indian or natural meeting validation.",
+                              "CREMA-D test actors are the previously published benchmark, reused for comparison only.",
                               "Confidence acceptance accuracy is reported separately and is not the requested full-test accuracy.",
                               "Ten test actors limit precision; a point estimate is not a population guarantee."]}
     write_json(output / "evaluation.json", report)
@@ -399,7 +424,7 @@ def main():
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--features", type=Path)
     parser.add_argument("--checkpoint", type=Path)
-    parser.add_argument("--encoder", choices=["WAVLM_BASE_PLUS", "WAVLM_LARGE"], default="WAVLM_BASE_PLUS")
+    parser.add_argument("--encoder", choices=list(ENCODERS), default="WAVLM_BASE_PLUS")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--threads", type=int, default=4)

@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0",
+  "version": "0.4.1+accuracy-research",
   "resources": [
     {
       "name": "CREMA-D",
@@ -32,8 +32,15 @@
       "name": "RAVDESS",
       "source": "https://zenodo.org/records/1188976",
       "license": "CC-BY-NC-SA-4.0",
-      "status": "supplied speech sample and legacy artifacts only; raw training set not restored or retrained in this update",
-      "records": "assets/evaluation_sample.json"
+      "status": "Downloaded for current six-label accuracy research; final test reserved",
+      "records": "docs/voice_emotion/ravdess_scope.json",
+      "download_source": "https://github.com/ZenvilleErasmus/RAVDESS-emotions-speech-audio-only",
+      "revision": "29dc10e08b419f805a29c691c4dbc03da0b2b43e",
+      "speech_files": 1440,
+      "shared_label_files": 1056,
+      "unsupported_label_files": 384,
+      "actors": 24,
+      "raw_data_redistributed": false
     },
     {
       "name": "AMI Meeting Corpus",

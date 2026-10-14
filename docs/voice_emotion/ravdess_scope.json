@@ -1,0 +1,2365 @@
+{
+  "total_speech_files": 1440,
+  "shared_label_files": 1056,
+  "excluded": [
+    {
+      "file": "03-01-02-01-01-01-01.wav",
+      "sha256": "4c442cd4ea63c77b38adddcbd67c051e9476c8fff79ca555a677755c2d7f2c6a",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-01.wav",
+      "sha256": "57271aa6c5c22081f9bd560afb0605b122fd80e36796dc04bec1a67f2b62b41c",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-01.wav",
+      "sha256": "8ba7c44161ec9bec67c7ba25d531e4118f81578321686c02451e425f2dd3c0a7",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-01.wav",
+      "sha256": "ef76cad95e9a695009edff703deee1da15833743a801536b223ec4ffb8c51c0d",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-01.wav",
+      "sha256": "2b66015924416040ade81cd92deca032ec15fc53dfb73b0db80af268e0fa691b",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-01.wav",
+      "sha256": "d4fd63e69a155b00c978a7ed50d21b159d57a241dedc58d673ae16ccf4fa04c7",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-01.wav",
+      "sha256": "a5ebeece0c1d5cfb64fdefa0407191014b2540b1ebe766e951c3bf7298b60edc",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-01.wav",
+      "sha256": "64b4d14dbb2ff4c9656661a3ba8d09f0c5aa2a22a0acc4b083da877e85a1a3ef",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-01.wav",
+      "sha256": "5e43c41dae0e824c1a07663b05a0dfdccac7412fb4a745510df58d2d6ee53231",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-01.wav",
+      "sha256": "d97bdaaf8ef7e89ce61c8c75612032646600a2731bbd1a41d64f8a40441984ab",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-01.wav",
+      "sha256": "30f76a703577ed6bc8d1b5e0dc2d68afbe508a17c960c79fa17cacef4adf05ec",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-01.wav",
+      "sha256": "070662892d30d9e43b5ff88312b371498e574513166d2b0690c47324c5befd5e",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-01.wav",
+      "sha256": "6786e322debf5aead0ad67df4751e2b3e1c09e4909857b53cbd88897f2251efb",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-01.wav",
+      "sha256": "7b97b8e5e821f3f16183c24025dab6557021578849494fa12cbcd1e7b29a963c",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-01.wav",
+      "sha256": "6e5db4d6fa637f12bbe74430d1da8178f9a5c5f6b3dfe6482e554668c9cc6a6e",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-01.wav",
+      "sha256": "8b1322434092abff250e8de2571b2abdc9c501af84c7595b01111da1a21c0182",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-02.wav",
+      "sha256": "7b43258db0818fccf82884d54bb1f36e7501308acc99e1f2bc05fa1da10d3899",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-02.wav",
+      "sha256": "d4b8363d0c65c9f61e7cb20cc725e24b6e64c608d224c21a2bbfaad30b8e487b",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-02.wav",
+      "sha256": "f51a66b9bc696cd5891f566edddbd0651af12347fe74f95a2c97df42bc3c0934",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-02.wav",
+      "sha256": "2bcada99818df62ec0cbe2e23ff0ebf3fbf112ab04805e265a7bfe7d7a6d7354",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-02.wav",
+      "sha256": "59eeaaceed8c8e8ad89d5c5c5164a064cb425c724cf71f7d0546001da9a81531",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-02.wav",
+      "sha256": "cf81009e63d704c500ab9ee481be6b1aabe268ed5ce78b34ffd984d76c45457e",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-02.wav",
+      "sha256": "3f6b579ef647c2611a50ba88dc9910d18e28f5c9b18509caaa66e853a069d9c3",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-02.wav",
+      "sha256": "909613c25f4bb82a4ee759fd30b3dad44fc331b6c5830e909e4e2c5fb53054a4",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-02.wav",
+      "sha256": "909401c525b3d157d822fa3f66171086d531d7aa930e81c28fa15b9c557a931b",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-02.wav",
+      "sha256": "47f3448862bd16ab03018bab2e5388b22b465242c2e3a248f4d33b7c3bb514a4",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-02.wav",
+      "sha256": "1489de3ebaf08e0dbfc70f72267702813420da79316e18a03af86e3958875c18",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-02.wav",
+      "sha256": "55b262e82032742f82c8500e905940968e88cfc443059261ad85721664cac224",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-02.wav",
+      "sha256": "9e7c283f2a4cf53343a097990bed51b1aaf31da63c0fad30f337429a90f6a70b",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-02.wav",
+      "sha256": "51f0b1a5ffd771df5800a3aef0ea802e28bc128f4ae8559c7f2b8f645aa9477e",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-02.wav",
+      "sha256": "34d26a4be4259d595b4f178b97cd218f216c74cd41e76c324ab62ecb86c3b08d",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-02.wav",
+      "sha256": "252269fe584a3f8bf91dae2f9c21ff9456f44b2783cc64f7ea1d1189661bf450",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-03.wav",
+      "sha256": "7de7f8c071c5a7d7537d6d1445770c56c3dd02a9e84cc5612930570e28b98ee4",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-03.wav",
+      "sha256": "42f895c76bd4891a2cfd9dd5a8631b36b29e5e60e8be2bd6e09104bfc0bbbb84",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-03.wav",
+      "sha256": "18b09a1ad4929b246b2c3ce56bd2ecd99af664e67c77fb018703d466022054f1",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-03.wav",
+      "sha256": "456e4b2c9f419c55422908497e7ff8b3c2f00ff84c6e1c04ed6c4430d9cc6d0d",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-03.wav",
+      "sha256": "33afd76533b0e48b131f93d80340b99c85d4a2cba11f1b7f5c748bcd5a01c2bb",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-03.wav",
+      "sha256": "98d4b2a4e8c67d80e0044297de35b10ac608e8f786407afdea793d613edb4cde",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-03.wav",
+      "sha256": "c70ff203bae72dd7f0bb4903f68023dc12d6c42701dde36d1efba9aff2de96ae",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-03.wav",
+      "sha256": "4dbf22283b47b60c8b5900f7002c04e0d3da26a60d4e285ed5302b3c504c5a28",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-03.wav",
+      "sha256": "641676edc25de3c9a257286743a851720295fcf012c673c48512de0fb79aa320",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-03.wav",
+      "sha256": "e9d77fb83d946ae37098a5e45e69048fd5a405725fadbcd4cf0450708d8ac8d3",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-03.wav",
+      "sha256": "be5d67e4e056c2d2b8346120a0041369b3ebb35208038fada98df9a15df84e43",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-03.wav",
+      "sha256": "5c0217ffab33c8d811bcbd5d1dae9c0d90dd44c97a191b7437d3f114e3de6fc5",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-03.wav",
+      "sha256": "973e2dcb420f68ad21a98e3f9a809400709229f99b6f96c5ddbd424efaf602c8",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-03.wav",
+      "sha256": "14cd6e8aac3856b8d02b605b9d2cec83b9e2bd623db4ea1dcb605a7c565ad12f",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-03.wav",
+      "sha256": "af4e286922da452ebb8c3c85fc86d475996e9ecbabc4e7f03c58dff8de7dab56",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-03.wav",
+      "sha256": "432e32b8ef5cd66e98e094b31573b71dd7a4c2ceae5d956279980e12f7725089",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-04.wav",
+      "sha256": "633f5ef8dee54527239424d77d0e13e9f88e988653566cef9267b5bf09d34110",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-04.wav",
+      "sha256": "c335e6cfdbbdfbce8a81750b50993e9a269f59b82f6d54ec4ff4df10f25e4c35",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-04.wav",
+      "sha256": "84a090066a441894077d2a091f969833522ef78935eaa111411fb5abc851223b",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-04.wav",
+      "sha256": "c92c38f19bdde7b40b3c6dfaa4d40822c816c13c5f9355b515ce62245404de41",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-04.wav",
+      "sha256": "c4c1a5c61665c5b02073b4cd0ad34088ea123c7416c564da13217fdfe351abf5",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-04.wav",
+      "sha256": "579c49ccf6b64570c49abbcd17611b7f8b4e89c7a10cd7409acdc46b55cae3d4",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-04.wav",
+      "sha256": "810506ed6f7eb06f488cf67cbc43813edf4e42c0e76c465ea93f50428e1fdc7f",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-04.wav",
+      "sha256": "ce79b25c9dd670d333632c69789f4df1863e6e972da02b26368f2a3439584a2b",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-04.wav",
+      "sha256": "3dfebc80da2fdbbca6e569f77ae930a835bfda279a8439130479a5aa516b7bc3",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-04.wav",
+      "sha256": "a7ef5f055a90a4fdb7aaf540b2aa71528724a9e7859f2b0db1fdc971c0b1b4a8",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-04.wav",
+      "sha256": "d027e70f227ec6f37384026ea639b864f7596cc85c071932bac8ead3a91dd3c2",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-04.wav",
+      "sha256": "0fe01918f93053b56ee47d9359ae80484e61033bf393960f69b91ddf07a20aca",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-04.wav",
+      "sha256": "ca7be944c4f1987c13efbb94ac5025a4d6e93531346c72273a4150ad7c65ca64",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-04.wav",
+      "sha256": "2a0a560efd8498b59d68f54bb8794b937e2669f75e4cfe712d32f05dec303d01",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-04.wav",
+      "sha256": "6f24ff38726860419250a624550b182c3f17bc82706a240e2b5432d28d524b43",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-04.wav",
+      "sha256": "0716649f953d80f43d471b41afcbd1f453d657be9afed88fd47954dbc06a139b",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-05.wav",
+      "sha256": "e402cf7ae0915e3d9026c9ad97450725e67da1c857f9d793091938304861caeb",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-05.wav",
+      "sha256": "45431c557af5d32d6d84dda28748938b7db311f91634a76a0f552081a493a1f0",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-05.wav",
+      "sha256": "a39b07130628bc886c98eeaec3486bb434d147cbf690e2977d7262bd4786c645",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-05.wav",
+      "sha256": "d9925b794f402e9db11315122a93abd30150b63d4b09f7ec6405640377b78a7a",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-05.wav",
+      "sha256": "5ac86a34811dc81218ad3c2eddf3857a2f51b243e3e7a163317fa492a5be015d",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-05.wav",
+      "sha256": "568da375ded7dd792ee7e0a398b6c8bae6c83cb777438c2a0811e697ccff4db3",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-05.wav",
+      "sha256": "5a7f78bb36f0c91bf042cccf9cb7991b4689278c3e77243056c6eba351d4a09b",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-05.wav",
+      "sha256": "ea4fb026190fee0661db094eb8f4827982e341f1d4c7fb85b51775ba1c018fe5",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-05.wav",
+      "sha256": "6b3c3f56cf12aeaab28493cdd7b9122411df704aeec6bcc5294ff1143c0623c1",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-05.wav",
+      "sha256": "d41db144f0bd50a38972e690ed2103b86399ebcccc4d8dc77db5d51f4fbc8544",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-05.wav",
+      "sha256": "bacada423a2ea4fe43944edab18a93ed3dedc5e51f4f9118cc7dfc52e6307a35",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-05.wav",
+      "sha256": "37afa36f44998a88d2afe55ad75cb3a3a40f85e16f1acc24eceff5a1ce9407a8",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-05.wav",
+      "sha256": "b501452fd4e605129fa46a063ad472e8d542ef81393f9d2b3ac9c82b236f2c2c",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-05.wav",
+      "sha256": "3f3adb8a8111f65872b82861d09078639a8dad45b88256d50f195fd5ab057bcf",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-05.wav",
+      "sha256": "0556d9136bc211dd265ca43a148fdda95267964a59d611838fbc077c4b8058bf",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-05.wav",
+      "sha256": "81a7918fe9cd26be1fe216b97ec4029baf3017491889c029a2b252038f8a75cc",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-06.wav",
+      "sha256": "6a63a18fe0dcea069f8c6af0c6c9aded59e87a72f3b220b51e1a406a062e7617",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-06.wav",
+      "sha256": "4572cbed5a3be6767c8d66fe2fb759442a53ec3800db68b73f3fe446c5397044",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-06.wav",
+      "sha256": "0c1d0e4526683a29192a7da23be187f237b7330d7b1cf097a2d72a76d61d6406",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-06.wav",
+      "sha256": "bdfa697945e65bcc05ace80100d87dab3c72febf8856a6b245b8587a92bc13bc",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-06.wav",
+      "sha256": "be7b7f0ad36acdafd54c724b1e2c27efb0665832cd3f05b6e88d93b5a5a74aaa",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-06.wav",
+      "sha256": "eba2154d73bb4810f280c93d7d8d9b80ad6540a62cc7e57fb6d8fdd94c765a75",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-06.wav",
+      "sha256": "5d6e7883d2b130d431f1162145c9001dd8a3dcaf219fe50b0422081847b7ff52",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-06.wav",
+      "sha256": "c02b44e67c908b64f792e4afda54c313b69007ea573cc196bb2494b2a19656b6",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-06.wav",
+      "sha256": "2594534bb6ecb6b354699e2039dfc025aa09900111c7c3b0e78705cb20b1679a",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-06.wav",
+      "sha256": "2f21ff30751d44404c214ffbd7313d87cad3bbd938f68492d996fcb54cb20c0d",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-06.wav",
+      "sha256": "f9daf135ced270749062abf90fb61c45d208b42438484e822dca27853198fe9f",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-06.wav",
+      "sha256": "ee8c714b012322693cad150b1811635f641ab3f2513d0595ecab85d1dabe7681",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-06.wav",
+      "sha256": "740b5b46bdadb2270d7e7ce2b972cdd819be2d72ad9df3868023dee01f82c475",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-06.wav",
+      "sha256": "48c0a5753dc71ff68828bf689a8e20e86c652cbde677bdccc1c87e7d730f70ef",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-06.wav",
+      "sha256": "d21b4885a50a5a839c36525e5077ccf86d8c0443ac48c044a8f396f3716608d7",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-06.wav",
+      "sha256": "8dc978712d7289d40ae4b2afa12b9b70fb121ecfb06ecdf5c9aee9358ef640d1",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-07.wav",
+      "sha256": "91450c438177d8084b6f927dee80c5e788862464f2f87d276f3f46c8fe28d9ad",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-07.wav",
+      "sha256": "ef0220645f58965058e7b67a566dfd08be66a253f0c7df8a75cdea23152519a6",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-07.wav",
+      "sha256": "bf049834fa242f71d24a497e5f02cd7e84494f48e855eebb51744eeb33b9bc62",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-07.wav",
+      "sha256": "a7189c59d1f1e5750cb9588720260fc046b6908d73546ccd20e240264f21d80f",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-07.wav",
+      "sha256": "82d67f1cb31d9a4e01c9320c2b704f8c70c6c6c1b2242f4a5ed99d037b0174f3",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-07.wav",
+      "sha256": "315cb2bc64df40804e43298e2f4c7c15af0df0f4b5b6ca99212683a5481464e4",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-07.wav",
+      "sha256": "c492784eded52e75ddcda059b9b0fea6dec33f39598900e936ccb33605c63f33",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-07.wav",
+      "sha256": "dfe8ceb869611eee15f76d33d6260ff6934de1aa29cc74fcebca406f955faa92",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-07.wav",
+      "sha256": "776ad5c7ec7e0c47ae70a1f03d9cd3c978d26fa79656d0199ee7ee2736c3e7f0",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-07.wav",
+      "sha256": "de3946969288de4442b2482864d41e1b2cea34eaa649471ca27f2ebba14a7309",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-07.wav",
+      "sha256": "0c4e085afe4b4b2936b56555aabe70944cb763da4dcdbe067b0264a9156a2d44",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-07.wav",
+      "sha256": "f4a73b9f22065ff6c1f2cc2511c6c81defb53b59e8f22d8ba45c2630b641013c",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-07.wav",
+      "sha256": "48e3a0e820b3bf76266983e632f8afa8d06c3ac80802f4de3bd6765d14eb69b8",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-07.wav",
+      "sha256": "2562754c7ea55a5389f4cebbdd87a0f2e838eb5ba31038371dfe7c891a54d8a7",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-07.wav",
+      "sha256": "5674088dcfc7204f2118b12aff6e49a73db40e38b61e54db98fa5e0065e37798",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-07.wav",
+      "sha256": "6cbbed1462f76717946db58b6e306ea97392a40c9b6963d69352f375733be6ec",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-08.wav",
+      "sha256": "bb8d65c535a1a14c532b57276275c670c24c3d9142bcb071c5a6818e141a669b",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-08.wav",
+      "sha256": "fd56790a30586d3fdbcd53129cab8b5f219b869e7c316cb159d7adcd0e8ccee0",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-08.wav",
+      "sha256": "a0087f7e7eaa091ac06f1fb6783b12d85608dc33e78cb1305eb74200c74df4f7",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-08.wav",
+      "sha256": "adea78e29a78a8d007491f72f328687b87f21f75211accfcfc422acedefe0a4e",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-08.wav",
+      "sha256": "87c4added529d821e7c09295dbeaecd374b4395873b836743cbad023ebdc1c9c",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-08.wav",
+      "sha256": "cefcf67aa99afe3ae33316ae16ffb9365cc3645283873a65494768c7b63eaf55",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-08.wav",
+      "sha256": "1cde7e94a589aa4ac4cdcbff34b5f4816c3f0b0b96992183ae0f5524f7698437",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-08.wav",
+      "sha256": "ea6885a16766dc3b974685aa28733e0501fe2c7fc59a852e306e18d53b2ee18c",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-08.wav",
+      "sha256": "3b51796f87f57107b8cd32bf68d0699c520bd38ea6b99fc2d9e2c65a8c516ec5",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-08.wav",
+      "sha256": "10b63eac6279d59d93d416e510859c7b908b09da142b613e492fe7cfafc0e9ce",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-08.wav",
+      "sha256": "c23b31fd6063cd4e3c82588e458780b8d8cf453371f3bd179f43c56e380ae617",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-08.wav",
+      "sha256": "1db245ad2ba875a022623a17862d69b1890b5b4d7b600d092b55df2d0883327e",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-08.wav",
+      "sha256": "9fc2d1c7efd5348703d31db7f99d44bd22d8763261abfcaeb0496a9d50487fdb",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-08.wav",
+      "sha256": "bf60de7f219d3b04bcd0f035ddef9f5a5e9869d49cf6315631ba1806541e6089",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-08.wav",
+      "sha256": "ceca1f76c45d9f95625e7f5c3b248948e37aac5bbed954cc7a28c779d310dae2",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-08.wav",
+      "sha256": "4777e0a489e65a6518419db2585ebe03d3fee8ab0788d5abb8d5f07d3ebad934",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-09.wav",
+      "sha256": "4c6fe1437db56ae044c0d6594c70abe1d0588820ac2cce9a7e68327ab78ef9e3",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-09.wav",
+      "sha256": "6a38e7e31a1ddd4087d680bedf58d1f3cdca7e6b47c246b766cf059846af75ca",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-09.wav",
+      "sha256": "14ebb005a00eb91b4afa09e63ad11832016b445ec00c3a2fc3be2b90d1307e26",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-09.wav",
+      "sha256": "24fcca62d8260433ad5b0110b82b459f1c692649f9876cf75c0161465f27e91e",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-09.wav",
+      "sha256": "199ccef3ade986848e96b83fd36c24217bc27b89685ea3b3668c3a3bcd696da0",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-09.wav",
+      "sha256": "5863c49693cd279c0feca09b305102180f6bd96083ec375f4fbdb8b519c78998",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-09.wav",
+      "sha256": "711b70d5f62c97a2766b3ee3f88cf5aa6c450e97cf600a35158f2c3caef990e9",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-09.wav",
+      "sha256": "31285067a6652907d91dca0d4e0732cce2787cbc2af368086a01005e3824bfcf",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-09.wav",
+      "sha256": "66aebc8ad1333752fec81c8c2a6f432c4c58a9499a9ad37be15bbf010849e9c5",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-09.wav",
+      "sha256": "9ec8c0f050ab6720c8f7760f7866e1b28b05c4bc2aa9def750f7d9587dbd3d0f",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-09.wav",
+      "sha256": "2a962b0f56215dbed73769aff9a870d70b3f87728bb903b46f0f163ca847e8a2",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-09.wav",
+      "sha256": "d03c75db8862b8d94ab7af69c54be8373b1bda2629bfc55a7e1aeac496b92148",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-09.wav",
+      "sha256": "8193659c4c84c07a516de3fb4079ab0288839f1381ab9455d643de78bc7424de",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-09.wav",
+      "sha256": "e832c9d2373ae7b67027fbd874371a2ffe5b328f5acdce575e78af8e2a62600b",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-09.wav",
+      "sha256": "31915ab4b80534eacd54ae023d72e8439cd02ddfe27b5341195f816ca7491e7b",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-09.wav",
+      "sha256": "873fd497038a272b2b5bf66068d3cbb043f4dcbb8445b2f6c445dd4688459737",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-10.wav",
+      "sha256": "268fa3cadb68c700e1d5eb5e04008621d9e31cd2a8172d484acddb0b5853fcc6",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-10.wav",
+      "sha256": "6a4428296f90cf6d6331e3b00c6ad58258f6f9e6f5dff810ec2c81a026a27e0a",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-10.wav",
+      "sha256": "77df5ac6300e9ad14029099c613c1bd6adda045997470eca99cbd2c828e5b9fa",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-10.wav",
+      "sha256": "1c71004c1bbae4b2002a9a831955f71b68ced39a8a909d449b4ddcc821ddd440",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-10.wav",
+      "sha256": "4d4ee646009dd51cba150ffae19012c605f156a3485d4a693eef79297aa77643",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-10.wav",
+      "sha256": "0aeefad517b5c091ad945dac71663d71a68e4b3d878978d0dd9dfce842d55bc4",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-10.wav",
+      "sha256": "7558b5d85aee37bbc88afdb18c0da5d65834b2a7aa035d795990522416b02008",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-10.wav",
+      "sha256": "5d72af0962715f2073dbdbb848f02e230893889ba8caf12503077a1ce876f895",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-10.wav",
+      "sha256": "12d4ad622e4df0cd8877044cd97b6dcdbe54a08cc2802b5180bcbb1fe3e5708a",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-10.wav",
+      "sha256": "ef7bff2e399aa757e9af4657020c9f3447a1e242a552f90b8ae18c15552076e3",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-10.wav",
+      "sha256": "991c76ba3b3a7f05f9be2b545e5cceb2bedd29e0d7bcfc624d01b58c6f85014c",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-10.wav",
+      "sha256": "1f097bdd2050abd46760000faea8f912a7cadcf7f5a08bb92f355affed9032e1",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-10.wav",
+      "sha256": "e6ab2eb6b5193798c0dae27fc64058370de5350d18e64b8a982d432522567c48",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-10.wav",
+      "sha256": "cdc528f8ce0f146a2eb4ff5c2c099e56d68a1cbf83b12b858c93714b5b789116",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-10.wav",
+      "sha256": "43c888268fc05fac94b9b00b67885c7b9156771387ed64bdca11ce3c52f4f98f",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-10.wav",
+      "sha256": "4302c149ef33908a1a5afa18193d4e26e87a0552d52c3f9632076c228411b8e1",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-11.wav",
+      "sha256": "c95cfc157ce6f1405b00454748d48fc8aca0f134e0bbfe4fc66874510a973cc5",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-11.wav",
+      "sha256": "8c5946227162245973fad90f5cfc273bf0b25f8f8bb8b8a554cd1b2cb76c277f",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-11.wav",
+      "sha256": "be0e228a5680e95b08596431b7e28b67772f0daed92ce1975c6ca74ab230f3ce",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-11.wav",
+      "sha256": "8ce769a586215d5556b3d56f117ff32d5ef5e205a0305b6d60d02a034fcdd7f0",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-11.wav",
+      "sha256": "1c82297654ff92a12007fe3da6b30ac8e0c61861973fa5c9842a2f25cb4514f5",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-11.wav",
+      "sha256": "e1fc6fc14363e67b7dc69d787d747ff1258276798cf28db36bb63a9f041ba98d",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-11.wav",
+      "sha256": "2305dcc20653ca99ee36ecc587436a1a1621602034a2d000a0cc63aae6ea7c9c",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-11.wav",
+      "sha256": "4604f5c03bf5d1afdbf26f06bfd76b7cf4401ce5eac120a6de5b0f0d64d83314",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-11.wav",
+      "sha256": "f9dcc36578fa7531b0e635d5dd2cef16bbb81e57cb338db1ccb6edb903aac955",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-11.wav",
+      "sha256": "3f733641f0d5ebe5aad2a8059384eb4a203caab3f3f43a168c54445dbb37d205",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-11.wav",
+      "sha256": "98d80902a54ac8f7571ab3c512aa8e6823f2a6d44f4ef08a082e39c4faf5dc50",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-11.wav",
+      "sha256": "43627af1d71e1b27fbf6399b90851646d54b293a93b179c3ab51a83cdfd356d2",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-11.wav",
+      "sha256": "f2b8f4d89e35c0a4bd7e036711fe1588ebe04fc3173086f9a9294398fd4af5fe",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-11.wav",
+      "sha256": "bb2622ccd9015edba9c585bbe0171551fbb290343a124dcbcc7631bb20c98425",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-11.wav",
+      "sha256": "036e915e1f95899857fb17eb9c659ff073c193704ef144d937baa09259ca5a0d",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-11.wav",
+      "sha256": "2361b257b361cbb9f469bf2befcee55866f9b3e3dba2cdb9b97398faf428a3b5",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-12.wav",
+      "sha256": "e9ce579a86cd5c6a502f11c7c687de7f11e34a5b2797717545f39712db6fc485",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-12.wav",
+      "sha256": "4e41f1c894f8a1bcb9daa66794808ecc1c13286aed0273abe72467ddbe844f58",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-12.wav",
+      "sha256": "2fcc5309967b41e86cf127c8913ed0200d651cc08285bc5dd2f55c4d6026d67d",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-12.wav",
+      "sha256": "34b400071881ae22c7025615fa1bbb96dec816fad0404511faabf29d0f887848",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-12.wav",
+      "sha256": "eba1d2f975f8ac51a465c58dc2682b570228dcc3dc1e2cfe5cbec093425c4920",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-12.wav",
+      "sha256": "54e3c36c8872dd4d39bf844abd7cb02754cf1bbaa7f7352f874089f5e64e0d10",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-12.wav",
+      "sha256": "ca52bc2538daa153e828b2755dabfaf33377f7226cd201d1271b5450cbced2bf",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-12.wav",
+      "sha256": "543e8bc99b53db8f85820e4bb93dd74c88b2827efcdd6259d94a526b9f3ebd63",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-12.wav",
+      "sha256": "b63d2f3c840e02d0870d8f5317018c7b236543ecb621e2fb766c1502ee7b15fd",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-12.wav",
+      "sha256": "957c530b130a4093d7dbe241acd7d9a624b9fcd0f257566f19be1b5c840925fe",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-12.wav",
+      "sha256": "84560a6b0d28ecfad807b6f216fac4d36108253cc0c1b411aec7ae9adfb0fcb9",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-12.wav",
+      "sha256": "cbb951592af0773e2e31429228504179daf71d031e2237cb3e0edb3ce4f3ae8e",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-12.wav",
+      "sha256": "a0e18a0edbab00b1a066088ff6cf7d5061eeba7ed764ec4ebf36ac0c748cb7f5",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-12.wav",
+      "sha256": "5348e84c4d60630c999e27e544c2a80b673721c5cb40db7bab8e46d573ca2925",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-12.wav",
+      "sha256": "accd314cf05279a00348d3a239408dadc42d4c1824e60cce04a49dd21297f960",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-12.wav",
+      "sha256": "9daee303d15a4b8a6b9658d88c9e387ba0ea79eaa9b2e1a01c2f5484a9f60a48",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-13.wav",
+      "sha256": "ee6d49d7952894421fa5aa25f624e84cbf1c411348503622adc622ac117b4625",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-13.wav",
+      "sha256": "5822213dce30b21a1e8f1e0821599c13b553b5250d66b598f36b86194f34cdf0",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-13.wav",
+      "sha256": "843133f6d3d6ca202ae50b970d2f7c94720c4a87d34331ba867b0584882d8163",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-13.wav",
+      "sha256": "a8392336250924db7a147cb45386daedce3d811894f363db73d807253997e462",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-13.wav",
+      "sha256": "5f1925541d5d44335f05d70f2ee2e90bfdea886e3da71057febb90836a01e616",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-13.wav",
+      "sha256": "a70c666f38907ee0e69f4bd4be3c60ea7b16f076f5516b2060cc24e02d72c2af",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-13.wav",
+      "sha256": "8d1d9b4650a072c8ea9bc5c7ab4c7e83db3b25f2587a454376e862fcd58cad21",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-13.wav",
+      "sha256": "11c356ffef415a4689ac9396c1b18a093eef27d74bc959781c96016e77a4da6f",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-13.wav",
+      "sha256": "eaab5be9c82d56e59acdb29a8f6cea6e4c23078d53570cc2f14ff520d5389da1",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-13.wav",
+      "sha256": "650399219c463f3d8a01334fa93faf94af016a4cdca4f7468094085b8aadb618",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-13.wav",
+      "sha256": "2bdf3fd7ce5c582004ab17b91803df127b6a5928cff027ac9c16302374b7ccd0",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-13.wav",
+      "sha256": "7b1145d239852f3a3b96fe4cbcf32e3ceac8ebfd6bd94221661983c084b798d7",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-13.wav",
+      "sha256": "1714e79abf8c42f0051780028f1cc1d68aa9c691f08367c6d2eb82c032cdeec3",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-13.wav",
+      "sha256": "96b99387d88528a8737b6b65361667e2a3bf2e8f7f3b2f803e2cf31c5d0de271",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-13.wav",
+      "sha256": "a131a3c4bc6fe500fcfe4944b52fb86a23546f5f9d0e2cf86ca980e9e5d018d9",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-13.wav",
+      "sha256": "bef34bff77d7966159b4041fee819ddacf0d6f01bfdb777bcc931029eddc9caa",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-14.wav",
+      "sha256": "348c3a5cc002ee9b6f585e44c1a40c203f4b077b040f73df6780bac25b837c2c",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-14.wav",
+      "sha256": "de37ac47505ba2e5263b3521ce06d975c5673674756b7850975e48904eeacc30",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-14.wav",
+      "sha256": "0ca0bc8b57114ddb424cac73d29d9ef931fa06f02cbb4cfd1c0174ad3aae396f",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-14.wav",
+      "sha256": "6adcc56daea066906c772a002bedb64902f549f5c7be400f1cc238c1f8f39f69",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-14.wav",
+      "sha256": "8516f9f523e0cbff008ff82bda4a357586143b82eabf3832bb9fed789dc4f45c",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-14.wav",
+      "sha256": "47e6c6f676b81ebad66e4eb8d6aa309a3ddcbd6973f60284ce934381f4d3aec5",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-14.wav",
+      "sha256": "9ca85b98b86234914dd5583bf0f69200f839979668fb49c7ef9709b9b0d763da",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-14.wav",
+      "sha256": "c60696e9c48c0ff7b297e57683409f2fde8019543aeb1bbbb8e9b2d5a8d2df1e",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-14.wav",
+      "sha256": "7b3716237cfc6ab4a79eba79f41839b3991bb4ca67d867f8e159b67a6ed14481",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-14.wav",
+      "sha256": "edd17d04a1904433196f7c996f646fcbd4482067c786fa3ac32281b30af55447",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-14.wav",
+      "sha256": "b7b9b99086e2f481bd8371a109d6c4ac0c485771009e2c387d90c2576b162e5d",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-14.wav",
+      "sha256": "3f98723481642494c9021ba39378ee98b0337a1cae4cca8d3fe9abe1472ca31b",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-14.wav",
+      "sha256": "69072d302d081dd73241ee4035e7dc5a661fc09fd62c4daf769b0a7b6f91e24c",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-14.wav",
+      "sha256": "6407dc93fd890a054a40a55c0e54e6c09cdabf073983dccbaff8d8fcdb7b5cd7",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-14.wav",
+      "sha256": "e49efac4653fbe19fe28c486241afca9f9cacba2ec3904266826b64c7e39799a",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-14.wav",
+      "sha256": "0f21e4a46350cc193a11b0e1775db14ed13290ef3518ac5fe9a2c0ff3fffce4c",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-15.wav",
+      "sha256": "69c6a4cfd8dfe87b0cb79b86c42635eb2b25ebb0c111e474fc030808952b2eca",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-15.wav",
+      "sha256": "e4f627f2b6f9f7b9d78f943b7b621dad315b6b33098dee99288e4980749513a2",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-15.wav",
+      "sha256": "388ba7a171fd4d36c0602b7231d985fa38f04bad22100b5b33ac67da1ca9a711",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-15.wav",
+      "sha256": "ea22b7c6ab26fc48a627b8e948508966935b77dc727c794055f1419bc6df64ce",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-15.wav",
+      "sha256": "f6996a66e4085992a03a6f4acf8913e25f20d6eb6d407270696bfef6737cb047",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-15.wav",
+      "sha256": "7e880095d2ea76bac4719ba0193b127236dd83e9f9b6c6f26581ca2f97ec86d6",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-15.wav",
+      "sha256": "cedbc9ab98c7c36063c569158118ba5c41d2e49529a15733333f251ac1b9efec",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-15.wav",
+      "sha256": "72b7b4640fedd18aea3def383dec2f3819117a4e38fb17cfc3dae1cbf6555871",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-15.wav",
+      "sha256": "6afd1c35688c938f6318b4aaa221e9cb788f3f604599af940bbf8243283edf5f",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-15.wav",
+      "sha256": "4af9acf824deffe9162b12c4bf3a2088543be2dd0be3b76f590e2959e56f998e",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-15.wav",
+      "sha256": "68d1ce5727cd1d646f3cbda9dd4c12f75ac23b67ef829c297f1f016566a06fd7",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-15.wav",
+      "sha256": "7035b3c5ad540e03617cf13d1e0cc982c62805a0c5b58121bcee1ca5614c025e",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-15.wav",
+      "sha256": "8843eff2b1fa4570de57bfe2087a2c2c5e0e84e787b91853e50e218305732c27",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-15.wav",
+      "sha256": "11fd3d33374cffdb5ab96bcc0d56eac7dd03fcc110cf503378a1454b3ea4561a",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-15.wav",
+      "sha256": "afb0c37943ec42142f8636c8b96c8ba2d2999a372dde26d380d212f46bbd0469",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-15.wav",
+      "sha256": "f256ff393629f229cf06a3cfb0f9fcf033324354731d20f058e1ce9762f398ea",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-16.wav",
+      "sha256": "541fa434ca95a73506c33974488ae35a02a1f1f7c369a984145de4a100cd65d2",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-16.wav",
+      "sha256": "79f99f14fab7b8f0d74f233d6da88f7d076336a2aa83a984155932851995c127",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-16.wav",
+      "sha256": "33715651f4cf0a78fbe12b9771aa55fb84fd2487c3b239c4209633b9ce414d19",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-16.wav",
+      "sha256": "7aca69775053b31102ec1d3fdc3e40ca49516c4e94c2cb26b06e202b7e694325",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-16.wav",
+      "sha256": "a1e81fc8e915ac7df9ad8ad73728c4758fcb6f76a32391332452c3eb151df562",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-16.wav",
+      "sha256": "2fe55e39c7730fc5d69bfc91ee06071d2308816485105ee24f8ad5f9059f5a5f",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-16.wav",
+      "sha256": "5513f19faa4249755185a6f2fdbfef10591ff7d16a1da2e1725d22423aef431d",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-16.wav",
+      "sha256": "56d7c1bf65731686ecbc8e864ebf32c18a5c277b3d35190c4f6bd6fab59ce3d2",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-16.wav",
+      "sha256": "4a615fb47205a95c28ac0d51c2add961566fe05e30e95dc96b2c8c03ad1be5cf",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-16.wav",
+      "sha256": "f33d9b735a61fb8aeecca2eedb60ee7d48f9bf9effa77dbbca30c5c38ab89ef0",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-16.wav",
+      "sha256": "d6cb4899ad42c9def82c7449e8d3edf43a094f297a2caae2be48a1e65c468cf5",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-16.wav",
+      "sha256": "902f599580f91615db71e8ca29c3478a8c5665586c1a8f29047fbafa55628d9f",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-16.wav",
+      "sha256": "f3057760aa50afe1fd76bfc6da8427548ceafcca2aee1975c319937580f74142",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-16.wav",
+      "sha256": "bede1bf2f711ffef7a05e3eb04a6c34ee10ea333136c2a9e4aa5052707872a46",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-16.wav",
+      "sha256": "01b588ca3b21482ba95e45a5df83baf487b1a756203f00bdfacb3d7e092e9cfa",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-16.wav",
+      "sha256": "c46a55a638f58f1e123263bc1c8147dbd4908397ff95818475ff89f4e9898b04",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-17.wav",
+      "sha256": "b20a24d1427ab64adee9039a5282d2f40974d619daa8c7dae8afbb62a63989c8",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-17.wav",
+      "sha256": "6780964471cdb5458f4f44ec7712ab4553c97886661126d41cdb175ec5597dd1",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-17.wav",
+      "sha256": "7d96e15c4f34373b136a7e7869aeb441d23154fa6114309c62002c14ca855988",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-17.wav",
+      "sha256": "51450443487998f3d3439591448855c372a36be2c3f430c22b302315a9fe6a0a",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-17.wav",
+      "sha256": "03b32a7d8494ce524e631e18229c50c3655ef1830a0c0dcc1fc2afcf687ea813",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-17.wav",
+      "sha256": "da9b0d3220b73fb77a0850cbcc3c658cc52afab1774b5e7f8a8f4b4c39de5fc4",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-17.wav",
+      "sha256": "5563de5ed78b77442e35cb713c408ce10a509dce81f3d10b65f6bc3bf773d1f0",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-17.wav",
+      "sha256": "3e0e0801bfaeef3bd851611f6b4b16321d94cda98cd8f6b7c61d0fc0915c3c83",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-17.wav",
+      "sha256": "a5e51b9596f15a48095513632813afa8717747d1657094b0c68b4ce52a616be4",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-17.wav",
+      "sha256": "fad1886b326e60efc668f4bf40c21e1629b2ee5243f81b0885912eec710d9834",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-17.wav",
+      "sha256": "cfaf36b4a4e024e6afc3b6662c4faf17e8b74e1ccd203e93083b2ef173ee5325",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-17.wav",
+      "sha256": "d04743cab5d399ed2fb0631c18556f71c6ba6f994f3957076c76ec6ff67121cb",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-17.wav",
+      "sha256": "9d4fee243ebb2760b79a868646d1053ae8805b4da79a06477129a38118950695",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-17.wav",
+      "sha256": "e2223fff3c0049663da3524fc64a5b1b07196f01c916db73a85e630d1d4990ac",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-17.wav",
+      "sha256": "4ffe24b104ccadda8086e6e1e237149bf1bdda2b5a6fb2742382420a972698b6",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-17.wav",
+      "sha256": "18a7150e5b25c623064f58ba286368a5186f04a89c120e7e36e30fa67b822cc9",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-18.wav",
+      "sha256": "d2adddd24598bf1630ce808a0a8613921a3bba6148d3328fa29cc976d0504a6c",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-18.wav",
+      "sha256": "24ffb14478d0de5fd6a9ad1a95067c14a633a3aee211e8becb467c06fe7f86ee",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-18.wav",
+      "sha256": "c37999349fc6ee9e270a826ad5116da9a5f93d2d657f1af8375ac622c4f07d26",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-18.wav",
+      "sha256": "27293a0b71faecec50679af94b46ec20d2c9f5bf476714336a0a9e4ab5afbf40",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-18.wav",
+      "sha256": "b610268e2c3f1e401c6914ae35e2678bc18d49cbb9311188305ff9467bfc5e91",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-18.wav",
+      "sha256": "0f653c9ebb8d6ebd019f529817037a06e154556f01e2f4b79fc7aad5106a4723",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-18.wav",
+      "sha256": "5311353939d305dd2da9247784f79e73cb3d5b72aaf88c4088f87b193f586697",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-18.wav",
+      "sha256": "3a2fe35ee6fcf52b9ece94d69f81eb54dfa3b599158c1754d3bedb8f1a22cb83",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-18.wav",
+      "sha256": "509459ab8776adbb3476aaa32ab5cf550d718f4a98db6460777a8a9579836fec",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-18.wav",
+      "sha256": "55ef4d7ee4b202e9e3fa53d7a8d189c0dc5523a531a4e1fd1d435df7ad47cfb8",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-18.wav",
+      "sha256": "284d1383d3c3774dd19c1f8e51b0de952aa35efd61745a397236afd5c591cf03",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-18.wav",
+      "sha256": "b1d49049d62b0c8122431c68b1ff386514738fc630d40525fc51c406fd0d958b",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-18.wav",
+      "sha256": "801de05166b89076704a9dec146a3f73e03123971aacbe8dc9acfb2e718a786e",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-18.wav",
+      "sha256": "bacec60b87d682ac5698d5fea7914a7d99076bb6a5454155bbc8ef8540d2b8c8",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-18.wav",
+      "sha256": "3d2b883b5d27c7ed943afe4d2ddf3cccfbce88061350c20b7b0ce57c39227453",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-18.wav",
+      "sha256": "b658d10acef56df800e050ad56646a2962eaa36abede7a55430266398f837527",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-19.wav",
+      "sha256": "169a3fefbf4d3f8a21baf13aecc3410feabef5788545957f2f7e44acb0e00a81",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-19.wav",
+      "sha256": "0cfa172574e3a443a7f291a7815169cff2b7c7159722bad0baf9e776812612b7",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-19.wav",
+      "sha256": "0a776deeeb6ada5fa3ec88b13d93d9d46f5e5119d9315e724264d3ebfd24d745",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-19.wav",
+      "sha256": "1e0b15e3b86295c068eb9fb7ee263bb4d3f859b975d50b31ae82f3a1684f2657",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-19.wav",
+      "sha256": "60ac6014eec6867cb61bbea727f3670e953dad2f98ed93a140ce0e933b1f1519",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-19.wav",
+      "sha256": "c22af90a9011941171d55e92a30b174ff08f93c2d6a1b6c344fdf4dac76ba959",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-19.wav",
+      "sha256": "7f8f07c231f7494190234ffd26b20cc48d2b5d46d62a84cc6c38639eb90b9216",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-19.wav",
+      "sha256": "8163e782791595d60722d66d51fd926c984e1cbb5be3912d90337fcf92bfae50",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-19.wav",
+      "sha256": "6558d52c5bf999371138e9017ef8c34108f4fdb26b860a97533575f27c2d912a",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-19.wav",
+      "sha256": "8425b965ee46b85289e5867083df10f8d28d0d91d21c47f7e1f5b029e8826db9",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-19.wav",
+      "sha256": "3d42f6012500c233b01c51ed09920c259971e8a4ad652ea2c5a3b5674acbf717",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-19.wav",
+      "sha256": "67ff45bcc3b39ddf2bcc65e6397504eb4af4e4f443e07ea533ddd42e2bedfd31",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-19.wav",
+      "sha256": "ec5495b69aefbc188872eec9cefae7440a48b6fe696b4d82a74259c8557df959",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-19.wav",
+      "sha256": "95f5bc3fbb43034efc956a44c2e9b8f61910983736330761432501b730404514",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-19.wav",
+      "sha256": "dbec90a37a1c17d3e8dc0610677b61e09e4a1375851e9291d064af0a293bd5ef",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-19.wav",
+      "sha256": "678f797eb13af5e00d7f6154738b58be4c3cf3a23ea0379398aae7b1c92ed155",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-20.wav",
+      "sha256": "9551581455244ec668d485e35dfcbe4fd69ad8ba9f775cc6f18ecd4aa4357cad",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-20.wav",
+      "sha256": "1a1dc56a11f235ccf3598f91ef658d55b3ced40164a96ff94b48154e82a49383",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-20.wav",
+      "sha256": "5832ed43760f9ffdf2253f2087324717ad92dad9594cdf1bd98ab48ca433f781",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-20.wav",
+      "sha256": "b2c7fcf596d563bd97400c0195c8d6a36f4671adee3e4086954817241873da3a",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-20.wav",
+      "sha256": "4285a057fcb59f938460e261d788b8de285b850a646d80743bf7a9bf966d01f8",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-20.wav",
+      "sha256": "3b750aab49e9de522b1ea4d846c0d5dc42cc7911358311fcda07276f68c7e683",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-20.wav",
+      "sha256": "320bb5188c0a250d565c1588f853650bfa1c02e033279599a936e756d390110e",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-20.wav",
+      "sha256": "70a5ddfb41d31f4781e3e586fcff25fb008cbd6797aaaff2dfb81678f46d2f01",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-20.wav",
+      "sha256": "1904024625d93e5524bface52d3a1db5756bee8201ece1fb6c7ad4afbaf95178",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-20.wav",
+      "sha256": "c8f41c2df662450df9818de8228a7352a4e8e50778a273020680ce9277210294",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-20.wav",
+      "sha256": "63d4c87089e44bb3caaac99abdca813bdf20740a6c7c4764a4582217b6373e8f",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-20.wav",
+      "sha256": "140af36f520d9cb5c3a73cd6f229dad850e0ef992f127a0d6e3a5817c3a5bf10",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-20.wav",
+      "sha256": "3fc30103fd19a7aaea05f3ba068e8b9b1a6770ebd33b325d73340d854b0e0f24",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-20.wav",
+      "sha256": "b8010431056302b8dff566131c44d66db03ad1b5fc62dcb611823f37372569c5",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-20.wav",
+      "sha256": "5f8994c15cbb793365149073a826bcbc780f424b56c42de04ece5fb706257d7c",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-20.wav",
+      "sha256": "4b5bfd91aaf9bb52a289b54e8aed4f3b536f01a3dd3106bdd274c2b3afc1e35d",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-21.wav",
+      "sha256": "ad579e6ced67017865be9eddaa1423469cdbbc6f70b3b254a262a2bc64563581",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-21.wav",
+      "sha256": "b09bbe4ad33caa391602721a16bffca2be8798ee4af02b6a5d90d08af308a908",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-21.wav",
+      "sha256": "1fa078517608433fe49847c70510b6583c689af310c092665a5b6c84f583a112",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-21.wav",
+      "sha256": "23fe86131be5047ddab6af220deca722040f4dc7a4888da5f6c4a55077cd72d0",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-21.wav",
+      "sha256": "69bb9494002c94706d4175d958d13a0243dcf4edccfd22f5935dae10b380f6a5",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-21.wav",
+      "sha256": "547fbe9cca22854f75feeb915b7218f1adc959be9c1b89f3709b702628a4bc7a",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-21.wav",
+      "sha256": "b648c3e609c02304401000f59a42e110c0750091c0fb101fffb5228b0c8fa05f",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-21.wav",
+      "sha256": "ca44508b66b0631da143e38aefb1bdb34939e624f94c9e63688a2fcb805dd779",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-21.wav",
+      "sha256": "fd118a72b2627bb216e2088e967154df732cc0513675438ecad5a378f84b898b",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-21.wav",
+      "sha256": "16a9cf7f71cbb82e8ed5c54ce815819e33fab75a9f4bd683c82a44ac16aee6ed",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-21.wav",
+      "sha256": "a4f507d1111fc98e1cbd8914a1056eb179546a614b0dde2257098c2c989b2403",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-21.wav",
+      "sha256": "c690ea126041b409ea2f16fe788524e810e5b8cbff3cc9e4137b882ed996bfb4",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-21.wav",
+      "sha256": "f560e7e242a0a2465605c9058d9d8ede7048c10f968e1ddca3242f56ed128ba3",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-21.wav",
+      "sha256": "2583673596ef9d79c2f81e892188e7e32cf3434a04776ed7c771ce5f43463910",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-21.wav",
+      "sha256": "1dce82afe6872970050f20508b67cf3808c637e0fec401d3059b4a5266efaec9",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-21.wav",
+      "sha256": "c2cc924fac8178656603a9f2c256c478742a0d29ddfb66f6ff7380e38cc5deb8",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-22.wav",
+      "sha256": "8dadc949860f9ffbea95fd647db676d9ae36c8b0d740af7810a9135ce5a3c43a",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-22.wav",
+      "sha256": "05f13870838c352ae1f8fe42dfac049eb9ad6cbf23c84aaa2f6e8eccf8c8ecfd",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-22.wav",
+      "sha256": "b48d0de9bd84c777e956a1964e50009bd9625a278f8aefb002925f8a4e47fff7",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-22.wav",
+      "sha256": "af8f932c56db03eb93bcb280e0acd9bccadb77151b12ee46d849477417b6a31c",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-22.wav",
+      "sha256": "a3ec69f72d50a511a7fbf406e817358a6805120b7a97f29abfddc90e384787ad",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-22.wav",
+      "sha256": "e0d9c49f6622cbf0815f5da4f64da727039ed8db3867bcca27c95b775a398dbb",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-22.wav",
+      "sha256": "3dc6b6d5ba3516828eda4a48c16607f69a4c6ebc1fd5e415afa255add169aaf9",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-22.wav",
+      "sha256": "a66dfcd82f40bd0da115029ff8e86bb372cfae1f9c3ea15f7f8f19b761fdbd92",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-22.wav",
+      "sha256": "f602818041d51bbb9101e010cf30de183b044c1a2ab65fa52439279fee86f132",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-22.wav",
+      "sha256": "5dd7caba048451d74356832ceb30ade9a1fafb94e8a3058608cbfdb5eba74d7a",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-22.wav",
+      "sha256": "474ede1772d962189a47726e6c2c5d34afad895743b8924f07d30062304c81dc",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-22.wav",
+      "sha256": "37ae104e34f97bd0b6f702e0ed96eedcef376bb8a8b27c32776130bf865f8e10",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-22.wav",
+      "sha256": "8e9d79f6f455aaeb7aff53b15b32200778ad2b0d85caebc818facb7aac9007b9",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-22.wav",
+      "sha256": "b132f275f8fe44bb31d5df7feeba9939e91bf21af58bee67803f9fbc6c18afed",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-22.wav",
+      "sha256": "b838f44b7f78f218fee589307a28d60537775888994e7174dc00e72bd56e0b89",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-22.wav",
+      "sha256": "f3968e06c34e11ed258f64c383cf37ee5393c88399f6ac1912221d7912d459f4",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-23.wav",
+      "sha256": "c63836e7cf4ded5df899e5df75801b390bd74bb113b91ba2ea73d3cb0df3ebf0",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-23.wav",
+      "sha256": "b27f01d9e1d64c127731ca110e27407c0cd37c372c6f205a395b5ac62d94e92e",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-23.wav",
+      "sha256": "0484965cd1676e7f5addbd74cda3b37d8296fad5971b1a626b6caa722421e52d",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-23.wav",
+      "sha256": "59788b4e0f30ca9699eda003aea554761317eed0fe384f29b4a7345fdcc964ff",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-23.wav",
+      "sha256": "b43dd980f7a8babf831ffea98893fe91e8c2c46f4d5bf250947ae7e7ae3b130a",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-23.wav",
+      "sha256": "62f05eed1065232db71fa18ba58923c3d8878ef13ae756cd444c068a4a88fc8c",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-23.wav",
+      "sha256": "30ebc57169e5dcaa2e6b5f548d942ae2b3101154467cedb7928f169c73c0495d",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-23.wav",
+      "sha256": "6664924aa91933789bc8cdac500914723d698e12bb9f4e8cca5edfb6f4b6b9e4",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-23.wav",
+      "sha256": "fe745ce8167d3cb1fd95c6ede6d2b3875928e91b64e992b0150fbffb85aa4bc0",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-23.wav",
+      "sha256": "0826ca66756ff968f159fdfdc540f7449b32ea423fd37c6b1c82b622693ed37b",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-23.wav",
+      "sha256": "66724e5ef0576f6fe3cd2c1b46bed59fe781f354ce8cc8fda60ed9bca3b11957",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-23.wav",
+      "sha256": "a8903e28a5fecd7e40af97e5c6456ccd294a1f37711cf1e6ad376d617b48ca78",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-23.wav",
+      "sha256": "47e2207d1c7ab3bbba53d8780843285d348c4893ac81210e0835b0caa914aae4",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-23.wav",
+      "sha256": "75961b4e7e0e84e3cbfb0385466420855e698b02f4d3d59657fe9d202b0cd5c1",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-23.wav",
+      "sha256": "ebfe86a957fffca7521ba3384fbaed0cd5a43cbf1fbef076d90ecfba9bc927fe",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-23.wav",
+      "sha256": "b08192cc522a35f28f0668a6132148d393b602798554e7b0cfe70f9a1465d4d8",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-01-24.wav",
+      "sha256": "e7463310b0410068b9c0c6ad90d9b9b9f5f9f02f329cb0916f1b1412947df7f6",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-01-02-24.wav",
+      "sha256": "8cc9d9ea7ad423ed6528b8cc2fdb019d4563f180a93c4a64bc18e9c5df228a83",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-01-24.wav",
+      "sha256": "c12276bc08387d4c12ff191f35155fb2b0e4b612dd5b99133e63dd7ff6353dce",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-01-02-02-24.wav",
+      "sha256": "66b15d8a4eec35635f27e417df1ef1e8280c7ce991727715b34f6fe1694684b9",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-01-24.wav",
+      "sha256": "1ee1929d226a66cdddfff592a83944f274c9a4d9ac77038c48ffa5f26d45c7d5",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-01-02-24.wav",
+      "sha256": "bab274e5772c34f7d52a54c29f41aa1c620881f22710fe9934d15fe3696d473b",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-01-24.wav",
+      "sha256": "41e2a086641ca21336e12b621058716ff09daab789465d78c904d02da0a5fada",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-02-02-02-02-24.wav",
+      "sha256": "4b041740d11b684ef3a68e36dc2e8de6a75d9003433f73cff82019cf792b7c70",
+      "original_label": "calm",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-01-24.wav",
+      "sha256": "c0a53eb17ce076fd89411ce4f8b2a42941a2df0f41b58f9eaf410ab6bc14e40b",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-01-02-24.wav",
+      "sha256": "bf5f6cb5f3f20d3b37c5395bb1d514d3bdd131e172b367cdd6e437544c5eedc0",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-01-24.wav",
+      "sha256": "220106ba042e290a734d8a7d381cd89c70cac151ca0795f1faac6db6c0e7fc7c",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-01-02-02-24.wav",
+      "sha256": "0a4d06db5f5b8968b43f977cd4aaa353d60aad9f386fd0ecd784a7b04eb3a615",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-01-24.wav",
+      "sha256": "03fbfe87455f451efd1ee318d655f1212806b7ae01fa8b09096eb5807a8335c0",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-01-02-24.wav",
+      "sha256": "5c6ba329fa05e6e0c572336bfce2fd64994cd50a7a4392437b199ab56afe1f90",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-01-24.wav",
+      "sha256": "f00df3f3eabee3dd3e1da72276776a90346dd5c5cf7e7cfa1b04f26b68b74a54",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    },
+    {
+      "file": "03-01-08-02-02-02-24.wav",
+      "sha256": "26e04dd0e9fc847ceb3fe15f05e2605f29f81d53623cd280dfeb7b7cae3c0f40",
+      "original_label": "surprise",
+      "reason": "Unsupported in the pre-existing six-label application task"
+    }
+  ],
+  "seed": 20261014,
+  "actor_splits": {
+    "train": [
+      "ravdess-07",
+      "ravdess-21",
+      "ravdess-19",
+      "ravdess-09",
+      "ravdess-23",
+      "ravdess-15",
+      "ravdess-12",
+      "ravdess-20",
+      "ravdess-24",
+      "ravdess-02",
+      "ravdess-10",
+      "ravdess-14"
+    ],
+    "validation": [
+      "ravdess-05",
+      "ravdess-16"
+    ],
+    "calibration_fit": [
+      "ravdess-13",
+      "ravdess-06"
+    ],
+    "calibration_policy": [
+      "ravdess-01",
+      "ravdess-04"
+    ],
+    "test": [
+      "ravdess-11",
+      "ravdess-03",
+      "ravdess-17",
+      "ravdess-18",
+      "ravdess-22",
+      "ravdess-08"
+    ]
+  },
+  "split_counts": {
+    "calibration_policy": 88,
+    "train": 528,
+    "test": 264,
+    "validation": 88,
+    "calibration_fit": 88
+  },
+  "source": {
+    "name": "RAVDESS",
+    "source_url": "https://zenodo.org/records/1188976",
+    "paper_doi": "10.1371/journal.pone.0196391",
+    "license": "CC-BY-NC-SA-4.0",
+    "download_url": "https://github.com/ZenvilleErasmus/RAVDESS-emotions-speech-audio-only",
+    "download_revision": "29dc10e08b419f805a29c691c4dbc03da0b2b43e",
+    "upstream_checksums_available": false,
+    "mirror_readme_license": "README.txt",
+    "task_coverage": "Six existing app labels; calm (02) and surprise (08) are unsupported"
+  }
+}
