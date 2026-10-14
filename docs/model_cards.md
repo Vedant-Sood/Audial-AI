@@ -1,5 +1,34 @@
 # Current model cards
 
+## WavLM-Large emotion ensemble, version 0.4
+
+A frozen WavLM-Large encoder feeds three emotion heads selected from 97
+development candidates: fused layers with training-only PCA and logistic
+classification, a layer-12 SVM with training-speaker nuisance projection, and a
+layer-14 logistic classifier. All preprocessing
+and classifiers fit 63 training actors. Nine other actors select the model;
+four calibrate confidence temperature; five choose its uncertainty threshold.
+Positive temperature scaling preserves predicted labels.
+
+The original ten test actors supply 814 clips. Overall accuracy is **80.8%**,
+balanced accuracy **81.1%**, macro F1 **81.2%**, and confidence-accepted accuracy
+**88.8%** at **81.9% coverage**. The speaker-bootstrap 95% interval for overall
+accuracy is **74.9–86.1%**. The requested 85–90% full-test point estimate was not
+reached. The benchmark uses actor-directed labels, acted English and twelve
+sentences, with no natural-meeting or Indian-language validation.
+
+Weights, calibration, confusion matrix, class metrics, actor results and software
+versions are in [models/emotion-wavlm/evaluation.json](../models/emotion-wavlm/evaluation.json).
+The original 1.2 GB encoder is downloaded explicitly and checked against SHA-256.
+Extraction and inference share BF16 precision and the recorded four-thread CPU
+setting. This is classifier transfer learning; the encoder was not fine-tuned.
+
+An independent listener-label experiment is retained under
+`models/research/emotion-listener`. It reached 74.3% majority-label agreement
+and 56.1% single-label macro F1 on its test actors. Its 6.7% sadness recall makes
+it unsuitable as the desktop's selected model. These results measure a different
+label target and are separate from the actor-label comparison.
+
 ## CREMA-D emotion baseline
 
 183 acoustic features feed an SVM chosen on validation actors. A logistic probability head fits margins on four independent calibration actors; five different actors select an uncertainty threshold. Ten test actors are held out. Six actor-directed classes are angry, disgust, fear, happy, neutral and sad. Calibrated overall test accuracy is 51.6%; accepted accuracy is 71.5% at 22.9% coverage. Silence, clipped audio, short/long segments and low confidence abstain. The model is disabled by default and not validated on meetings. Detailed license, data hashes, splits, software versions, confusion matrices and limitations accompany the weights in models/emotion.
@@ -12,7 +41,7 @@
 
 Whisper tiny/small/medium handles recognition and word timing; no new ASR fine-tuning is claimed. ECAPA embeddings produce experimental session clusters, not real identities. MediaPipe hand/body tasks supply shared pose features and light landmarks. Their source, license, revision and file hashes are recorded on explicit installation by the model manager. Optional Community-1 was not installed or evaluated.
 
-## Version 0.3 status
+## Historical version 0.3 status
 
 Weights are unchanged from the uploaded baseline. No Indian voice training run
 was completed in this task, and 85–90% accuracy on Indian voices is unverified.

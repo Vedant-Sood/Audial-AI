@@ -1,19 +1,18 @@
-AccessibilityAI 0.3.1 makes Indian Sign Language the default across typed text,
-clipboard/page selections, documents, subtitles, live speech captions and local
-recordings. Desktop and browser share the selected ISL vocabulary and automatic
-caption preference. Long plans retain every sign/text step, and unknown passages
-remain readable in order. DOCX, text PDF, CSV and HTML join the existing inputs.
-Local dictionary videos show the original signer in the native displays; failed
-media falls back to text and later signs continue.
+AccessibilityAI 0.4.0 upgrades voice emotion analysis with a newly trained
+WavLM-Large ensemble. It scores 80.8% overall accuracy on 814 CREMA-D clips from
+ten held-out actors, compared with 51.6% for the original calibrated baseline.
+Confidence-accepted estimates reach 88.8% accuracy at 81.9% coverage; remaining
+clips display uncertain. The requested 85–90% accuracy across all clips remains
+unmet, and natural conversation accuracy has not been measured.
 
-The desktop retains the simpler navigation, readable audio controls and persistent
-emotion color pool introduced in 0.3.0. Tests cover default ISL routing, document
-extraction, shared packs, mixed scripts, long queues and playback recovery. The
-Windows build workflow gates native ZIP publication on target-platform checks.
+Install **WavLM voice emotion (CREMA-D)** from **Advanced tools → Models**, then
+enable voice emotion estimates in Settings. The native ZIP includes the trained
+classifier. Its original ~1.2 GB encoder downloads explicitly once, is checked
+against SHA-256, and is selected for the next session. Allow about 2.4 GB of disk
+space for installation and the verified active copy. Inference then runs locally.
 
-The shipped vocabulary still contains four phrases; no extra sign corpus was
-downloaded in this cloud. This is dictionary playback, not fluent arbitrary ISL
-sentence translation. The bundled emotion weights remain the CREMA-D baseline
-(historical full-test accuracy 51.6%); 85–90% Indian voice accuracy is unmeasured
-and has not been achieved. Consult docs/validation-0.3.1.json for current results
-and Windows packaging status, and docs/isl.md for input and vocabulary details.
+The source includes complete data hashes, 97 development comparisons, separate
+speaker partitions for selection and calibration, final class metrics,
+actor-bootstrap uncertainty, model activation checks, and a separate documented
+listener-rating experiment. The original model remains available as a fallback.
+Windows release publication is gated on regression and executable startup checks.

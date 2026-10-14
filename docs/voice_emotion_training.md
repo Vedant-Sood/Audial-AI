@@ -3,11 +3,27 @@
 The requested target is 85–90% classification accuracy on all recordings from
 held-out speakers. The user has allowed non-Indian voices for this work. The
 published baseline scores 51.6% on 814 CREMA-D clips from ten test actors.
+The new model scores **80.8%** on these same clips, with **88.8% accepted accuracy
+at 81.9% coverage**. The full-test target is still unmet.
 
 The new training path uses the pretrained WavLM-Large encoder and trains emotion
 classifier heads on verified CREMA-D audio. Training a classifier on frozen
 pretrained features is transfer learning; the encoder itself is not fine-tuned.
-No new accuracy is claimed before the final evaluation has completed.
+The original encoder weights are unchanged; the emotion heads are newly trained.
+
+| Held-out metric | Original calibrated baseline | WavLM ensemble |
+|---|---:|---:|
+| Overall accuracy, all 814 clips | 51.6% | 80.8% |
+| Macro F1 | 50.7% | 81.2% |
+| Accepted prediction accuracy | 71.5% | 88.8% |
+| Accepted coverage | 22.9% | 81.9% |
+
+The original baseline was re-evaluated on the downloaded WAVs and reproduced its
+published results exactly. The new overall score has a 74.9–86.1% actor-bootstrap
+95% interval. This interval and the 80.8% point estimate do not demonstrate the
+requested 85–90% overall accuracy.
+
+![Held-out accuracy comparison and WavLM confusion matrix](voice_emotion/evaluation.png)
 
 ## Data and evaluation protocol
 
@@ -16,6 +32,11 @@ official GitLab mirror is checked against every original GitHub Git LFS SHA-256.
 The [dataset inventory](voice_emotion/dataset_inventory.json) records the source
 revisions, labels, hashes and assignments. The six labels are angry, disgust,
 fear, happy, neutral and sad; they describe the actors' requested performances.
+
+The [data audit](voice_emotion/data_quality.json) found three pairs of identical
+recordings with conflicting actor labels, within training, validation and test
+respectively. They remain in the original benchmark; none cross partitions.
+No recording is removed or relabeled based on a model's predictions.
 
 | Partition | Actors | Clips | Use |
 |---|---:|---:|---|
@@ -58,7 +79,7 @@ mkdir -p ../emotion-run
 curl -fL https://download.pytorch.org/torchaudio/models/wavlm_large.pth -o ../emotion-run/encoder.pth
 python -m scripts.train_ssl_emotion prepare --audio ../crema-audio/AudioWAV --pointers ../crema-pointers/AudioWAV --output ../emotion-run/data
 python -m scripts.train_ssl_emotion extract --manifest ../emotion-run/data/dataset.json --checkpoint ../emotion-run/encoder.pth --encoder WAVLM_LARGE --precision bfloat16 --output ../emotion-run/features --threads 4
-python -m scripts.train_ssl_emotion select --manifest ../emotion-run/data/dataset.json --features ../emotion-run/features --output ../emotion-run/model --threads 4
+python -m scripts.train_ssl_emotion select --manifest ../emotion-run/data/dataset.json --features ../emotion-run/features --output ../emotion-run/model --workers 3
 python -m scripts.train_ssl_emotion evaluate --manifest ../emotion-run/data/dataset.json --features ../emotion-run/features --checkpoint ../emotion-run/encoder.pth --output ../emotion-run/model
 ```
 
@@ -67,8 +88,12 @@ download the checkpoint with `Invoke-WebRequest -Uri <URL> -OutFile <path>`.
 The Python commands are the same on Windows. Extraction resumes only when the
 dataset, encoder, feature shape and precision match its saved provenance.
 Repeated selection into an existing result folder and repeated final test
-evaluation are rejected. Start a new experiment without tuning against test
-results when changing the model.
+evaluation are rejected. An interrupted development comparison can use
+`--resume-selection`, before its final test has been evaluated. Completed layer
+comparisons are preserved; any required voting members are refitted on training
+actors only. Start a new experiment without tuning against test results when
+changing the model. Classifier fits run independently with three workers and one
+BLAS thread per worker; scores are recorded in a fixed candidate order.
 
 WavLM yields a temporal mean and standard deviation from each transformer layer.
 Individual layers and fixed layer averages are compared with regularized
@@ -76,11 +101,21 @@ logistic classifiers and RBF SVMs. Layer averages also receive a neural classifi
 candidate. Concatenated layer features with training-only PCA and a uniform
 three-member vote across the strongest distinct layer representations are also
 compared. Validation accuracy selects the model, with macro F1 breaking ties.
+Selected representations also compare removal of four or sixteen dominant
+between-speaker directions, learned only from training-actor averages. This
+transform never uses a test speaker's identity or other recordings.
 Preprocessing fits only training actors. BF16 is an explicit encoder
 precision setting used identically in extraction and desktop inference; pooled
 features and classifier calculations use FP32 or scikit-learn's native precision.
+The saved CPU thread count is also applied to encoder inference, because BF16
+reductions can vary with that setting. Extraction and runtime features are
+compared on actual recordings before publishing an evaluated model.
 
 ## Use a trusted evaluated model
+
+In version 0.4, **Advanced tools → Models → WavLM voice emotion (CREMA-D)**
+downloads the verified encoder and activates the shipped classifier. This is the
+desktop route; the following commands serve source checkouts and research runs.
 
 An evaluated folder must contain `emotion.joblib` and `evaluation.json`. Include
 its matching `encoder.pth`, or explicitly allow the activation command to fetch
@@ -97,6 +132,16 @@ Restore the original baseline with `python -m scripts.activate_emotion --bundled
 Load only trusted local joblib files, which contain executable Python objects.
 
 ## Scope and licenses
+
+The independent listener-label experiment trains against `VoiceVote` in the
+upstream `processedResults/summaryTable.csv`. Equally popular labels remain as
+multi-label targets. It scored 74.3% majority-label agreement over all 814 test
+clips, including 70 ties; on 744 unambiguous clips, accuracy was 74.2% and macro F1
+56.1%. Its neutral-only baseline was 55.3% agreement and its sadness recall was
+6.7%. These results are a different task from the actor-label benchmark. The
+desktop ships the actor-label ensemble as the installable upgrade. This research
+code and evaluated artifact are retained for reproducibility, rather than used
+to claim a higher actor-label accuracy.
 
 CREMA-D is acted English with twelve sentence texts; this benchmark does not
 establish accuracy on Indian languages, spontaneous conversation, background

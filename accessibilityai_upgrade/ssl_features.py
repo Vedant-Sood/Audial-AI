@@ -47,9 +47,15 @@ def pool_layers(features, layers, aggregation="mean"):
 
 
 class PooledEncoder:
-    def __init__(self, name, checkpoint, expected_sha256, *, device="cpu", precision="float32"):
+    def __init__(self, name, checkpoint, expected_sha256, *, device="cpu", precision="float32", cpu_threads=4):
         if name not in ENCODERS:
             raise ValueError("Unsupported emotion encoder.")
+        if device == "cpu":
+            if not isinstance(cpu_threads, int) or cpu_threads < 1:
+                raise ValueError("CPU thread count must be positive.")
+            # BF16 reductions can differ with a different CPU thread count.
+            # Training and inference use the same recorded setting.
+            torch.set_num_threads(cpu_threads)
         if file_sha256(checkpoint) != expected_sha256:
             raise ValueError("Emotion encoder checksum differs from training metadata.")
         bundle = getattr(torchaudio.pipelines, name)

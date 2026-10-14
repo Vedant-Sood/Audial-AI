@@ -1,0 +1,13 @@
+{
+  "dataset_inventory": "docs/voice_emotion/dataset_inventory.json",
+  "data_quality": "docs/voice_emotion/data_quality.json",
+  "encoder_source": "https://download.pytorch.org/torchaudio/models/wavlm_large.pth",
+  "encoder_sha256": "8c1e5637ae88657f1c54b60ec6b0e0277482b3a071d4be57cdc5715b7921d36e",
+  "model_sha256": "9153731dc0eb1253b43001b635c735b415f1f09eaa4292875c6d7e7ea6439b01",
+  "encoder_license": "Microsoft MIT; see docs/voice_emotion/WAVLM-LICENSE.txt",
+  "training_data_license": "ODbL-1.0 / DbCL-1.0",
+  "runtime_validation": "docs/voice_emotion/runtime_validation.json",
+  "raw_audio_redistributed": false,
+  "encoder_in_git": false,
+  "emotion_encoder_fine_tuned": false
+}

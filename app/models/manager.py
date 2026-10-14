@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import shutil
 import urllib.request
-from app.utils.paths import atomic_json, data_root
+from app.utils.paths import atomic_json, data_root, project_root
 
 
 @dataclass(frozen=True)
@@ -28,6 +28,10 @@ REGISTRY = {
     "pyannote": ModelSpec("pyannote", "Community-1", "Diarization / overlap", "pyannote/speaker-diarization-community-1", "CC-BY-4.0", "See model card", ("config.yaml",), True, "Accept upstream conditions first; requires requirements-overlap.txt. No speech separation."),
     "hand-pose": ModelSpec("hand-pose", "MediaPipe Hand Landmarker", "Hand tracking", "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task", "Apache-2.0 (MediaPipe)", "~8 MB", ("model.task",)),
     "body-pose": ModelSpec("body-pose", "MediaPipe Pose Landmarker lite", "Body tracking", "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task", "Apache-2.0 (MediaPipe)", "~6 MB", ("model.task",)),
+    "emotion-wavlm": ModelSpec("emotion-wavlm", "WavLM voice emotion (CREMA-D)", "Voice emotion",
+        "https://download.pytorch.org/torchaudio/models/wavlm_large.pth", "Microsoft MIT / CREMA-D ODbL-1.0, DbCL-1.0",
+        "~1.2 GB download; ~2.4 GB installed", ("encoder.pth", "emotion.joblib", "evaluation.json"),
+        notes="Acted English benchmark. Installing selects the evaluated model for the next session; enable voice emotion in Settings."),
 }
 
 
@@ -55,11 +59,23 @@ class ModelManager:
         staging = self.root / (model_id + ".installing")
         staging.mkdir(exist_ok=True)
         progress(f"Downloading {spec.name} from {spec.source}; {spec.license}")
+        if model_id == "emotion-wavlm":
+            from accessibilityai_upgrade.ssl_features import ENCODERS
+            bundled = project_root() / "models" / "emotion-wavlm"
+            report = json.loads((bundled / "evaluation.json").read_text(encoding="utf-8"))
+            if file_hash(bundled / "emotion.joblib") != report["model_sha256"]:
+                raise ValueError("Bundled emotion classifier differs from its evaluation report.")
+            if report["encoder_sha256"] != ENCODERS["WAVLM_LARGE"]["sha256"]:
+                raise ValueError("Emotion encoder differs from the registered pretrained checkpoint.")
+            for name in ["emotion.joblib", "evaluation.json"]:
+                shutil.copyfile(bundled / name, staging / name)
         revision = None
         if spec.source.startswith("https://"):
-            target = staging / "model.task"
+            target = staging / spec.required[0]
             with urllib.request.urlopen(spec.source, timeout=60) as src, target.open("wb") as dst:
                 shutil.copyfileobj(src, dst)
+            if model_id == "emotion-wavlm" and file_hash(target) != report["encoder_sha256"]:
+                raise ValueError("Downloaded emotion encoder failed checksum verification.")
         else:
             from huggingface_hub import HfApi, snapshot_download
             info = HfApi().model_info(spec.source)
@@ -75,6 +91,9 @@ class ModelManager:
         if dest.exists():
             shutil.rmtree(dest)
         staging.replace(dest)
+        if model_id == "emotion-wavlm":
+            from scripts.activate_emotion import activate
+            activate(dest)
         progress("Installation complete")
         return dest
 

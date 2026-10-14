@@ -14,10 +14,10 @@ def package(output):
         and not any(part in excluded for part in p.relative_to(root).parts)
         and p.suffix not in {".pyc", ".tmp", ".zip"}
         and not p.match("epoch_*.pt")
-        and p.name not in {"delivery_manifest.json", "features.npz"} and p.resolve() != output]
-    manifest = {"project": "ACCESSIBILITY AI", "version": "0.3.1", "kind": "source and research checkpoints",
+        and p.name not in {"delivery_manifest.json", "features.npz", "features.npy", "encoder.pth", "selected.joblib"} and p.resolve() != output]
+    manifest = {"project": "ACCESSIBILITY AI", "version": "0.4.0", "kind": "source and research checkpoints",
         "contains_prebuilt_windows_executable": False, "excluded": sorted(excluded), "files": {}}
-    manifest["excluded_patterns"] = ["epoch_*.pt", "features.npz"]
+    manifest["excluded_patterns"] = ["epoch_*.pt", "features.npz", "features.npy", "encoder.pth", "selected.joblib"]
     for p in files:
         manifest["files"][p.relative_to(root).as_posix()] = {
             "bytes": p.stat().st_size, "sha256": hashlib.sha256(p.read_bytes()).hexdigest()}

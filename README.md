@@ -1,13 +1,14 @@
-# AccessibilityAI 0.3.1
+# AccessibilityAI 0.4.0
 
 A Windows desktop workspace for local captions, Indian Sign Language (ISL) phrase
 playback, and optional voice emotion estimates with customizable colors.
 
 ## Windows desktop ZIP
 
-Windows CI passes 54 Python tests, 14 browser tests, source startup, and startup
-of the packaged native executable. Use the native Windows ZIP from the
-[GitHub release](https://github.com/Vedant-Sood/Audial-AI/releases/tag/v0.3.1).
+Use the native Windows ZIP from the
+[GitHub release](https://github.com/Vedant-Sood/Audial-AI/releases/tag/v0.4.0).
+Release publication is gated on Windows regression, source startup, native build
+and packaged-executable startup checks.
 The alternative portable Python ZIP is integrity-checked but was not separately
 executed on Windows. See the [validation report](docs/validation-0.3.1.json).
 
@@ -22,13 +23,17 @@ executed on Windows. See the [validation report](docs/validation-0.3.1.json).
    sources. Nothing records automatically when the app launches.
 5. In **Settings**, enable optional voice emotion estimates, choose an emotion
    color pool, and save. Stop active capture before saving desktop settings.
+6. For the new model, install **WavLM voice emotion (CREMA-D)** in **Advanced
+   tools → Models**. This downloads its verified ~1.2 GB encoder once and selects
+   the trained classifier for the next session. It needs about 2.4 GB disk space;
+   subsequent inference runs locally. The original small baseline stays available.
 
 For a source checkout, install Python 3.11/3.12 x64, run `setup.bat --cpu`, then
 `run.bat`. `run_browser.bat` opens the local browser companion. The Windows
 portable ZIP and source ZIP are different packages; do not mix their launchers.
 
 [User guide](docs/user_guide.md) · [Development](CONTRIBUTING.md) ·
-[Architecture](docs/architecture.md) · [Validation](docs/validation-0.3.1.json)
+[Architecture](docs/architecture.md) · [Validation](docs/validation-0.4.0.json)
 
 ## What changed
 
@@ -58,12 +63,13 @@ portable ZIP and source ZIP are different packages; do not mix their launchers.
 
 ## Model coverage and accuracy
 
-**85–90% accuracy on Indian voices has not been achieved or demonstrated.** The
-included weights remain the uploaded CREMA-D research baseline. Their historical
-full-test accuracy is **51.6%** over 814 clips from ten held-out actors; accepted
-predictions were 71.5% accurate at 22.9% coverage. These are acted English speech
-results, not an Indian voice or natural conversation benchmark. Emotion estimates
-are disabled by default and low-confidence audio appears as uncertain.
+The new WavLM-Large ensemble reaches **80.8% overall accuracy** on 814 clips from
+ten held-out CREMA-D actors, compared with **51.6%** for the original calibrated
+baseline. Confidence-accepted predictions reach **88.8% accuracy at 81.9% coverage**;
+remaining predictions display **uncertain**. Macro F1 is **81.2%**. The 85–90%
+target across every clip remains unmet. These measurements use acted English
+speech with six actor-directed labels. Indian voices and natural conversations
+have not been validated. Emotion estimates remain disabled until enabled.
 
 The bundled ISL vocabulary has **four phrases**: good evening, good night,
 pleased, and thank you. Native playback and licensed vocabulary import work;
@@ -73,8 +79,8 @@ are not implemented. Text fallback preserves content but is not sign translation
 See [Indian voice training](docs/indian_voice_training.md),
 [model cards](docs/model_cards.md), and [limitations](docs/limitations.md).
 
-The current [voice emotion accuracy work](docs/voice_emotion_training.md) trains
-new classifiers with WavLM-Large features on the full verified CREMA-D corpus.
+The [voice emotion accuracy work](docs/voice_emotion_training.md) trained and
+compared 97 classifiers with WavLM-Large features on the full verified corpus.
 It includes separate selection, calibration and test stages, actor-level
 uncertainty intervals, and verified activation of larger pretrained models.
 
@@ -83,7 +89,7 @@ uncertainty intervals, and verified activation of larger pretrained models.
 Run `python -m pytest -q`, `npm test`, and `python -m app.main --smoke-test`.
 On headless Linux, use `QT_QPA_PLATFORM=offscreen`. Startup checks exercise native
 UI, bundled ISL playback and silence abstention without recording devices.
-Current-run results are in `docs/validation-0.3.1.json`; original benchmark and
+Current-run results are in `docs/validation-0.4.0.json`; original benchmark and
 training records are historical and are not presented as measurements of this
 release or your Windows laptop.
 

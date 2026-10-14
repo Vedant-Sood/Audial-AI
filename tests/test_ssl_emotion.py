@@ -2,6 +2,7 @@
 import copy
 import hashlib
 import json
+from pathlib import Path
 
 import joblib
 import numpy as np
@@ -12,7 +13,7 @@ from accessibilityai_upgrade.predict import EmotionModel
 from accessibilityai_upgrade.ssl_features import FEATURE_VERSION, pool_layers, PooledEncoder
 from scripts.train_ssl_emotion import validate_manifest, cluster_interval
 from scripts.activate_emotion import activate
-from accessibilityai_upgrade.emotion_heads import LayerHeadEnsemble
+from accessibilityai_upgrade.emotion_heads import LayerHeadEnsemble, SpeakerNuisanceProjection, NumericMLPHead
 
 
 def manifest():
@@ -129,3 +130,51 @@ def test_voting_serialization_preserves_class_order_and_predictions(tmp_path):
     members[1]["model"].classes_ = np.array(["sad", "happy"])
     with pytest.raises(ValueError, match="class order"):
         LayerHeadEnsemble(members, (2, 2, 4))
+
+
+def test_speaker_projection_needs_no_test_speaker_identity():
+    # Identity controls the first coordinate; emotion the second. Training
+    # speakers receive identical emotion distributions, as in CREMA-D.
+    X = np.array([[-10., -1], [-10., 1], [10., -1], [10., 1]])
+    transform = SpeakerNuisanceProjection(1).fit(X, groups=["a", "a", "b", "b"])
+    unseen = np.array([[20., -1], [20., 1]])
+    np.testing.assert_allclose(transform.transform(unseen), [[0., -1], [0., 1]], atol=1e-12)
+    with pytest.raises(ValueError, match="speaker IDs"):
+        SpeakerNuisanceProjection().fit(X)
+
+
+def test_neural_early_stopping_accepts_real_string_emotion_labels():
+    labels=np.repeat(["angry","disgust","fear","happy","neutral","sad"],30)
+    X=np.random.default_rng(4).normal(size=(len(labels),8)).astype(np.float32)
+    with pytest.warns(UserWarning,match="Maximum iterations"):
+        model=NumericMLPHead(max_iter=2).fit(X,labels)
+    assert set(model.predict(X[:10])).issubset(set(labels))
+    assert model.predict_proba(X[:10]).shape == (10,6)
+
+
+def test_model_page_install_verifies_and_selects_the_evaluated_head(tmp_path, monkeypatch):
+    from io import BytesIO
+    from app.models import manager
+    from app.utils.paths import data_root
+    from accessibilityai_upgrade.ssl_features import ENCODERS
+    root = tmp_path / "source"
+    bundled = root / "models" / "emotion-wavlm"
+    bundled.mkdir(parents=True)
+    head, encoder = b"trusted test head; not unpickled", b"test encoder; not unpickled"
+    digest = hashlib.sha256(encoder).hexdigest()
+    report = {"model_sha256": hashlib.sha256(head).hexdigest(), "feature_version": FEATURE_VERSION,
+              "encoder": "WAVLM_LARGE", "encoder_sha256": digest,
+              "split_summary": {"test": {"speakers": ["a"]}}, "test": {"accuracy": 0.8},
+              "dataset": "CREMA-D", "target_met": False}
+    (bundled / "emotion.joblib").write_bytes(head)
+    (bundled / "evaluation.json").write_text(json.dumps(report), encoding="utf-8")
+    monkeypatch.setattr(manager, "project_root", lambda: root)
+    monkeypatch.setitem(ENCODERS["WAVLM_LARGE"], "sha256", digest)
+    monkeypatch.setattr(manager.urllib.request, "urlopen", lambda *a, **kw: BytesIO(encoder))
+    model_manager = manager.ModelManager(tmp_path / "models")
+    model_manager.install("emotion-wavlm", progress=lambda _: None)
+    assert model_manager.installed("emotion-wavlm")
+    selection = json.loads((data_root() / "emotion_selection.json").read_text(encoding="utf-8"))
+    assert selection["test_accuracy"] == 0.8
+    assert selection["target_met"] is False
+    assert hashlib.sha256(Path(selection["path"]).read_bytes()).hexdigest() == report["model_sha256"]

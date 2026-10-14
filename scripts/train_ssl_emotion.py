@@ -5,6 +5,7 @@ single final test evaluation. Raw audio and feature caches stay outside Git.
 """
 import argparse
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -25,13 +26,15 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from threadpoolctl import threadpool_limits
 import torch
+import torchaudio
+import sklearn
 
 from accessibilityai_upgrade.audio import read_wav
 from accessibilityai_upgrade.ssl_features import (
-    FEATURE_VERSION, PooledEncoder, file_sha256, pool_layers,
+    FEATURE_VERSION, PooledEncoder, file_sha256, pool_layers, ENCODERS,
 )
 from accessibilityai_upgrade.train import EMOTIONS, metrics, raw_logits
-from accessibilityai_upgrade.emotion_heads import LayerHeadEnsemble
+from accessibilityai_upgrade.emotion_heads import LayerHeadEnsemble, SpeakerNuisanceProjection, NumericMLPHead
 
 
 def write_json(path, value):
@@ -94,15 +97,20 @@ def extract(manifest_path, checkpoint, encoder_name, output, threads, device, pr
     torch.set_num_threads(threads)
     manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
     digest = file_sha256(checkpoint)
-    encoder = PooledEncoder(encoder_name, checkpoint, digest, device=device, precision=precision)
+    if digest != ENCODERS[encoder_name]["sha256"]:
+        raise ValueError("Checkpoint differs from the registered pretrained encoder.")
+    encoder = PooledEncoder(encoder_name, checkpoint, digest, device=device, precision=precision, cpu_threads=threads)
     fingerprint = hashlib.sha256(Path(manifest_path).read_bytes()).hexdigest()
     metadata = {"feature_version": FEATURE_VERSION, "manifest_sha256": fingerprint,
-                "encoder": encoder_name, "encoder_sha256": digest, "precision": precision,
+                "encoder": encoder_name, "encoder_sha256": digest, "precision": precision, "cpu_threads": threads,
                 "shape": [len(manifest["clips"]), encoder.layers, 2, encoder.width],
                 "dtype": "float32", "completed": 0}
     progress_path, features_path = output / "features.json", output / "features.npy"
     if progress_path.exists():
         saved = json.loads(progress_path.read_text(encoding="utf-8"))
+        # The initial run used the documented four-thread default before this
+        # setting was explicitly serialized. Reject other legacy assumptions.
+        saved.setdefault("cpu_threads", 4)
         if any(saved[k] != v for k, v in metadata.items() if k != "completed"):
             raise ValueError("Feature cache provenance differs; choose a new folder.")
         metadata = saved
@@ -175,10 +183,12 @@ def validate_manifest(manifest):
             raise ValueError("Partition clip count differs from its manifest.")
 
 
-def select(manifest_path, features_path, output, seed):
+def select(manifest_path, features_path, output, seed, workers=3, resume=False):
     output = Path(output)
-    if (output / "selected.joblib").exists():
+    if (output / "selected.joblib").exists() and not resume:
         raise ValueError("Selection already exists; choose a new output directory.")
+    if resume and (output / "evaluation.json").exists():
+        raise ValueError("Cannot resume selection after the test was evaluated.")
     output.mkdir(parents=True, exist_ok=True)
     features, y, splits, manifest, metadata = load_features(manifest_path, features_path)
     train, validation = splits["train"], splits["validation"]
@@ -190,6 +200,19 @@ def select(manifest_path, features_path, output, seed):
                    (list(range(max(1, count-4), count+1)), "mean"),
                    (list(range(4, count+1, 4)), "concat")]
     evaluations, best, members = [], None, []
+    if resume:
+        previous = json.loads((output / "selection.json").read_text(encoding="utf-8"))
+        if previous.get("complete"):
+            raise ValueError("Selection already completed; choose a new experiment.")
+        selected = joblib.load(output / "selected.joblib")
+        if previous["seed"] != seed or selected["encoder_sha256"] != metadata["encoder_sha256"]:
+            raise ValueError("Selection resume settings differ from the original run.")
+        if previous.get("manifest_sha256", metadata["manifest_sha256"]) != metadata["manifest_sha256"]:
+            raise ValueError("Dataset manifest changed after the original selection.")
+        evaluations = previous["candidates"]
+        summary = previous["selected"]
+        best = ((summary["validation_accuracy"],summary["validation_macro_f1"]),
+                selected["model"],selected["layers"],selected["name"],selected["aggregation"])
 
     def record(model, layers, aggregation, result):
         nonlocal best
@@ -201,9 +224,12 @@ def select(manifest_path, features_path, output, seed):
             joblib.dump({"model": model, "layers": layers, "name": result["model"],
                          "aggregation": aggregation, "feature_version": FEATURE_VERSION,
                          "encoder": metadata["encoder"], "encoder_sha256": metadata["encoder_sha256"],
-                         "precision": metadata["precision"], "dataset": manifest["dataset"]},
+                         "precision": metadata["precision"], "cpu_threads": metadata.get("cpu_threads", 4),
+                         "dataset": manifest["dataset"]},
                         output / "selected.joblib", compress=3)
         write_json(output / "selection.json", {"seed": seed, "candidates": evaluations,
+                   "fit_workers": workers, "blas_threads_per_worker": 1,
+                   "manifest_sha256": metadata["manifest_sha256"], "complete":False,
                    "selected": {"model": best[3], "layers": best[2], "aggregation": best[4],
                                 "validation_accuracy": best[0][0], "validation_macro_f1": best[0][1]},
                    "test_used_for_selection": False})
@@ -221,22 +247,43 @@ def select(manifest_path, features_path, output, seed):
         candidates += [(f"svm-C{c}", make_pipeline(*preprocessing(),
                         SVC(C=c, gamma="scale", decision_function_shape="ovr", break_ties=True, random_state=seed)))
                        for c in [1.0, 3.0, 10.0]]
+        if aggregation == "mean" and (layers in [[8], [12], [16]] or len(layers)>1):
+            candidates += [(f"speaker-projection-{n}-svm-C3", make_pipeline(
+                StandardScaler(), SpeakerNuisanceProjection(n),
+                SVC(C=3.0, gamma="scale", break_ties=True, random_state=seed)))
+                for n in [4, 16]]
         if len(layers) > 1 and aggregation == "mean":
             # Internal early-stopping clips belong only to training actors.
             # The external, speaker-disjoint validation split selects the head.
-            candidates += [("mlp-256", make_pipeline(StandardScaler(), MLPClassifier(
-                hidden_layer_sizes=(256,), alpha=1.0, batch_size=128,
-                learning_rate_init=0.0005, max_iter=150, early_stopping=True,
-                n_iter_no_change=12, random_state=seed)))]
+            candidates += [("mlp-256", make_pipeline(StandardScaler(), NumericMLPHead(seed=seed)))]
         member = None
-        for name, model in candidates:
+        def fit_candidate(candidate):
+            name, model = candidate
             started = time.monotonic()
-            model.fit(X[train], y[train])
+            fit_params = {}
+            if "speakernuisanceprojection" in model.named_steps:
+                speakers = np.array([c["speaker_id"] for c in manifest["clips"]])
+                fit_params["speakernuisanceprojection__groups"] = speakers[train]
+            model.fit(X[train], y[train], **fit_params)
             predicted = model.predict(X[validation])
             result = {"model": name, "layers": layers, "aggregation": aggregation,
                       "validation_accuracy": float(accuracy_score(y[validation], predicted)),
                       "validation_macro_f1": float(f1_score(y[validation], predicted, average="macro")),
                       "fit_seconds": round(time.monotonic()-started, 2)}
+            return model, result
+
+        prior = [r for r in evaluations if r["layers"] == layers and r["aggregation"] == aggregation]
+        if prior and {r["model"] for r in prior} == {name for name, _ in candidates}:
+            winning = max(prior, key=lambda r:(r["validation_accuracy"],r["validation_macro_f1"]))
+            estimator = dict(candidates)[winning["model"]]
+            members.append(((winning["validation_accuracy"],winning["validation_macro_f1"]),
+                            {"model":estimator,"layers":layers,"aggregation":aggregation,"needs_fit":True}))
+            continue
+        # Independent fits release the GIL in NumPy/libsvm. Limit BLAS to one
+        # thread per fit, and preserve candidate order for deterministic ties.
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            fitted = list(executor.map(fit_candidate, candidates))
+        for model, result in fitted:
             score = (result["validation_accuracy"], result["validation_macro_f1"])
             if member is None or score > member[0]:
                 member = (score, {"model": model, "layers": layers, "aggregation": aggregation})
@@ -245,6 +292,13 @@ def select(manifest_path, features_path, output, seed):
     # A fixed three-member voting option compares different representations.
     # Its uniform weights and membership use validation only, never test scores.
     top = [m[1] for m in sorted(members, key=lambda m: m[0], reverse=True)[:3]]
+    for member in top:
+        if member.pop("needs_fit",False):
+            X_member=pool_layers(features,member["layers"],member["aggregation"])
+            fit_params={}
+            if "speakernuisanceprojection" in member["model"].named_steps:
+                fit_params["speakernuisanceprojection__groups"]=np.array([c["speaker_id"] for c in manifest["clips"]])[train]
+            member["model"].fit(X_member[train],y[train],**fit_params)
     ensemble = LayerHeadEnsemble(top, features.shape[1:])
     layers = list(range(1, count+1))
     X = pool_layers(features[validation], layers, "concat")
@@ -254,6 +308,9 @@ def select(manifest_path, features_path, output, seed):
               "validation_macro_f1": float(f1_score(y[validation], predicted, average="macro")),
               "members": [{"layers": m["layers"], "aggregation": m["aggregation"]} for m in top]}
     record(ensemble, layers, "concat", result)
+    finished=json.loads((output / "selection.json").read_text(encoding="utf-8"))
+    finished["complete"]=True
+    write_json(output / "selection.json",finished)
 
 
 def cluster_interval(y, predicted, speakers, seed=1729, repeats=5000):
@@ -307,6 +364,7 @@ def evaluate(manifest_path, features_path, output, checkpoint, target=0.85):
               "label_source": manifest["label_source"], "labels": classes.tolist(),
               "feature_version": FEATURE_VERSION, "encoder": metadata["encoder"],
               "encoder_sha256": metadata["encoder_sha256"], "precision": metadata["precision"],
+              "cpu_threads": metadata.get("cpu_threads", 4),
               "model_sha256": file_sha256(output / "emotion.joblib"),
               "feature_count": X.shape[1], "layers": bundle["layers"], "aggregation": bundle["aggregation"],
               "calibration_method": "Positive scalar temperature; preserves argmax labels",
@@ -317,7 +375,9 @@ def evaluate(manifest_path, features_path, output, checkpoint, target=0.85):
               "calibration_policy": metrics(y[policy], policy_probabilities, classes, threshold),
               "test": result, "split_summary": manifest["splits"],
               "manifest_sha256": file_sha256(manifest_path),
-              "versions": {"python": platform.python_version(), "torch": torch.__version__},
+              "versions": {"python": platform.python_version(), "torch": torch.__version__,
+                           "torchaudio": torchaudio.__version__, "numpy": np.__version__,
+                           "scikit_learn": sklearn.__version__, "platform": platform.platform()},
               "limitations": ["Acted English, twelve sentences and six classes; not Indian or natural meeting validation.",
                               "Test actors are the previously published baseline benchmark, reused for comparison only.",
                               "Confidence acceptance accuracy is reported separately and is not the requested full-test accuracy.",
@@ -343,9 +403,13 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--threads", type=int, default=4)
+    parser.add_argument("--workers", type=int, default=3, help="Independent classifier fits (1–4).")
+    parser.add_argument("--resume-selection", action="store_true", help="Continue an interrupted development-only comparison.")
     parser.add_argument("--device", default="cpu", choices=["cpu", "cuda"])
     parser.add_argument("--precision", choices=["float32", "bfloat16"], default="float32")
     args = parser.parse_args()
+    if args.workers not in range(1, 5) or args.threads < 1:
+        parser.error("Use 1–4 classifier workers and a positive thread count.")
     required = {
         "prepare": ["audio", "pointers"],
         "extract": ["manifest", "checkpoint"],
@@ -355,7 +419,7 @@ def main():
     missing = [f"--{name}" for name in required[args.stage] if getattr(args, name) is None]
     if missing:
         parser.error("Required for this stage: " + ", ".join(missing))
-    with threadpool_limits(limits=args.threads):
+    with threadpool_limits(limits=1 if args.stage == "select" else args.threads):
         run_stage(args)
 
 
@@ -365,7 +429,7 @@ def run_stage(args):
     elif args.stage == "extract":
         extract(args.manifest, args.checkpoint, args.encoder, args.output, args.threads, args.device, args.precision)
     elif args.stage == "select":
-        select(args.manifest, args.features, args.output, args.seed)
+        select(args.manifest, args.features, args.output, args.seed, args.workers, args.resume_selection)
     else:
         evaluate(args.manifest, args.features, args.output, args.checkpoint)
 

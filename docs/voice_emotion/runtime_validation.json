@@ -1,0 +1,12 @@
+{
+  "source": "CREMA-D",
+  "clips": 814,
+  "accepted_clips": 667,
+  "coverage": 0.8194103194103194,
+  "accepted_accuracy": 0.8875562218890555,
+  "classifier_accuracy_from_api": 0.8083538083538083,
+  "cached_prediction_matches": 814,
+  "seconds": 377.41777662499226,
+  "microphone_started": false,
+  "silence_tone": "uncertain"
+}

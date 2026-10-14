@@ -1,0 +1,49 @@
+{
+  "recordings": 7442,
+  "unique_audio_sha256": 7439,
+  "duplicate_groups": [
+    [
+      {
+        "file": "1006_TIE_HAP_XX.wav",
+        "speaker_id": "1006",
+        "label": "happy",
+        "partition": "train"
+      },
+      {
+        "file": "1006_TIE_NEU_XX.wav",
+        "speaker_id": "1006",
+        "label": "neutral",
+        "partition": "train"
+      }
+    ],
+    [
+      {
+        "file": "1013_WSI_DIS_XX.wav",
+        "speaker_id": "1013",
+        "label": "disgust",
+        "partition": "test"
+      },
+      {
+        "file": "1013_WSI_SAD_XX.wav",
+        "speaker_id": "1013",
+        "label": "sad",
+        "partition": "test"
+      }
+    ],
+    [
+      {
+        "file": "1017_IWW_ANG_XX.wav",
+        "speaker_id": "1017",
+        "label": "angry",
+        "partition": "validation"
+      },
+      {
+        "file": "1017_IWW_FEA_XX.wav",
+        "speaker_id": "1017",
+        "label": "fear",
+        "partition": "validation"
+      }
+    ]
+  ],
+  "policy": "Retain original recordings and actor labels for the unchanged published benchmark; no conflicting clips cross partitions. Do not remove test errors or relabel from model predictions."
+}

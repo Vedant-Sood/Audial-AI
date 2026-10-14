@@ -35,7 +35,8 @@ class EmotionModel:
                     raise ValueError("Emotion encoder must use the verified local filename.")
                 self.encoder = PooledEncoder(
                     self.bundle["encoder"], self.directory / "encoder.pth",
-                    self.bundle["encoder_sha256"], precision=self.bundle["precision"]
+                    self.bundle["encoder_sha256"], precision=self.bundle["precision"],
+                    cpu_threads=self.bundle.get("cpu_threads", 4)
                 )
             features = self.encoder.extract(samples, max_layer=max(self.bundle["layers"]))
             vector = pool_layers(features, self.bundle["layers"], self.bundle.get("aggregation", "mean"))
