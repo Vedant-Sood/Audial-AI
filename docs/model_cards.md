@@ -17,6 +17,10 @@ accuracy is **74.9–86.1%**. The requested 85–90% full-test point estimate wa
 reached. The benchmark uses actor-directed labels, acted English and twelve
 sentences, with no natural-meeting or Indian-language validation.
 
+Emitted-label precision varies by emotion: angry 95.8%, disgust 90.8%, fear
+75.4%, happy 97.0%, neutral 95.2%, and sad 82.0%. The 88.8% aggregate does not
+mean that every emotion class reaches 85–90% precision.
+
 Weights, calibration, confusion matrix, class metrics, actor results and software
 versions are in [models/emotion-wavlm/evaluation.json](../models/emotion-wavlm/evaluation.json).
 The original 1.3 GB encoder is downloaded explicitly and checked against SHA-256.

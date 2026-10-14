@@ -30,5 +30,18 @@
     "passed": 14,
     "failed": 0
   },
-  "native_linux_startup": "PASS"
+  "native_linux_startup": "PASS",
+  "windows_ci": {
+    "run": "https://github.com/Vedant-Sood/Audial-AI/actions/runs/38515642089",
+    "commit": "11ee734cc0db9856e0de3853af362c93313fbaa2",
+    "conclusion": "success",
+    "python_tests": 65,
+    "browser_tests": 14,
+    "native_build": "PASS",
+    "packaged_startup": "PASS",
+    "verified_encoder_install": "PASS",
+    "packaged_real_voice_emotion_inference": "PASS",
+    "inference_sample": "assets/evaluation_sample.wav",
+    "microphone_started": false
+  }
 }

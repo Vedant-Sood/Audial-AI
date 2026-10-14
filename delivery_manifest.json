@@ -408,8 +408,8 @@
       "sha256": "6589f2b3035889d7809cc7163cf378e142f6af6bd0a0ad769f6345c3cdcf2e80"
     },
     "docs/model_cards.md": {
-      "bytes": 3828,
-      "sha256": "d31d50740e3fb89c8883e253c37cd4fdda94ec97045ab2ef11981e768131e6ee"
+      "bytes": 4042,
+      "sha256": "f617ac2405819053e1902a11724c8700ed83bc1a39ca7122c056593e0c6b7ebd"
     },
     "docs/privacy.md": {
       "bytes": 2690,
@@ -496,8 +496,8 @@
       "sha256": "ad5a4a3a4ea5dbd1dac117d1778100f1a80f6dc6f30733c2e721c98dfe3ee2c4"
     },
     "docs/validation-0.4.1.json": {
-      "bytes": 902,
-      "sha256": "a11e8888c52a522a33f6c79a60b97a654282e6432301f3c06a4d1f9ac2d44d67"
+      "bytes": 1382,
+      "sha256": "02f0744b2253c7b4420ff1dc8c8f67376a053ec69d4959550fe9639842c3a1d9"
     },
     "docs/voice_emotion/WAVLM-LICENSE.txt": {
       "bytes": 1104,
@@ -580,8 +580,8 @@
       "sha256": "9153731dc0eb1253b43001b635c735b415f1f09eaa4292875c6d7e7ea6439b01"
     },
     "models/emotion-wavlm/evaluation.json": {
-      "bytes": 36360,
-      "sha256": "3125a4ae8cf38feec69db274d1cce087580acf121068bb23f6e176897878425c"
+      "bytes": 37022,
+      "sha256": "e3bf5509a53e977f527de8ae70229f990407089151ae67027de79e2225631f97"
     },
     "models/emotion-wavlm/provenance.json": {
       "bytes": 691,

@@ -1447,6 +1447,32 @@
       "1066": 0.7926829268292683,
       "1067": 0.5975609756097561,
       "1078": 0.9390243902439024
+    },
+    "emitted_per_class": {
+      "angry": {
+        "emitted_labels": 118,
+        "emitted_precision": 0.9576271186440678
+      },
+      "disgust": {
+        "emitted_labels": 98,
+        "emitted_precision": 0.9081632653061225
+      },
+      "fear": {
+        "emitted_labels": 134,
+        "emitted_precision": 0.753731343283582
+      },
+      "happy": {
+        "emitted_labels": 101,
+        "emitted_precision": 0.9702970297029703
+      },
+      "neutral": {
+        "emitted_labels": 105,
+        "emitted_precision": 0.9523809523809523
+      },
+      "sad": {
+        "emitted_labels": 111,
+        "emitted_precision": 0.8198198198198198
+      }
     }
   },
   "split_summary": {
