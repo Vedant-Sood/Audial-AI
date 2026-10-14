@@ -13,3 +13,6 @@ datasets/raw/
 .env.*
 ci-state/
 windows-tests.xml
+models/**/encoder.pth
+models/**/encoder.download
+models/**/selected.joblib

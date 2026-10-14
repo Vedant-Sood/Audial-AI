@@ -1,0 +1,86 @@
+"""Frozen WavLM features shared by emotion training and desktop inference.
+
+Checkpoints are downloaded explicitly by the training command. Inference never
+downloads weights or audio. Layer numbers in model metadata are one-based.
+"""
+from pathlib import Path
+import hashlib
+
+import numpy as np
+import torch
+import torchaudio
+
+from .audio import SAMPLE_RATE, prepare
+
+FEATURE_VERSION = "wavlm-layer-mean-std-v1"
+ENCODERS = {
+    "WAVLM_BASE_PLUS": {
+        "url": "https://download.pytorch.org/torchaudio/models/wavlm_base_plus.pth",
+        "sha256": "136a3e720c04f2c77bf7a4dc6a3868b14d5a2c145a988114b733cb1a8428be98",
+    },
+    "WAVLM_LARGE": {
+        "url": "https://download.pytorch.org/torchaudio/models/wavlm_large.pth",
+        "sha256": "8c1e5637ae88657f1c54b60ec6b0e0277482b3a071d4be57cdc5715b7921d36e",
+    },
+}
+
+
+def file_sha256(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def pool_layers(features, layers):
+    """Average selected layers, preserving both temporal mean and deviation."""
+    indices = np.asarray(layers, dtype=int) - 1
+    if not len(indices) or indices.min() < 0 or indices.max() >= features.shape[-3]:
+        raise ValueError("Invalid WavLM layer selection.")
+    return np.take(features, indices, axis=-3).mean(axis=-3).reshape(
+        (*features.shape[:-3], -1)
+    ).astype(np.float32)
+
+
+class PooledEncoder:
+    def __init__(self, name, checkpoint, expected_sha256, *, device="cpu", precision="float32"):
+        if name not in ENCODERS:
+            raise ValueError("Unsupported emotion encoder.")
+        if file_sha256(checkpoint) != expected_sha256:
+            raise ValueError("Emotion encoder checksum differs from training metadata.")
+        bundle = getattr(torchaudio.pipelines, name)
+        # Construction avoids get_model(), which implicitly downloads weights.
+        self.model = torchaudio.models.wavlm_model(**bundle._params)
+        state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+        self.model.load_state_dict(state, strict=True)
+        self.model.eval().requires_grad_(False).to(device)
+        self.normalize = bundle._normalize_waveform
+        self.device = device
+        if precision not in {"float32", "bfloat16"}:
+            raise ValueError("Unsupported encoder precision.")
+        self.precision = precision
+        if precision == "bfloat16":
+            # Autocast would round these weights to BF16 on every utterance.
+            # Precast linear weights once; keep normalization/position weights
+            # in FP32. This preserves the extracted values and reduces CPU work.
+            for layer in self.model.modules():
+                if isinstance(layer, torch.nn.Linear):
+                    layer.to(dtype=torch.bfloat16)
+        self.layers = bundle._params["encoder_num_layers"]
+        self.width = bundle._params["encoder_embed_dim"]
+
+    def extract(self, samples, max_layer=None):
+        samples = prepare(samples, SAMPLE_RATE).astype(np.float32)
+        waveform = torch.from_numpy(samples).unsqueeze(0).to(self.device)
+        if self.normalize:
+            waveform = torch.nn.functional.layer_norm(waveform, waveform.shape[-1:])
+        # Each utterance is processed without padding, matching inference exactly.
+        with torch.inference_mode(), torch.autocast(
+            device_type=self.device, dtype=torch.bfloat16,
+            enabled=self.precision == "bfloat16"
+        ):
+            frames, _ = self.model.extract_features(waveform, num_layers=max_layer)
+            pooled = [torch.stack((f[0].mean(0), f[0].std(0, unbiased=False)))
+                      for f in frames]
+            return torch.stack(pooled).float().cpu().numpy().astype(np.float32)

@@ -73,6 +73,11 @@ are not implemented. Text fallback preserves content but is not sign translation
 See [Indian voice training](docs/indian_voice_training.md),
 [model cards](docs/model_cards.md), and [limitations](docs/limitations.md).
 
+The current [voice emotion accuracy work](docs/voice_emotion_training.md) trains
+new classifiers with WavLM-Large features on the full verified CREMA-D corpus.
+It includes separate selection, calibration and test stages, actor-level
+uncertainty intervals, and verified activation of larger pretrained models.
+
 ## Verification and release
 
 Run `python -m pytest -q`, `npm test`, and `python -m app.main --smoke-test`.

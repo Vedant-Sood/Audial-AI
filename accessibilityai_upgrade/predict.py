@@ -7,23 +7,40 @@ from pathlib import Path
 import joblib
 from scipy.special import softmax
 
-from .audio import FEATURE_VERSION, extract_features, read_wav
+from .audio import FEATURE_VERSION, extract_features, read_wav, prosody
 from .train import raw_logits
 
 
 class EmotionModel:
     def __init__(self, model_path):
+        self.directory = Path(model_path).resolve().parent
         self.bundle = joblib.load(model_path)
-        if self.bundle["feature_version"] != FEATURE_VERSION:
+        self.encoder = None
+        if self.bundle["feature_version"] not in {FEATURE_VERSION, "wavlm-layer-mean-std-v1"}:
             raise ValueError("Model and acoustic feature versions differ.")
 
     def predict_samples(self, samples):
-        vector, details = extract_features(samples)
-        if len(vector) != self.bundle["feature_count"]:
-            raise ValueError("Model feature count differs.")
+        if self.bundle["feature_version"] == FEATURE_VERSION:
+            vector, details = extract_features(samples)
+        else:
+            details = prosody(samples)
+            details.pop("_pitch_features")
         if details["rms_dbfs"] < -55 or details["active_fraction"] < 0.05:
             return {"tone": "uncertain", "reason": "insufficient_audio", "confidence": None,
                     "probabilities": {}, "prosody": details}
+        if self.bundle["feature_version"] != FEATURE_VERSION:
+            from .ssl_features import PooledEncoder, pool_layers
+            if self.encoder is None:
+                if self.bundle.get("encoder_file") != "encoder.pth":
+                    raise ValueError("Emotion encoder must use the verified local filename.")
+                self.encoder = PooledEncoder(
+                    self.bundle["encoder"], self.directory / "encoder.pth",
+                    self.bundle["encoder_sha256"], precision=self.bundle["precision"]
+                )
+            features = self.encoder.extract(samples, max_layer=max(self.bundle["layers"]))
+            vector = pool_layers(features, self.bundle["layers"])
+        if len(vector) != self.bundle["feature_count"]:
+            raise ValueError("Model feature count differs.")
         logits = raw_logits(self.bundle["model"], vector[None, :])
         probabilities = self.bundle["calibrator"].predict_proba(logits)[0] if "calibrator" in self.bundle else softmax(logits / self.bundle["temperature"], axis=1)[0]
         confidence = float(probabilities.max())
