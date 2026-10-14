@@ -17,6 +17,7 @@ import numpy as np
 from scipy.optimize import minimize_scalar
 from scipy.special import softmax
 from sklearn.linear_model import LogisticRegression
+from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score, f1_score, log_loss
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import make_pipeline
@@ -30,6 +31,7 @@ from accessibilityai_upgrade.ssl_features import (
     FEATURE_VERSION, PooledEncoder, file_sha256, pool_layers,
 )
 from accessibilityai_upgrade.train import EMOTIONS, metrics, raw_logits
+from accessibilityai_upgrade.emotion_heads import LayerHeadEnsemble
 
 
 def write_json(path, value):
@@ -183,45 +185,75 @@ def select(manifest_path, features_path, output, seed):
     # These choices are fixed before evaluation. Test and calibration labels are
     # not supplied to any estimator or model-selection score.
     count = features.shape[1]
-    layer_sets = [[k] for k in range(4, count + 1, 2)]
-    layer_sets += [list(range(4, min(count, 8)+1)), list(range(max(1, count-4), count+1))]
-    evaluations, best = [], None
-    for layers in layer_sets:
-        X = pool_layers(features, layers)
-        candidates = [(f"logistic-C{c}", make_pipeline(StandardScaler(),
+    layer_sets = [([k], "mean") for k in range(4, count + 1, 2)]
+    layer_sets += [(list(range(4, min(count, 8)+1)), "mean"),
+                   (list(range(max(1, count-4), count+1)), "mean"),
+                   (list(range(4, count+1, 4)), "concat")]
+    evaluations, best, members = [], None, []
+
+    def record(model, layers, aggregation, result):
+        nonlocal best
+        evaluations.append(result)
+        print(json.dumps(result), flush=True)
+        score = (result["validation_accuracy"], result["validation_macro_f1"])
+        if best is None or score > best[0]:
+            best = (score, model, layers, result["model"], aggregation)
+            joblib.dump({"model": model, "layers": layers, "name": result["model"],
+                         "aggregation": aggregation, "feature_version": FEATURE_VERSION,
+                         "encoder": metadata["encoder"], "encoder_sha256": metadata["encoder_sha256"],
+                         "precision": metadata["precision"], "dataset": manifest["dataset"]},
+                        output / "selected.joblib", compress=3)
+        write_json(output / "selection.json", {"seed": seed, "candidates": evaluations,
+                   "selected": {"model": best[3], "layers": best[2], "aggregation": best[4],
+                                "validation_accuracy": best[0][0], "validation_macro_f1": best[0][1]},
+                   "test_used_for_selection": False})
+
+    for layers, aggregation in layer_sets:
+        X = pool_layers(features, layers, aggregation)
+        def preprocessing():
+            steps = [StandardScaler()]
+            if aggregation == "concat":
+                steps.append(PCA(n_components=min(256, len(train)-1, X.shape[1]),
+                                 whiten=True, svd_solver="randomized", random_state=seed))
+            return steps
+        candidates = [(f"logistic-C{c}", make_pipeline(*preprocessing(),
                        LogisticRegression(C=c, max_iter=1200, random_state=seed))) for c in [0.01, 0.1, 1.0]]
-        candidates += [(f"svm-C{c}", make_pipeline(StandardScaler(),
-                        SVC(C=c, gamma="scale", decision_function_shape="ovr", random_state=seed)))
+        candidates += [(f"svm-C{c}", make_pipeline(*preprocessing(),
+                        SVC(C=c, gamma="scale", decision_function_shape="ovr", break_ties=True, random_state=seed)))
                        for c in [1.0, 3.0, 10.0]]
-        if len(layers) > 1:
+        if len(layers) > 1 and aggregation == "mean":
             # Internal early-stopping clips belong only to training actors.
             # The external, speaker-disjoint validation split selects the head.
             candidates += [("mlp-256", make_pipeline(StandardScaler(), MLPClassifier(
                 hidden_layer_sizes=(256,), alpha=1.0, batch_size=128,
                 learning_rate_init=0.0005, max_iter=150, early_stopping=True,
                 n_iter_no_change=12, random_state=seed)))]
+        member = None
         for name, model in candidates:
             started = time.monotonic()
             model.fit(X[train], y[train])
             predicted = model.predict(X[validation])
-            result = {"model": name, "layers": layers,
+            result = {"model": name, "layers": layers, "aggregation": aggregation,
                       "validation_accuracy": float(accuracy_score(y[validation], predicted)),
                       "validation_macro_f1": float(f1_score(y[validation], predicted, average="macro")),
                       "fit_seconds": round(time.monotonic()-started, 2)}
-            evaluations.append(result)
-            print(json.dumps(result), flush=True)
-            score = (result["validation_macro_f1"], result["validation_accuracy"])
-            if best is None or score > best[0]:
-                best = (score, model, layers, name)
-                joblib.dump({"model": model, "layers": layers, "name": name,
-                             "feature_version": FEATURE_VERSION, "encoder": metadata["encoder"],
-                             "encoder_sha256": metadata["encoder_sha256"],
-                             "precision": metadata["precision"], "dataset": manifest["dataset"]},
-                            output / "selected.joblib", compress=3)
-            write_json(output / "selection.json", {"seed": seed, "candidates": evaluations,
-                       "selected": {"model": best[3], "layers": best[2],
-                                    "validation_macro_f1": best[0][0]},
-                       "test_used_for_selection": False})
+            score = (result["validation_accuracy"], result["validation_macro_f1"])
+            if member is None or score > member[0]:
+                member = (score, {"model": model, "layers": layers, "aggregation": aggregation})
+            record(model, layers, aggregation, result)
+        members.append(member)
+    # A fixed three-member voting option compares different representations.
+    # Its uniform weights and membership use validation only, never test scores.
+    top = [m[1] for m in sorted(members, key=lambda m: m[0], reverse=True)[:3]]
+    ensemble = LayerHeadEnsemble(top, features.shape[1:])
+    layers = list(range(1, count+1))
+    X = pool_layers(features[validation], layers, "concat")
+    predicted = ensemble.predict(X)
+    result = {"model": "three-layer-head-ensemble", "layers": layers, "aggregation": "concat",
+              "validation_accuracy": float(accuracy_score(y[validation], predicted)),
+              "validation_macro_f1": float(f1_score(y[validation], predicted, average="macro")),
+              "members": [{"layers": m["layers"], "aggregation": m["aggregation"]} for m in top]}
+    record(ensemble, layers, "concat", result)
 
 
 def cluster_interval(y, predicted, speakers, seed=1729, repeats=5000):
@@ -241,7 +273,7 @@ def evaluate(manifest_path, features_path, output, checkpoint, target=0.85):
     bundle = joblib.load(output / "selected.joblib")
     if file_sha256(checkpoint) != metadata["encoder_sha256"]:
         raise ValueError("Encoder checkpoint differs from extracted features.")
-    X = pool_layers(features, bundle["layers"])
+    X = pool_layers(features, bundle["layers"], bundle.get("aggregation", "mean"))
     classes = bundle["model"].classes_
     fit, policy, test = (splits[k] for k in ["calibration_fit", "calibration_policy", "test"])
     # Positive temperature scaling calibrates confidence without changing labels.
@@ -276,7 +308,7 @@ def evaluate(manifest_path, features_path, output, checkpoint, target=0.85):
               "feature_version": FEATURE_VERSION, "encoder": metadata["encoder"],
               "encoder_sha256": metadata["encoder_sha256"], "precision": metadata["precision"],
               "model_sha256": file_sha256(output / "emotion.joblib"),
-              "feature_count": X.shape[1], "layers": bundle["layers"],
+              "feature_count": X.shape[1], "layers": bundle["layers"], "aggregation": bundle["aggregation"],
               "calibration_method": "Positive scalar temperature; preserves argmax labels",
               "temperature": temperature, "abstention_threshold": threshold,
               "target_accuracy": target, "target_met": result["accuracy"] >= target,

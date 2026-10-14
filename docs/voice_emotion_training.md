@@ -73,7 +73,10 @@ results when changing the model.
 WavLM yields a temporal mean and standard deviation from each transformer layer.
 Individual layers and fixed layer averages are compared with regularized
 logistic classifiers and RBF SVMs. Layer averages also receive a neural classifier
-candidate. Preprocessing fits only training actors. BF16 is an explicit encoder
+candidate. Concatenated layer features with training-only PCA and a uniform
+three-member vote across the strongest distinct layer representations are also
+compared. Validation accuracy selects the model, with macro F1 breaking ties.
+Preprocessing fits only training actors. BF16 is an explicit encoder
 precision setting used identically in extraction and desktop inference; pooled
 features and classifier calculations use FP32 or scikit-learn's native precision.
 

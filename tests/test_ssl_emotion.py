@@ -12,6 +12,7 @@ from accessibilityai_upgrade.predict import EmotionModel
 from accessibilityai_upgrade.ssl_features import FEATURE_VERSION, pool_layers, PooledEncoder
 from scripts.train_ssl_emotion import validate_manifest, cluster_interval
 from scripts.activate_emotion import activate
+from accessibilityai_upgrade.emotion_heads import LayerHeadEnsemble
 
 
 def manifest():
@@ -50,6 +51,9 @@ def test_layer_pooling_is_identical_for_batches_and_single_utterances():
         np.testing.assert_array_equal(pooled[i], pool_layers(features[i], [4, 6, 8]))
     with pytest.raises(ValueError, match="layer"):
         pool_layers(features, [0])
+    concat = pool_layers(features, [4, 6, 8], "concat")
+    assert concat.shape == (4, 96)
+    np.testing.assert_array_equal(concat[0], pool_layers(features[0], [4, 6, 8], "concat"))
 
 
 def test_temperature_calibration_preserves_full_test_predicted_labels():
@@ -99,3 +103,29 @@ def test_activation_rejects_corrupted_encoder_without_changing_selection(tmp_pat
     with pytest.raises(ValueError, match="checksum"):
         activate(folder)
     assert json.loads(selection.read_text(encoding="utf-8")) == {"previous": True}
+
+
+class FixedHead:
+    classes_ = np.array(["happy", "sad"])
+
+    def __init__(self, logits):
+        self.logits = np.array(logits)
+
+    def decision_function(self, X):
+        return np.tile(self.logits, (len(X), 1))
+
+
+def test_voting_serialization_preserves_class_order_and_predictions(tmp_path):
+    members = [{"model": FixedHead([3, -1]), "layers": [1], "aggregation": "mean"},
+               {"model": FixedHead([2, 1]), "layers": [2], "aggregation": "mean"}]
+    model = LayerHeadEnsemble(members, (2, 2, 4))
+    features = np.arange(32).reshape(2, 2, 2, 4)
+    X = pool_layers(features, [1, 2], "concat")
+    path = tmp_path / "ensemble.joblib"
+    joblib.dump(model, path)
+    restored = joblib.load(path)
+    assert restored.predict(X).tolist() == ["happy", "happy"]
+    np.testing.assert_allclose(restored.predict_proba(X), model.predict_proba(X))
+    members[1]["model"].classes_ = np.array(["sad", "happy"])
+    with pytest.raises(ValueError, match="class order"):
+        LayerHeadEnsemble(members, (2, 2, 4))

@@ -38,7 +38,7 @@ class EmotionModel:
                     self.bundle["encoder_sha256"], precision=self.bundle["precision"]
                 )
             features = self.encoder.extract(samples, max_layer=max(self.bundle["layers"]))
-            vector = pool_layers(features, self.bundle["layers"])
+            vector = pool_layers(features, self.bundle["layers"], self.bundle.get("aggregation", "mean"))
         if len(vector) != self.bundle["feature_count"]:
             raise ValueError("Model feature count differs.")
         logits = raw_logits(self.bundle["model"], vector[None, :])

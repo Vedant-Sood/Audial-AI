@@ -12,6 +12,7 @@ for package in ['faster_whisper', 'ctranslate2', 'mediapipe', 'speechbrain', 'so
     binaries += b
     hiddenimports += h
 hiddenimports += collect_submodules('training') + collect_submodules('scripts')
+hiddenimports += collect_submodules('accessibilityai_upgrade')
 datas += [(str(project / 'assets'), 'assets'), (str(project / 'training'), 'training'),
           (str(project / 'browser'), 'browser'), (str(project / 'docs'), 'docs'),
           (str(project / 'models'), 'models')]

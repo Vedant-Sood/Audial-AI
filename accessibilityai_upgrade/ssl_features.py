@@ -33,14 +33,17 @@ def file_sha256(path):
     return digest.hexdigest()
 
 
-def pool_layers(features, layers):
-    """Average selected layers, preserving both temporal mean and deviation."""
+def pool_layers(features, layers, aggregation="mean"):
+    """Combine selected layers, preserving temporal mean and deviation."""
     indices = np.asarray(layers, dtype=int) - 1
     if not len(indices) or indices.min() < 0 or indices.max() >= features.shape[-3]:
         raise ValueError("Invalid WavLM layer selection.")
-    return np.take(features, indices, axis=-3).mean(axis=-3).reshape(
-        (*features.shape[:-3], -1)
-    ).astype(np.float32)
+    selected = np.take(features, indices, axis=-3)
+    if aggregation == "mean":
+        selected = selected.mean(axis=-3)
+    elif aggregation != "concat":
+        raise ValueError("Unsupported layer aggregation.")
+    return selected.reshape((*features.shape[:-3], -1)).astype(np.float32)
 
 
 class PooledEncoder:
