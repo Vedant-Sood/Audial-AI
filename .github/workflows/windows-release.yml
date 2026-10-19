@@ -87,6 +87,7 @@ jobs:
         if: ${{ !cancelled() && steps.build_installer.outcome == 'success' && matrix.runtime == 'CPU' }}
         shell: pwsh
         run: |
+          ./scripts/prepare_edge_ci.ps1 -Output windows-browser-edge/edge-runtime.json
           $edge = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
           if (-not (Test-Path $edge)) { throw 'Microsoft Edge is missing from the Windows runner' }
           python -m scripts.verify_browser --browser "$edge" --native-host dist/AccessibilityAI/AccessibilityAIWorker.exe --output windows-browser-edge 2>&1 | Tee-Object windows-browser-edge.txt

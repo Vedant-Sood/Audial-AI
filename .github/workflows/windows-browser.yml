@@ -9,6 +9,7 @@ on:
       - 'app/services/native_host.py'
       - 'scripts/verify_browser.py'
       - 'scripts/diagnose_browser_discard.py'
+      - 'scripts/prepare_edge_ci.ps1'
       - 'scripts/package_extension.py'
       - 'native_host.py'
       - '.github/workflows/windows-browser.yml'
@@ -51,6 +52,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Browser dependency conflict' }
           python -m PyInstaller --onefile --console --noconfirm --clean --name AudialAINativeAcceptance --distpath build/browser-native --workpath build/browser-work --specpath build/browser-spec native_host.py 2>&1 | Tee-Object windows-browser-native-build.txt
           if ($LASTEXITCODE -ne 0) { throw 'Isolated native-host packaging failed' }
+      - name: Use current Microsoft Edge Stable
+        if: matrix.browser == 'Edge'
+        shell: pwsh
+        run: ./scripts/prepare_edge_ci.ps1
       - name: Actual tab lifecycle and native PCM capture
         env:
           DEBUG: pw:browser
