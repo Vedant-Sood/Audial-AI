@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import platform
 import re
+import sys
 import tempfile
 import threading
 
@@ -51,7 +52,8 @@ def main():
                 context = playwright.chromium.launch_persistent_context(
                     str(directory / "profile"), executable_path=args.browser,
                     headless=False, ignore_default_args=["--disable-extensions"],
-                    args=["--disable-gpu", "--disable-extensions-except=" + str(extension), "--load-extension=" + str(extension)],
+                    chromium_sandbox=sys.platform == "win32",
+                    args=["--disable-extensions-except=" + str(extension), "--load-extension=" + str(extension)],
                 )
                 report["browser_version"] = context.browser.version
                 setup = context.new_page()

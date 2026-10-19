@@ -1,0 +1,87 @@
+{
+  "platform": "Windows-2022Server-10.0.20348-SP0",
+  "scope": "Real extension/native-bridge PCM transport with generated tones; ASR model is replaced only for this transport test",
+  "lifecycle_events": [
+    {
+      "event": "suspended tab target closed",
+      "stage": "discard"
+    },
+    {
+      "event": "first tab closed",
+      "stage": "normal cleanup"
+    },
+    {
+      "event": "context closed",
+      "stage": "normal cleanup"
+    },
+    {
+      "event": "browser disconnected",
+      "stage": "normal cleanup"
+    }
+  ],
+  "browser_version": "156.0.8078.4",
+  "developer_mode": "PASS; enabled through the real browser extension setup UI",
+  "initial_background": "chrome-extension://dojclhfndceededaacaeblikncmihnkb/service-worker.js",
+  "real_tab_discovery": "PASS across two actual browser windows",
+  "reload_and_navigation_identity": "PASS; actual tab ID retained",
+  "restricted_pages": "PASS using actual browser APIs",
+  "toolbar_commands": [
+    {
+      "description": "",
+      "name": "_execute_action",
+      "shortcut": "Ctrl+Shift+Y"
+    }
+  ],
+  "source_capture_and_switching": [
+    {
+      "expected_hz": 440,
+      "received_hz": 440.0,
+      "samples": 32000,
+      "expected_tab_id": 1657750956,
+      "actual_tab_id": 1657750956
+    },
+    {
+      "expected_hz": 1000,
+      "received_hz": 1000.0,
+      "samples": 32000,
+      "expected_tab_id": 1657750959,
+      "actual_tab_id": 1657750959
+    }
+  ],
+  "window_focus": [
+    {
+      "requested": "Audial source 440 Hz",
+      "foreground": "Audial source 440 Hz - Google Chrome for Testing",
+      "matched": true
+    },
+    {
+      "requested": "Audial source 1000 Hz",
+      "foreground": "Audial source 1000 Hz - Google Chrome for Testing",
+      "matched": true
+    },
+    {
+      "requested": "Audial source 440 Hz",
+      "foreground": "Audial source 440 Hz - Google Chrome for Testing",
+      "matched": true
+    }
+  ],
+  "stop_and_release": "PASS",
+  "closed_tab_removal": "PASS",
+  "extension_background_restart": "PASS; real extension reloaded and metadata restored",
+  "desktop_disconnect_releases_audio": "PASS; actual tab stream and offscreen document stopped",
+  "desktop_service_reconnection": "PASS; fresh bridge token/port, tab list restored automatically",
+  "discard_result": {
+    "id": 1657750967,
+    "active": false,
+    "discarded": true,
+    "windowId": 1657750952,
+    "status": "unloaded"
+  },
+  "discard_identity": {
+    "before": 1657750966,
+    "after": 1657750967
+  },
+  "suspend_restore": "PASS using actual browser APIs",
+  "source_commit": "00d6370ed7cb13c42d0b3ea489ba269fff6dca0b",
+  "source_job_url": "https://github.com/Vedant-Sood/Audial-AI/actions/runs/39310991766/job/118260199188"
+}

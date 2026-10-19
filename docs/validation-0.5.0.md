@@ -52,12 +52,16 @@ hardware. These results do not establish behavior on Windows or an RTX 4060.
   the individual installer SHA256 is inside the artifact. The hosted runner has
   no NVIDIA GPU: this validates the CUDA-runtime distribution's CPU fallback,
   not CUDA execution or target-laptop performance.
-- The short Windows browser workflow has now verified real two-window discovery,
-  reload/navigation identity, restricted pages, 440/1000-Hz source capture and
-  switching, Stop and closed-tab cleanup in Chromium 145 and Edge 155. Edge also
-  passed real extension reload, desktop disconnect/audio release and fresh-token
-  reconnection. Full suspended-tab acceptance and Chrome reload remain pending;
-  CPU artifact publication is still gated on them. The fast workflow packages
+- The short Windows browser workflow has passed the entire real transport suite
+  in [Chromium 156](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39310991766/job/118260199188):
+  two-window discovery, reload/navigation identity, restricted pages, 440/1000-Hz
+  capture/source switching, Stop, closed-tab cleanup, extension reload, desktop
+  disconnect/audio release, fresh-token reconnection and suspension/restoration.
+  [Exact result](validation-0.5.0/windows-browser-chromium.json). Discard replaces
+  the real tab ID; both its new identity and removal of the old entry are checked.
+  Chrome's supported Developer mode UI must be enabled for unpacked reloads.
+  Edge 155 has passed the other transport checks; its final suspended-tab check
+  remains pending. CPU artifact publication is still gated on it. The fast workflow packages
   the product native host independently; the release workflow checks the complete
   desktop worker. Generated tones establish transport/source identity, not ASR.
 - Signing: no certificate configured; installer acceptance requires/report NotSigned.
