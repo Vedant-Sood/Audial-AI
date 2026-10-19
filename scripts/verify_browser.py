@@ -401,22 +401,33 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
 
                 report["toolbar_commands"] = worker.evaluate("chrome.commands.getAll()")
                 observed = []
+                report["source_capture_and_switching"] = observed
                 for source, expected in [(first, 440), (second, 1000)]:
                     popup = invoke(source)
                     popup.click("#capture-current")
+                    expected_tab = tab_id(source)
+                    wait_until(
+                        lambda: service.bridge.owner is not None
+                        and service.bridge.owner["tab_id"] == expected_tab,
+                        timeout=25,
+                    )
+                    # A click starts an asynchronous source switch. Discard
+                    # packets only after the desktop owns the requested tab.
                     packets.clear()
-                    wait_until(lambda: packets, timeout=25)
-                    pcm = packets[-1]
+                    wait_until(lambda: any(np.max(np.abs(packet)) > 0.01 for packet in tuple(packets)), timeout=25)
+                    pcm = [packet for packet in tuple(packets) if np.max(np.abs(packet)) > 0.01][-1]
                     spectrum = np.abs(np.fft.rfft(pcm))
                     frequency = float(np.argmax(spectrum) * 16000 / len(pcm))
-                    assert abs(frequency - expected) < 10, (expected, frequency)
                     observed.append(
                         {
                             "expected_hz": expected,
                             "received_hz": frequency,
                             "samples": len(pcm),
+                            "expected_tab_id": expected_tab,
+                            "actual_tab_id": service.bridge.owner["tab_id"],
                         }
                     )
+                    assert abs(frequency - expected) < 10, (expected, frequency)
                     popup.screenshot(
                         path=str(args.output / f"extension-capturing-{expected}.png")
                     )
