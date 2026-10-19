@@ -8,6 +8,7 @@ on:
       - 'app/services/browser*.py'
       - 'app/services/native_host.py'
       - 'scripts/verify_browser.py'
+      - 'scripts/diagnose_browser_discard.py'
       - 'scripts/package_extension.py'
       - 'native_host.py'
       - '.github/workflows/windows-browser.yml'
@@ -66,11 +67,22 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Actual browser transport acceptance failed' }
           $report = Get-Content windows-browser-current/extension-acceptance.json -Raw | ConvertFrom-Json | ConvertTo-Json -Depth 12 -Compress
           Write-Output ('::notice title=Actual browser acceptance::' + $report.Replace('%', '%25').Replace([string][char]13, '%0D').Replace([string][char]10, '%0A'))
+      - name: Isolate tab discard from product integration
+        if: failure()
+        env:
+          DEBUG: pw:browser
+        shell: pwsh
+        run: |
+          if ('${{ matrix.browser }}' -eq 'Chromium') {
+            $browser = python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()'
+          } else { $browser = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe" }
+          python -m scripts.diagnose_browser_discard --browser "$browser" --output windows-browser-current/minimal-discard.json 2>&1 | Tee-Object windows-browser-current/minimal-discard.txt
+          if ($LASTEXITCODE -ne 0) { Write-Output 'The isolated browser discard check also failed; inspect the diagnostic artifact.' }
       - name: Publish failure excerpts
         if: failure()
         shell: pwsh
         run: |
-          $files = @('windows-browser-current/extension-acceptance.json', 'windows-browser-current.txt', 'windows-browser-native-build.txt')
+          $files = @('windows-browser-current/extension-acceptance.json', 'windows-browser-current/minimal-discard.json', 'windows-browser-current.txt', 'windows-browser-current/minimal-discard.txt', 'windows-browser-native-build.txt')
           foreach ($file in $files) {
             if (Test-Path $file) {
               $excerpt = if ($file.EndsWith('.json')) {

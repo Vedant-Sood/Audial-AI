@@ -137,15 +137,6 @@ def main():
         )
         controller_url = "chrome-extension://" + extension["id"] + "/" + controller_name
         profile_path = directory / "profile"
-        # Load unpacked is a developer-mode installation. Match that supported
-        # user setup in this disposable profile; otherwise Chrome's initial
-        # command-line load works but runtime.reload disables it as an
-        # unsupported developer extension. Enterprise policy still takes
-        # precedence; no policy or extension restriction is changed here.
-        (profile_path / "Default").mkdir(parents=True)
-        (profile_path / "Default" / "Preferences").write_text(
-            json.dumps({"extensions": {"ui": {"developer_mode": True}}})
-        )
         if sys.platform == "win32":
             if args.native_host is None:
                 raise ValueError(
@@ -279,6 +270,22 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 report["browser_version"] = (
                     context.browser.version if context.browser else args.browser
                 )
+                # Use the real supported Developer mode control in this
+                # disposable browser profile. Managed restrictions still win.
+                setup = context.new_page()
+                setup.goto("chrome://extensions/")
+                developer_mode = setup.locator("#devMode")
+                developer_mode.wait_for(state="visible")
+                if not developer_mode.evaluate("element => element.checked"):
+                    if developer_mode.evaluate("element => element.disabled"):
+                        raise AssertionError("Developer mode is unavailable under browser policy")
+                    developer_mode.click()
+                wait_until(
+                    lambda: developer_mode.evaluate("element => element.checked"),
+                    pump=setup.wait_for_timeout,
+                )
+                report["developer_mode"] = "PASS; enabled through the real browser extension setup UI"
+                setup.close()
                 first = context.new_page()
                 first.on("close", lambda: record_lifecycle("first tab closed"))
                 first.goto(base + "/first")
