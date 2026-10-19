@@ -6,6 +6,7 @@ and xdotool. Windows uses --native-host <installed AccessibilityAIWorker.exe>.
 """
 
 import argparse
+import base64
 from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -34,6 +35,76 @@ def wait_until(predicate, timeout=20):
             return value
         time.sleep(0.1)
     raise AssertionError("Browser acceptance condition timed out")
+
+
+class ToolbarPopup:
+    """Drive the real toolbar target when Playwright omits it from pages."""
+
+    def __init__(self, cdp, target, pump):
+        self.cdp, self.target, self.pump = cdp, target, pump
+        self.responses = {}
+        self.counter = 0
+        self.session = cdp.send("Target.attachToTarget", {"targetId": target, "flatten": False})["sessionId"]
+        def receive(event):
+            if event.get("sessionId") == self.session:
+                message = json.loads(event["message"])
+                if "id" in message:
+                    self.responses[message["id"]] = message
+        cdp.on("Target.receivedMessageFromTarget", receive)
+
+    def send(self, method, params=None):
+        self.counter += 1
+        number = self.counter
+        self.cdp.send("Target.sendMessageToTarget", {
+            "sessionId": self.session,
+            "message": json.dumps({"id": number, "method": method, "params": params or {}}),
+        })
+        deadline = time.monotonic() + 10
+        while number not in self.responses:
+            if time.monotonic() > deadline:
+                raise AssertionError("Toolbar target timed out: " + method)
+            self.pump(25)
+        response = self.responses.pop(number)
+        if "error" in response:
+            raise AssertionError("Toolbar target: " + str(response["error"]))
+        return response.get("result", {})
+
+    def evaluate(self, expression):
+        response = self.send("Runtime.evaluate", {"expression": expression, "returnByValue": True, "awaitPromise": True})
+        if response.get("exceptionDetails"):
+            raise AssertionError("Toolbar script failed: " + str(response["exceptionDetails"]))
+        return response.get("result", {}).get("value")
+
+    def click(self, selector):
+        deadline = time.monotonic() + 10
+        while True:
+            rectangle = self.evaluate("""(() => {
+              const element = document.querySelector(""" + json.dumps(selector) + """);
+              const connected = document.querySelector('#connection')?.textContent.startsWith('Connected');
+              if (!connected || !element || element.disabled) return null;
+              const r = element.getBoundingClientRect();
+              return {x:r.x+r.width/2,y:r.y+r.height/2};
+            })()""")
+            if rectangle:
+                break
+            if time.monotonic() > deadline:
+                raise AssertionError("Toolbar control is unavailable: " + selector + "; " + str(self.evaluate("document.body.innerText")))
+            self.pump(50)
+        # Actual browser input dispatch preserves trusted click behavior. The
+        # OS toolbar invocation above already granted activeTab for this source.
+        self.send("Input.dispatchMouseEvent", {"type": "mouseMoved", **rectangle})
+        for kind in ["mousePressed", "mouseReleased"]:
+            self.send("Input.dispatchMouseEvent", {"type": kind, "button": "left", "clickCount": 1, **rectangle})
+
+    def screenshot(self, path):
+        result = self.send("Page.captureScreenshot", {"format": "png"})
+        Path(path).write_bytes(base64.b64decode(result["data"]))
+
+    def close(self):
+        try:
+            self.cdp.send("Target.closeTarget", {"targetId": self.target})
+        finally:
+            self.cdp.detach()
 
 
 def main():
@@ -306,14 +377,19 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                             [args.xdotool, "key", "--clearmodifiers", "ctrl+shift+y"],
                             check=True,
                         )
+                    cdp = context.browser.new_browser_cdp_session()
                     deadline = time.monotonic() + 10
                     while time.monotonic() < deadline:
                         for candidate in context.pages:
                             if candidate.url.endswith("/popup.html"):
                                 candidate.wait_for_selector("#capture-current")
+                                cdp.detach()
                                 return candidate
+                        targets = cdp.send("Target.getTargets")["targetInfos"]
+                        popup_target = next((target for target in targets if target["url"] == "chrome-extension://" + extension["id"] + "/popup.html"), None)
+                        if popup_target:
+                            return ToolbarPopup(cdp, popup_target["targetId"], page.wait_for_timeout)
                         page.wait_for_timeout(100)
-                    cdp = context.browser.new_browser_cdp_session()
                     report["targets_after_toolbar_action"] = [
                         {key: target[key] for key in ["type", "url", "title"]}
                         for target in cdp.send("Target.getTargets")["targetInfos"]
@@ -327,7 +403,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 observed = []
                 for source, expected in [(first, 440), (second, 1000)]:
                     popup = invoke(source)
-                    popup.locator("#capture-current").click()
+                    popup.click("#capture-current")
                     packets.clear()
                     wait_until(lambda: packets, timeout=25)
                     pcm = packets[-1]
@@ -345,7 +421,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                         path=str(args.output / f"extension-capturing-{expected}.png")
                     )
                     if expected == 1000:
-                        popup.locator("#stop-capture").click()
+                        popup.click("#stop-capture")
                         wait_until(lambda: service.bridge.owner is None)
                         assert not service.engine.running
                     popup.close()
@@ -375,7 +451,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     "PASS; real extension reloaded and metadata restored"
                 )
                 popup = invoke(first)
-                popup.locator("#capture-current").click()
+                popup.click("#capture-current")
                 packets.clear()
                 wait_until(lambda: packets, timeout=25)
                 popup.close()
