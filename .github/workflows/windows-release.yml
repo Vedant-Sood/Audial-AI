@@ -38,9 +38,9 @@ jobs:
         shell: pwsh
         run: |
           $index = if ('${{ matrix.runtime }}' -eq 'NVIDIA') { 'cu126' } else { 'cpu' }
-          python -m pip install torch==2.8.0 torchaudio==2.8.0 --index-url "https://download.pytorch.org/whl/$index"
+          python -m pip install torch==2.8.0 torchaudio==2.8.0 --index-url "https://download.pytorch.org/whl/$index" 2>&1 | Tee-Object windows-torch-install.txt
           if ($LASTEXITCODE -ne 0) { throw 'PyTorch runtime installation failed' }
-          python -m pip install -r requirements.txt -r requirements-overlap.txt -r requirements-build.txt -r requirements-dev.txt
+          python -m pip install -r requirements.txt -r requirements-overlap.txt -r requirements-build.txt -r requirements-dev.txt 2>&1 | Tee-Object windows-dependencies-install.txt
           if ($LASTEXITCODE -ne 0) { throw 'Application dependencies failed' }
           python -m pip check
           if ($LASTEXITCODE -ne 0) { throw 'Dependency conflict' }
@@ -60,7 +60,7 @@ jobs:
       - name: Build versioned Setup.exe and checksums
         shell: pwsh
         run: |
-          ./scripts/build_windows.ps1 -Runtime '${{ matrix.runtime }}'
+          ./scripts/build_windows.ps1 -Runtime '${{ matrix.runtime }}' 2>&1 | Tee-Object windows-build.txt
           if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
           $version = python -c 'from app import __version__; print(__version__)'
           # Same payload packaged as a newer revision exercises the installer
@@ -103,11 +103,26 @@ jobs:
           retention-days: 30
           compression-level: 0
           if-no-files-found: error
+      - name: Report failure details
+        if: failure()
+        shell: pwsh
+        run: |
+          foreach ($file in @('windows-torch-install.txt', 'windows-dependencies-install.txt', 'windows-tests.txt', 'windows-build.txt')) {
+            if (Test-Path $file) {
+              $excerpt = (Get-Content $file | Select-Object -Last 25) -join [Environment]::NewLine
+              $excerpt | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+              $annotation = $excerpt.Replace('%', '%25').Replace([string][char]13, '%0D').Replace([string][char]10, '%0A')
+              Write-Output ("::error title=" + $file + "::" + $annotation)
+            }
+          }
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         if: always()
         with:
           name: Windows-validation-${{ matrix.runtime }}
           path: |
+            windows-torch-install.txt
+            windows-dependencies-install.txt
+            windows-build.txt
             windows-tests.xml
             windows-tests.txt
             windows-source-startup.txt
