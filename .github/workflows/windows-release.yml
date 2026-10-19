@@ -115,12 +115,15 @@ jobs:
         if: failure()
         shell: pwsh
         run: |
-          $files = @('windows-tests.txt', 'windows-source-startup.txt', 'windows-upgrade-build.txt', 'windows-acceptance.txt', 'windows-browser-chromium.txt', 'windows-browser-edge.txt')
-          $files += @(Get-ChildItem windows-acceptance -Filter '*.txt' -ErrorAction SilentlyContinue | ForEach-Object FullName)
+          $files = @('windows-acceptance/installer-acceptance.json', 'windows-acceptance/model-summary.txt', 'windows-acceptance/startup-error.log')
+          $files += @('windows-browser-chromium/extension-acceptance.json', 'windows-browser-edge/extension-acceptance.json', 'windows-browser-chromium.txt', 'windows-browser-edge.txt')
+          $files += @(Get-ChildItem windows-acceptance -Filter '*errors.txt' -ErrorAction SilentlyContinue | ForEach-Object FullName)
+          $files += @('windows-acceptance/installed-offline-inference.txt', 'windows-acceptance.txt', 'windows-tests.txt', 'windows-build.txt')
           $files += @(Get-ChildItem windows-acceptance -Filter '*.json' -ErrorAction SilentlyContinue | ForEach-Object FullName)
           foreach ($file in $files) {
             if (Test-Path $file) {
               $excerpt = (Get-Content $file | Select-Object -Last 25) -join [Environment]::NewLine
+              if (-not $excerpt.Trim()) { continue }
               $excerpt | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
               $annotation = $excerpt.Replace('%', '%25').Replace([string][char]13, '%0D').Replace([string][char]10, '%0A')
               Write-Output ("::error title=" + $file + "::" + $annotation)
