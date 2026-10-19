@@ -275,13 +275,13 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 # disposable browser profile. Managed restrictions still win.
                 setup = context.new_page()
                 setup.goto("edge://extensions/" if "msedge" in args.browser.lower() else "chrome://extensions/")
-                developer_mode = setup.get_by_label(re.compile("developer mode", re.I))
+                developer_mode = setup.get_by_label(re.compile("developer mode", re.I)).filter(visible=True).first
                 try:
                     developer_mode.wait_for(state="visible", timeout=10000)
                 except Exception:
                     report["extension_setup_page"] = setup.locator("body").inner_text()[:4000]
                     raise
-                enabled = "element => Boolean(element.checked) || element.getAttribute('aria-checked') === 'true' || element.getAttribute('aria-pressed') === 'true'"
+                enabled = "element => element.checked === true || element.checked === 'true' || element.getAttribute('aria-checked') === 'true' || element.getAttribute('aria-pressed') === 'true'"
                 if not developer_mode.evaluate(enabled):
                     if developer_mode.evaluate("element => element.disabled || element.getAttribute('aria-disabled') === 'true'"):
                         raise AssertionError("Developer mode is unavailable under browser policy")
