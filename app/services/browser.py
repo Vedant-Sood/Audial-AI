@@ -1,6 +1,6 @@
 """Loopback browser companion for the existing audio engine and real ISL poses."""
 from collections import deque
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict, is_dataclass, replace
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
 import hashlib
@@ -11,6 +11,7 @@ import tempfile
 import threading
 import uuid
 import re
+import secrets
 from urllib.parse import parse_qs, urlsplit
 
 import numpy as np
@@ -23,7 +24,8 @@ from app.services.lexicon import ISL_LANGUAGE, SignLexicon
 from app.services.text_input import read_text_bytes
 from app.storage.transcript import Session
 from app.utils.config import PRESETS, Settings
-from app.utils.paths import project_root
+from app.utils.paths import project_root, data_root, atomic_json
+from app.services.browser_bridge import BrowserBridge
 from app.utils.palette import DEFAULT_EMOTION_COLORS, validate_palette
 
 
@@ -54,7 +56,7 @@ def pose_sequence(entry):
 class BrowserService:
     def __init__(self, engine=None, settings=None, port=0, vocabulary=None):
         self.settings = settings or Settings.load()
-        self.engine = engine or AudioEngine(self.settings)
+        self.engine = engine or AudioEngine(self.settings, queue_events=False)
         self.owns_engine = engine is None
         self.vocabulary = vocabulary or ISLVocabulary()
         self.sign_media = {}
@@ -68,13 +70,21 @@ class BrowserService:
         self.server = None
         self.thread = None
         self.unsubscribe = self.engine.subscribe(self.on_event)
+        self.bridge = BrowserBridge(self)
+        self.bridge_token = secrets.token_urlsafe(32)
+        self.bridge_stopped = threading.Event()
 
     def on_event(self, kind, data):
-        if kind not in {"caption","partial","status","warning","error","prosody","performance","isl_settings","isl_vocabulary"}:
+        if kind not in {"caption","partial","status","warning","error","prosody","performance","isl_settings","isl_vocabulary","emotion","caption_voice"}:
             return
         with self.lock:
             if kind == "caption":
-                self.session.add(data)
+                self.session.add(replace(data, voice=dict(data.voice)))
+            elif kind == "caption_voice":
+                for caption in reversed(self.session.captions[-40:]):
+                    if (caption.start, caption.end, caption.speaker) == (data["start"], data["end"], data["speaker"]):
+                        caption.voice = {**caption.voice, "tone": data["estimate"]["tone"], "tone_confidence": data["estimate"].get("confidence")}
+                        break
             self.id += 1
             self.events.append({"id": self.id,"kind": kind,"data": data})
 
@@ -202,7 +212,9 @@ class BrowserService:
                 parsed = urlsplit(self.path)
                 query = parse_qs(parsed.query)
                 try:
-                    if parsed.path == "/api/status":
+                    if parsed.path == "/api/tabs":
+                        self.respond(200, service.bridge.snapshot())
+                    elif parsed.path == "/api/status":
                         selected = PRESETS[service.settings.preset]["asr"]
                         self.respond(200,{"running":service.engine.running,"source":service.engine.source,
                             "asr_model":selected,"asr_installed":service.engine.manager.installed(selected),
@@ -232,7 +244,7 @@ class BrowserService:
                             service.session.export(target,kind)
                             self.respond(200,target.read_bytes(),"text/vtt; charset=utf-8" if kind=="vtt" else "application/octet-stream","transcript."+kind)
                     else:
-                        allowed = {"index.html","app.js","styles.css","light-box.js","capture.js","pcm-worklet.js","emotion.js","isl-playback.js"}
+                        allowed = {"index.html","app.js","styles.css","light-box.js","capture.js","pcm-worklet.js","emotion.js","isl-playback.js","transcript.js","notifications.js"}
                         filename = parsed.path.lstrip("/") or "index.html"
                         if filename not in allowed:
                             self.respond(404,{"error":"Not found."});return
@@ -249,7 +261,15 @@ class BrowserService:
                     body = self.rfile.read(size)
                     if len(body)!=size:raise ValueError("Incomplete request.")
                     parsed = urlsplit(self.path)
-                    if parsed.path == "/api/signs":
+                    if parsed.path == "/api/bridge":
+                        if not secrets.compare_digest(self.headers.get("X-Audial-Bridge", ""), service.bridge_token):
+                            self.respond(403, {"error": "Use the installed Audial-AI browser bridge."})
+                            return
+                        self.respond(200, service.bridge.handle(json.loads(body or b"{}")))
+                    elif parsed.path == "/api/browser-command":
+                        options = json.loads(body or b"{}")
+                        self.respond(200, service.bridge.queue_command(options["profile"], int(options["tab_id"])))
+                    elif parsed.path == "/api/signs":
                         options = json.loads(body or b"{}")
                         if not isinstance(options, dict):
                             raise ValueError("Send a JSON object with text.")
@@ -318,6 +338,14 @@ class BrowserService:
         self.server = ThreadingHTTPServer(("127.0.0.1",self.port),Handler)
         self.thread = threading.Thread(target=self.server.serve_forever,daemon=True)
         self.thread.start()
+        discovery = data_root() / "browser-bridge.json"
+        atomic_json(discovery, {"url": self.url, "token": self.bridge_token})
+        discovery.chmod(0o600)
+        self.bridge_stopped.clear()
+        def watch_bridge():
+            while not self.bridge_stopped.wait(1):
+                self.bridge.expire()
+        threading.Thread(target=watch_bridge, daemon=True).start()
         if self.owns_engine:
             threading.Thread(target=self.drain,daemon=True).start()
         return self.url
@@ -329,6 +357,9 @@ class BrowserService:
             except queue.Empty:pass
 
     def stop(self):
+        self.bridge_stopped.set()
+        if self.bridge.owner:
+            self.bridge.stop(self.bridge.owner["profile"], self.bridge.owner["session_id"])
         if self.owns_engine:self.engine.stop()
         if self.server:
             self.server.shutdown()

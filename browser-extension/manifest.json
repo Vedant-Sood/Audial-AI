@@ -1,8 +1,33 @@
 {
   "manifest_version": 3,
-  "name": "AccessibilityAI · page text to ISL",
-  "version": "0.2.0",
-  "description": "Open selected page text in your local AccessibilityAI light-sign companion.",
-  "permissions": ["activeTab", "scripting", "storage"],
-  "action": {"default_title": "Open text in AccessibilityAI", "default_popup": "popup.html"}
+  "name": "Audial-AI · local tabs, captions and ISL",
+  "version": "0.5.0",
+  "minimum_chrome_version": "116",
+  "description": "Choose real browser tabs, send their audio to the local Audial-AI app, and display page text in ISL.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArLqMTXLQc2mvsyHTYiDmuzdhbkB/2zXQ43XW3FNgO17dOfKB5egxsRZG1kyGn2g1p9oyC1O9kyA4sEpQxDPjTJCKi2OjIl8++k7UCst6Za0IODWIe1Jz0DvO5NtzPy7etWYDIgwFTzGoNvbAu2dXd1FIvC5nUY9vuXU1CpAKtM71QOtMUNXTlec74+itCHrr6EOzEnEMMrMVKWlDhHox3fMrrPnlJ6btQ2FhSrKNYQe4FaZdkY6OCdU8wrL3YsS1J9Z0shsxOd8nrbl8esT3lsv6yTO+AiGvFLxLYO9LKbS05Y7gh7m+3HXXOLjdSt3G6pN1hbKglcmXfmfr5YZVpQIDAQAB",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "tabCapture",
+    "offscreen",
+    "nativeMessaging",
+    "scripting",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Audial-AI · choose this tab",
+    "default_popup": "popup.html"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y"
+      },
+      "description": "Choose the current tab in Audial-AI"
+    }
+  }
 }

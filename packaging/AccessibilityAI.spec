@@ -11,8 +11,27 @@ for package in ['faster_whisper', 'ctranslate2', 'mediapipe', 'speechbrain', 'so
     datas += d
     binaries += b
     hiddenimports += h
-hiddenimports += collect_submodules('training') + collect_submodules('scripts')
+hiddenimports += collect_submodules('training')
+# Developer browser/benchmark tooling must never bundle Playwright or Node.
+hiddenimports += [name for name in collect_submodules('scripts') if name not in {
+    'scripts.verify_browser', 'scripts.benchmark_browser', 'scripts.benchmark_ui',
+    'scripts.evaluate_voice_models', 'scripts.package_extension'}]
 hiddenimports += collect_submodules('accessibilityai_upgrade')
+if find_spec('pyannote') is not None and find_spec('pyannote.audio') is not None:
+    d, b, h = collect_all('pyannote.audio')
+    datas += d
+    binaries += b
+    hiddenimports += h
+# Keep upstream distribution metadata and license files for the runtime SBOM.
+from PyInstaller.utils.hooks import copy_metadata
+for package in ['faster-whisper', 'speechbrain', 'torch', 'torchaudio', 'ctranslate2',
+                'mediapipe', 'PySide6', 'numpy', 'scipy', 'scikit-learn', 'soundfile',
+                'sounddevice', 'pyttsx3', 'pyannote.audio', 'filelock']:
+    try:
+        datas += copy_metadata(package, recursive=True)
+    except Exception:
+        if package != 'pyannote.audio':
+            raise
 datas += [(str(project / 'assets'), 'assets'), (str(project / 'training'), 'training'),
           (str(project / 'browser'), 'browser'), (str(project / 'docs'), 'docs'),
           (str(project / 'models'), 'models')]
@@ -21,7 +40,7 @@ icon = str(icon_path) if icon_path.is_file() else None
 a = Analysis([str(project / 'launcher.py')], pathex=[str(project)], binaries=binaries,
              datas=datas, hiddenimports=hiddenimports,
              hookspath=[str(project / 'packaging' / 'hooks')],
-             excludes=['tkinter', 'IPython', 'notebook'], noarchive=False)
+             excludes=['tkinter', 'IPython', 'notebook', 'playwright', 'pytest'], noarchive=False)
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='AccessibilityAI', debug=False,
           bootloader_ignore_signals=False, strip=False, upx=False, console=False,

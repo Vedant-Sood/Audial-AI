@@ -22,6 +22,7 @@ export class BrowserAudioCapture {
         await navigator.mediaDevices.getDisplayMedia({video:true,audio:true,systemAudio:"include",surfaceSwitching:"include"});
       if(generation!==this.generation) {stream.getTracks().forEach(t=>t.stop());return;}
       this.stream=stream;
+      this.sourceLabel = stream.getVideoTracks?.()[0]?.label || stream.getAudioTracks()[0]?.label || (source === "microphone" ? "microphone" : "shared audio");
       if(!this.stream.getAudioTracks().length) throw new Error("No audio was shared. Choose a browser tab and enable Share tab audio, or use the microphone.");
       this.context=new AudioContext(); await this.context.audioWorklet.addModule(this.workletUrl);
       if(generation!==this.generation) return;

@@ -1,0 +1,165 @@
+{
+  "protocol": "Fixed RAVDESS test from the committed multi-corpus inventory; no fitting or selection in this command",
+  "test_exposure": "Previously exposed in 2026-10-14 research; repeated evaluation is not a fresh blind benchmark",
+  "speakers": [
+    "ravdess-03",
+    "ravdess-08",
+    "ravdess-11",
+    "ravdess-17",
+    "ravdess-18",
+    "ravdess-22"
+  ],
+  "clips": 264,
+  "model_sha256": "9153731dc0eb1253b43001b635c735b415f1f09eaa4292875c6d7e7ea6439b01",
+  "feature_version": "wavlm-layer-mean-std-v1",
+  "inventory_sha256": "7c97b8b8ba39e4f6125aac9de212d1e453d7785205f16e7f335859114e29851d",
+  "accuracy": 0.5113636363636364,
+  "macro_f1": 0.3993784248710357,
+  "per_class": {
+    "angry": {
+      "precision": 0.35036496350364965,
+      "recall": 1.0,
+      "f1-score": 0.518918918918919,
+      "support": 48.0
+    },
+    "disgust": {
+      "precision": 1.0,
+      "recall": 0.3125,
+      "f1-score": 0.47619047619047616,
+      "support": 48.0
+    },
+    "fear": {
+      "precision": 0.5972222222222222,
+      "recall": 0.8958333333333334,
+      "f1-score": 0.7166666666666667,
+      "support": 48.0
+    },
+    "happy": {
+      "precision": 0.717948717948718,
+      "recall": 0.5833333333333334,
+      "f1-score": 0.6436781609195402,
+      "support": 48.0
+    },
+    "neutral": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 24.0
+    },
+    "sad": {
+      "precision": 1.0,
+      "recall": 0.020833333333333332,
+      "f1-score": 0.04081632653061224,
+      "support": 48.0
+    },
+    "accuracy": 0.5113636363636364,
+    "macro avg": {
+      "precision": 0.6109226506124317,
+      "recall": 0.46875000000000006,
+      "f1-score": 0.3993784248710357,
+      "support": 264.0
+    },
+    "weighted avg": {
+      "precision": 0.66646107339538,
+      "recall": 0.5113636363636364,
+      "f1-score": 0.43568555440476614,
+      "support": 264.0
+    }
+  },
+  "confusion_labels": [
+    "angry",
+    "disgust",
+    "fear",
+    "happy",
+    "neutral",
+    "sad",
+    "uncertain"
+  ],
+  "confusion_matrix": [
+    [
+      48,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      31,
+      15,
+      2,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      3,
+      0,
+      43,
+      2,
+      0,
+      0,
+      0
+    ],
+    [
+      15,
+      0,
+      5,
+      28,
+      0,
+      0,
+      0
+    ],
+    [
+      23,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+    ],
+    [
+      17,
+      0,
+      22,
+      8,
+      0,
+      1,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  ],
+  "accepted_coverage": 0.696969696969697,
+  "accepted_accuracy": 0.6141304347826086,
+  "latency_seconds": {
+    "model_object_load": 1.2760863390003578,
+    "first_prediction": 6.804670217999956,
+    "p50": 0.4436980069999663,
+    "p95": 0.5532717264498842
+  },
+  "observed_peak_rss_bytes": 2910945280,
+  "environment": {
+    "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+    "python": "3.12.14",
+    "logical_cpus": 5,
+    "cpu_affinity_count": 5,
+    "inference_device": "cpu"
+  },
+  "dataset_license": "RAVDESS CC-BY-NC-SA-4.0; Livingstone and Russo (2018), doi:10.1371/journal.pone.0196391",
+  "limitations": [
+    "Acted English speech; Indian voices and natural conversation are not established.",
+    "Corpus actor IDs are disjoint; independent human identity matching across corpora is unavailable.",
+    "Predictions describe vocal expression and do not establish feelings, intent or health."
+  ]
+}

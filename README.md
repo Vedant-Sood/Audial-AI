@@ -1,118 +1,122 @@
-# AccessibilityAI 0.4.1
+# Audial-AI 0.5.0
 
-A Windows desktop workspace for local captions, Indian Sign Language (ISL) phrase
-playback, and optional voice emotion estimates with customizable colors.
+A private Windows workspace for local captions, Indian Sign Language (ISL),
+objective voice measurements and optional vocal-expression estimates. Processing
+uses your computer; no paid inference API is required. Microphone, camera and tab
+capture start only when you choose them.
 
-## Windows desktop ZIP
+## Windows installation
 
-Use the native Windows ZIP from the
-[GitHub release](https://github.com/Vedant-Sood/Audial-AI/releases/tag/v0.4.1).
-Release publication is gated on Windows regression, source startup, native build
-and packaged-executable startup checks.
-The alternative portable Python ZIP is integrity-checked but was not separately
-executed on Windows. See the [validation report](docs/validation-0.3.1.json).
+The normal distribution is a per-user **Setup.exe**, with separate **CPU** and
+**NVIDIA** runtimes. The NVIDIA build includes CUDA 12.6 libraries for compatible
+NVIDIA drivers and falls back to CPU when the GPU is unavailable. Use it for an
+RTX 4060 Laptop GPU; actual performance on that laptop has not been established.
+End users do not install Python, Git, Node or build tools.
 
-1. Extract the **entire Windows x64 ZIP** to a writable folder.
-2. In the native ZIP, double-click **AccessibilityAI.exe**. In the alternative
-   portable ZIP, use **Start AccessibilityAI.bat**. Python and native dependencies
-   are included; a separate Python installation or `setup.bat` is unnecessary.
-3. Open **Advanced tools → Models** and install **Whisper tiny** once for captions.
-   After downloading, transcription runs locally. ISL playback uses included assets.
-4. Open **Conversation**, choose Microphone or Computer / app audio, and click
-   **Start listening**. **ISL with captions** is enabled by default for all audio
-   sources. Nothing records automatically when the app launches.
-5. In **Settings**, enable optional voice emotion estimates, choose an emotion
-   color pool, and save. Stop active capture before saving desktop settings.
-6. For the new model, install **WavLM voice emotion (CREMA-D)** in **Advanced
-   tools → Models**. This downloads its verified ~1.3 GB encoder once and selects
-   the trained classifier for the next session. It needs about 2.7 GB disk space;
-   subsequent inference runs locally. The original small baseline stays available.
+Download only a successfully validated `Audial-AI-Windows-x64-*-Setup` artifact
+from [Windows Actions](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml)
+or a published [release](https://github.com/Vedant-Sood/Audial-AI/releases).
+**0.5.0 Windows build and installer acceptance are pending.** A source checkout
+or a successful Linux test is not a Windows installer. See the
+[current validation report](docs/validation-0.5.0.md) before choosing a build.
+The older 0.4.1 ZIP release does not contain these changes.
 
-For a source checkout, install Python 3.11/3.12 x64, run `setup.bat --cpu`, then
-`run.bat`. `run_browser.bat` opens the local browser companion. The Windows
-portable ZIP and source ZIP are different packages; do not mix their launchers.
+1. Check the adjacent `.sha256` with `Get-FileHash`, then run Setup.exe.
+   The installer is **unsigned**. Signing status is recorded by acceptance checks.
+2. Choose the optional desktop shortcut. Start menu access and uninstall are
+   included. Administrator rights are not required for the default location.
+3. First launch opens **Setup & models** and starts the full model catalogue.
+   Allow about 3.6 GB of downloads and 6 GB free for models and safe staging.
+   Pause/retry/resume reuses verified files and partial downloads.
+4. Gated Community-1 requires accepting its upstream terms and saving a read
+   token through **Save access token**. Windows Credential Manager stores the
+   token. Missing access or Windows speech voices remain **Needs action**.
+5. Open **Conversation**, select the input and click **Start listening**; or open
+   a local recording. Optional vocal-expression estimates are enabled in Settings.
 
-[User guide](docs/user_guide.md) · [Development](CONTRIBUTING.md) ·
-[Architecture](docs/architecture.md) · [Validation](docs/validation-0.4.1.json)
+Models, settings, sessions and logs use `%LOCALAPPDATA%\AccessibilityAI`, retained
+for compatibility with earlier versions. Upgrades and reinstall preserve them.
+Uninstall keeps data by default and asks explicitly before deleting it.
 
-## What changed
+## Real browser tabs
 
-- Everyday navigation stays visible; model tools, training and diagnostics are
-  grouped under **Advanced tools**.
-- Readable audio-source and language choices replace technical input codes.
-- **Voice & emotion** shows a text label, your chosen color, confidence and
-  uncertainty. All six emotion colors and the uncertain color persist locally.
-- **ISL is the fixed default for every supported input**, independently of the
-  speech language. Text, clipboard, page selection, documents, subtitles and
-  completed speech captions use one shared local vocabulary and playback plan.
-- TXT, Markdown, CSV, HTML, DOCX, text PDFs, SRT/VTT and transcript JSON are
-  supported. Included Hindi aliases match their English phrases. Scanned PDFs
-  need OCR text; arbitrary image/binary files are not interpreted as speech.
-- Known signs and explicit text fallbacks play in input order. Unknown words and
-  symbols are retained. Long plans no longer stop at 12/30/100 signs. The same
-  explicit limits apply across text inputs: 20,000 characters and 2 MB documents.
-- Added ISL packs extend the bundled vocabulary for desktop and browser together.
-  Silent dictionary videos can show the original signer in every native display;
-  invalid media becomes readable text and subsequent signs continue.
-- Audio/video file input can decode WAV, FLAC, OGG, MP3, M4A, MP4, WebM and MKV
-  locally using SoundFile/PyAV. Existing caption processing is retained.
-- A portable Windows packager verifies the official Python checksum and wheel
-  RECORD hashes. A Windows GitHub Actions workflow builds a native executable ZIP.
-- An Indian voice training command provides speaker-disjoint selection,
-  calibration and held-out evaluation, plus explicit local model activation.
+The desktop starts a loopback companion automatically. A normal webpage cannot
+enumerate unrelated browser tabs. Audial-AI uses a Manifest V3 Chrome/Edge
+extension with native messaging, real tab IDs and browser-granted capture.
 
-## Model coverage and accuracy
+The installer provides a `browser-extension` folder and registers the native
+bridge for your Windows account. Load that folder using **Load unpacked** in
+`chrome://extensions` or `edge://extensions`, then pin Audial-AI. No Store-signed
+extension is published yet. Managed browsers may prohibit developer extensions;
+manual **Share tab / app audio** remains available through the supported picker.
 
-The new WavLM-Large ensemble reaches **80.8% overall accuracy** on 814 clips from
-ten held-out CREMA-D actors, compared with **51.6%** for the original calibrated
-baseline. Confidence-accepted predictions reach **88.8% accuracy at 81.9% coverage**;
-remaining predictions display **uncertain**. Macro F1 is **81.2%**. The 85–90%
-target across every clip remains unmet. These measurements use acted English
-speech with six actor-directed labels. Indian voices and natural conversations
-have not been validated. Emotion estimates remain disabled until enabled.
+Open the desired regular web tab, invoke Audial-AI in its toolbar (Ctrl+Shift+Y),
+and click **Capture this tab**. The LIVE badge identifies capture. To change
+sources, open the other tab and invoke its toolbar action again. **Stop** releases
+tracks and audio resources. The popup lists tabs across windows; the companion
+can focus a chosen tab but cannot grant capture permission on your behalf.
+Restricted pages explain their limitation. Microphone capture is always explicit.
 
-The bundled ISL vocabulary has **four phrases**: good evening, good night,
-pleased, and thank you. Native playback and licensed vocabulary import work;
-arbitrary sentence translation, full ISL grammar and detailed facial expression
-are not implemented. Text fallback preserves content but is not sign translation.
+## Responsiveness and notifications
 
-See [Indian voice training](docs/indian_voice_training.md),
-[model cards](docs/model_cards.md), and [limitations](docs/limitations.md).
+- Intentional keyboard focus replaces duplicate native dotted button outlines;
+  pointer, pressed, selected and disabled states use consistent styling.
+- Routine warnings appear as nonmodal pop-ups. Failures stay visible with
+  recovery actions and a bounded, persistent diagnostic history.
+- Device enumeration, model downloads and inference run outside the GUI thread.
+  A single bounded worker owns the expression model; captions do not wait for it.
+- Desktop and browser display at most 500 caption rows. Complete session exports
+  retain every completed caption. Audio and expression queues have backpressure.
 
-The [voice emotion accuracy work](docs/voice_emotion_training.md) trained and
-compared 97 classifiers with WavLM-Large features on the full verified corpus.
-It includes separate selection, calibration and test stages, actor-level
-uncertainty intervals, and verified activation of larger pretrained models.
+## Measured model and feature scope
 
-## Verification and release
+The released WavLM classifier remains the selected model for automatic setup;
+existing explicit user selections are preserved. No new learned checkpoint is
+promoted. On the repeated, actor-disjoint RAVDESS transfer test (264 recordings,
+6 actors), the acoustic baseline scored **18.2% accuracy / 5.1% macro-F1**;
+WavLM scored **51.1% / 39.9%**. WavLM median CPU inference was **444 ms** with
+**2.91 GB** observed peak process memory in this Linux environment. This test was
+exposed in earlier research and is not a fresh blind benchmark. See the
+[protocol, per-class results and confusion matrices](docs/voice_emotion-0.5.0.md).
 
-Run `python -m pytest -q`, `npm test`, and `python -m app.main --smoke-test`.
-On headless Linux, use `QT_QPA_PLATFORM=offscreen`. Startup checks exercise native
-UI, bundled ISL playback and silence abstention without recording devices.
-Current-run results are in `docs/validation-0.4.1.json`; original benchmark and
-training records are historical and are not presented as measurements of this
-release or your Windows laptop.
+Historical CREMA-D test results are 51.6% baseline versus 80.8% WavLM accuracy;
+they are a different corpus and must not be combined with this comparison.
+The missing unpublished October 14 archive reports an unpromoted research result
+of 83.7%; its weights and source have not been recovered here. See
+[source recovery](docs/source_recovery-0.5.0.md).
 
-The portable package includes Windows binaries assembled on Linux. Compatibility
-checks, Windows CI, and real Windows device tests are distinct validation stages;
-consult the current report for completed stages. The Windows build workflow
-publishes native executable ZIPs only after its Windows checks pass.
+Estimates describe uncertain vocal expression, not feelings, intent or health.
+Acted English results do not establish Indian-language or natural-conversation
+accuracy. Objective pitch and recorded level remain available independently.
+ISL has four bundled phrases; unknown content remains readable text. This is not
+arbitrary sentence translation or a complete ISL grammar. Licensed vocabulary
+imports and the original document/text/audio input features remain available.
 
-Source packaging: `python -m scripts.package_project --output AccessibilityAI-source.zip`.
-Portable packaging: `python -m scripts.package_windows_portable --output AccessibilityAI-Windows.zip --cache build-cache`.
-Run portable packaging with its cache/output **outside the source checkout**.
-Native executable packaging on Windows: `build_windows.bat`.
+## Development and validation
 
-## Data and licenses
+Use Python 3.11/3.12 x64 and `setup.bat --cpu` / `run.bat` on Windows. Source-only
+Linux development uses `requirements-cloud.lock` with matching CPU Torch 2.8.0.
 
-Inference is local; model/dataset downloads require Internet access. No new Indian
-voice dataset or model is bundled. Raw training corpora and user recordings are
-excluded from release archives. The source import was checked against all 176
-uploaded manifest hashes; provenance is in `docs/source_import.json`. The original
-0.2 README is preserved in `docs/archive/README-0.2.md`.
+```text
+python -m pytest -q
+npm test
+python -m app.main --smoke-test
+python -m app.main --setup-models
+python -m app.main --verify-inference
+```
 
-Application code retains the included MIT licenses. Models, derived signs,
-evaluation speech, Python and dependency binaries retain their own licenses;
-preserve [LICENSE_NOTICES.md](LICENSE_NOTICES.md) and the runtime license files.
+The last command runs real local ASR, expression and prosody on the bundled
+licensed speech excerpt with all socket connections blocked. It requires model
+setup to be complete. Headless Linux UI checks use `QT_QPA_PLATFORM=offscreen`.
 
-See [ISL input behavior and vocabulary format](docs/isl.md) for the exact scope.
+Windows build machines also need Inno Setup 6 and the build dependencies.
+`scripts/build_windows.ps1 -Runtime CPU` builds native executables, Setup.exe,
+checksums and a dependency/source manifest. The Actions workflow tests fresh
+install, native first launch, automatic models, offline inference, upgrade,
+reinstall, uninstall/data preservation, and actual extension/native PCM capture.
+Publication is gated on these checks. An upgrade fixture uses the same payload
+with a newer installer revision; historical-binary upgrade remains separate.
+
+[User guide](docs/user_guide.md) · [Troubleshooting](docs/troubleshooting.md) ·
+[Architecture](docs/architecture.md) · [Model cards](docs/model_cards.md) ·
+[Validation](docs/validation-0.5.0.md) · [Licenses](LICENSE_NOTICES.md)

@@ -14,18 +14,22 @@ from app.models.manager import ModelManager
 from app.utils.config import PRESETS
 
 
-def choose_device(requested):
+def choose_device(requested, warning=None):
     import torch
     if requested == "cuda" and not torch.cuda.is_available():
+        if warning is not None:
+            warning("The selected NVIDIA GPU is unavailable. Using CPU for this session; check your driver and GPU runtime in Diagnostics.")
+            return "cpu"
         raise RuntimeError("CUDA was selected but PyTorch cannot use it. Choose CPU or run setup.bat again.")
     return "cuda" if requested in {"auto", "cuda"} and torch.cuda.is_available() else "cpu"
 
 
 class AudioEngine:
-    def __init__(self, settings, manager=None):
+    def __init__(self, settings, manager=None, queue_events=True):
         self.settings = settings
         self.manager = manager or ModelManager()
         self.events = queue.Queue(maxsize=300)
+        self.queue_events = queue_events
         self.jobs = queue.Queue(maxsize=8)
         self.stop_requested = threading.Event()
         self.paused = threading.Event()
@@ -40,6 +44,9 @@ class AudioEngine:
         self.source = "microphone"
         self.observers = []
         self.emotion_model = None
+        self.expression_worker = None
+        self.asr_thread = None
+        self.last_expression_timestamp = None
 
     def subscribe(self, callback):
         self.observers.append(callback)
@@ -51,6 +58,8 @@ class AudioEngine:
                 observer(kind, data)
             except Exception:
                 pass
+        if not self.queue_events:
+            return
         try:
             self.events.put_nowait((kind, data))
         except queue.Full:
@@ -87,7 +96,7 @@ class AudioEngine:
             os.environ["TRANSFORMERS_OFFLINE"] = "1"
             self.emit("status", "Loading local models…")
             preset = PRESETS[self.settings.preset]
-            device = choose_device(self.settings.device)
+            device = choose_device(self.settings.device, lambda message: self.emit("warning", message))
             self.asr = self.diarizer = self.prosody_model = self.emotion_model = None
             caption_ready = self.manager.installed(preset["asr"])
             if self._mode == "tone" and self.settings.auto_sign and not caption_ready:
@@ -117,12 +126,24 @@ class AudioEngine:
                 self.prosody_model = LocalClassifier(self.manager.path("prosody-local") / "best.pt", "prosody")
             if self.settings.prosody_classifier:
                 from app.inference.emotion import VoiceEmotion
-                self.emotion_model = VoiceEmotion()
+                from app.inference.expression import ExpressionWorker
+                try:
+                    self.emotion_model = VoiceEmotion()
+                    self.expression_worker = ExpressionWorker(self.emotion_model, self.emit)
+                    self.threads.append(self.expression_worker.thread)
+                    self.last_expression_timestamp = None
+                    self.emit("emotion", {"timestamp": 0, "estimate": {"tone": "uncertain", "confidence": None, "reason": "preparing_local_model"}})
+                except Exception as error:
+                    self.emotion_model = None
+                    self.emit("warning", "The optional vocal-expression model could not load: " + str(error) + ". Captions and objective prosody remain available.")
+            else:
+                self.emit("emotion", {"timestamp": 0, "estimate": None})
             if self.stop_requested.is_set() and (self.capture is None or self.capture.queue.empty()):
                 self.running = False
                 self.emit("status", "Idle")
                 return
             infer = threading.Thread(target=self._infer, daemon=True)
+            self.asr_thread = infer
             self.threads.append(infer)
             infer.start()
             if file_path:
@@ -140,9 +161,15 @@ class AudioEngine:
                 self.capture.stop()
                 self.capture = None
             # Drain final chunks in order before signaling completion.
-            if len(self.threads) > 1 and self.threads[-1].is_alive():
+            if self.asr_thread is not None and self.asr_thread.is_alive():
                 self.jobs.put(None)
-                self.threads[-1].join()
+                self.asr_thread.join()
+            if self.expression_worker is not None:
+                self.expression_worker.close(drain=bool(file_path) and not self.stop_requested.is_set())
+                self.expression_worker = None
+            self.emotion_model = None
+            self.asr = self.diarizer = self.prosody_model = None
+            self.asr_thread = None
             self.running = False
             self.emit("status", "Idle")
 
@@ -242,8 +269,9 @@ class AudioEngine:
             features["rate_source"] = "Finalized ASR words over a rolling window including pauses"
         if self.prosody_model:
             features["classification"] = self.prosody_model.predict(mfcc_features(audio))
-        if self.emotion_model:
-            features["emotion"] = self.emotion_model.predict(audio)
+        if self.expression_worker and (self.last_expression_timestamp is None or timestamp - self.last_expression_timestamp >= 1):
+            self.expression_worker.submit_display(audio, timestamp)
+            self.last_expression_timestamp = timestamp
         self.emit("prosody", features)
 
     def _infer(self):
@@ -266,10 +294,9 @@ class AudioEngine:
                     if end - start >= 1600 and not caption.overlap:
                         voice = prosody(audio[start:end])
                         caption.voice = {k: voice[k] for k in ["f0_hz", "dbfs", "pitch_confidence"]}
-                        if self.emotion_model:
-                            estimate = self.emotion_model.predict(audio[start:end])
-                            caption.voice.update(tone=estimate["tone"], tone_confidence=estimate.get("confidence"))
                     self.emit("caption", caption)
+                    if self.expression_worker and not caption.overlap:
+                        self.expression_worker.submit_caption(audio[start:end], caption)
                 with self.state_lock:
                     if words:
                         self.rate_words.append((words[0].start, words[-1].end, len(words)))

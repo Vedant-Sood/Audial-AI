@@ -1,5 +1,12 @@
 """Desktop entry point; report startup failures even without a console window."""
 if __name__ == "__main__":
+    import sys
+    if any(argument.startswith("chrome-extension://") for argument in sys.argv[1:]):
+        # Chrome and Edge pass the caller origin to the registered console worker.
+        # Native messaging must reserve stdout for its length-framed protocol.
+        from app.services.native_host import main
+        main()
+        sys.exit(0)
     try:
         from app.main import main
         main()

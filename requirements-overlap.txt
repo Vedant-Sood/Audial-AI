@@ -1,3 +1,5 @@
 # Optional Community-1 backend. Gated model terms must be accepted upstream.
-# This adapter is not part of the validated default configuration.
-pyannote.audio>=4.0,<5
+# Windows uses preloaded waveform dictionaries; no external FFmpeg is required
+# by Audial-AI's adapter. TorchCodec's optional file decoder is not used.
+pyannote.audio==4.0.1
+torchcodec==0.7.0; sys_platform == "win32"

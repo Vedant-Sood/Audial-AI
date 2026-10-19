@@ -7,6 +7,7 @@ The previous model remains on disk; --bundled selects the original baseline.
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import shutil
 
@@ -35,7 +36,10 @@ def activate(folder, download_encoder=False):
             if file_sha256(encoder) != encoder_sha:
                 raise ValueError("Encoder checksum differs from its training report.")
             if not destination.exists():
-                shutil.copyfile(encoder, destination)
+                try:
+                    os.link(encoder, destination)
+                except OSError:
+                    shutil.copyfile(encoder, destination)
         elif not destination.exists() and download_encoder:
             from urllib.request import urlopen
             temporary = destination.with_suffix(".download")

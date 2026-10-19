@@ -2,12 +2,18 @@ import { LightBox } from "./light-box.js";
 import { BrowserAudioCapture, openFloatingPanel } from "./capture.js";
 import { displayEmotion } from "./emotion.js";
 import { ISLPlayback } from "./isl-playback.js";
+import { TranscriptView } from "./transcript.js";
+import { BrowserNotices } from "./notifications.js";
 
 const elements=new Map([...document.querySelectorAll("[id]")].map(element=>[element.id,element]));
-const $=id=>elements.get(id), showError=text=>{$("error").textContent=text;};
+const $=id=>elements.get(id);
+const notices = new BrowserNotices($("error"), $("notification-history"));
+const showError = (text, severity = "error") => notices.publish(text, severity);
+const transcript = new TranscriptView($("transcript"));
 const lights=new LightBox($("lights"),{reducedMotion:matchMedia("(prefers-reduced-motion: reduce)").matches,onLabel:label=>{$("sign-status").textContent=label;}});
 $("reduced-motion").checked=lights.reducedMotion;
 let active=false,starting=false,stopping=false,paused=false,sending=false,cursor=0,generation=0,sessionId=null;
+let extensionActive = false;
 let emotionColors = null, lastEmotion = null, defaultColors = null;
 
 function applyEmotionColors() {
@@ -88,11 +94,11 @@ video.addEventListener("error", () => {
   showError("This ISL clip could not play. Its original text remains visible.");
 });
 async function request(path,data){
-  const response=await fetch(path,{method:data===undefined?"GET":"POST",headers:data===undefined?{}:{"Content-Type":"application/json"},body:data===undefined?undefined:JSON.stringify(data)});
+  const response=await fetch(path,{method:data===undefined?"GET":"POST",headers:data===undefined?{}:{"Content-Type":"application/json"},body:data===undefined?undefined:JSON.stringify(data),signal:AbortSignal.timeout(8000)});
   const result=await response.json();if(!response.ok)throw new Error(result.error??"The local request failed.");return result;
 }
 function setButtons(){
-  $("share").disabled=active||starting||stopping;$("microphone").disabled=active||starting||stopping;$("stop").disabled=stopping||!(active||starting);$("pause-audio").disabled=!active||stopping;
+  $("share").disabled=active||starting||stopping||extensionActive;$("microphone").disabled=active||starting||stopping||extensionActive;$("stop").disabled=stopping||!(active||starting);$("pause-audio").disabled=!active||stopping;
   $("pause-audio").textContent=paused?"Resume audio":"Pause audio";
 }
 const capture=new BrowserAudioCapture({onChunk:async chunk=>{
@@ -119,7 +125,7 @@ async function start(source){
     const result=await request("/api/start",{mode:"combined"});
     if(attempt!==generation){await request("/api/stop",{session_id:result.session_id});return;}
     active=true;starting=false;paused=false;sending=false;manualDisplay=false;sessionId=result.session_id;cursor=result.cursor;
-    $("transcript").replaceChildren();$("capture-status").textContent="Listening to the audio you selected. Loading local captions…";
+    transcript.clear();$("capture-status").textContent="Listening to " + (capture.sourceLabel || "the audio you selected") + ". Loading local captions…";
     setButtons();
   }catch(error){if(attempt===generation){starting=false;await capture.stop();setButtons();showError(error.message);}}
 }
@@ -134,9 +140,7 @@ async function stop({flush=true}={}){
 }
 function appendCaption(caption){
   if(!manualDisplay||active)$("caption").textContent=caption.text;
-  const item=document.createElement("li"),header=document.createElement("span"),text=document.createElement("p");
-  header.className="hint";header.textContent=`${caption.speaker} · ${caption.start.toFixed(2)}–${caption.end.toFixed(2)}s${caption.overlap?" · overlapping voices":""}`;
-  text.textContent=caption.text;item.append(header,text);$("transcript").append(item);if(!manualDisplay)item.scrollIntoView({block:"nearest"});
+  transcript.append(caption);
   if($("auto-sign").checked&&(!manualDisplay||active)){
     const current=signGeneration;
     signLookups=signLookups.then(()=>loadSigns(caption.text,true,current)).catch(error=>showError(error.message));
@@ -157,11 +161,13 @@ async function loadSigns(text,append=false,current=signGeneration){
   if(current!==signGeneration || (append && !$("auto-sign").checked))return;
   displayPlan(result, append);
 }
+let pollDelay = 300;
 async function poll(){
   try{
     const current=generation,result=await request("/api/events?after="+cursor);
     if(current!==generation){setTimeout(poll,300);return;}
     cursor=result.cursor;
+    pollDelay = 300;
     if(result.gap)showError("Some display updates were missed. Export the complete transcript to recover all completed captions.");
     for(const event of result.events){
       const data=event.data;
@@ -169,13 +175,17 @@ async function poll(){
       else if(event.kind==="partial")$("partial").textContent=data?"Live draft: "+data:"";
       else if(event.kind==="prosody"){
         $("level").textContent=`${data.dbfs.toFixed(1)} dBFS`;$("pitch").textContent=data.f0_hz===null?"Unvoiced":`${Math.round(data.f0_hz)} Hz`;
-        lastEmotion = data.emotion ?? null;
-        $("tone").textContent = lastEmotion ? lastEmotion.tone : "Off";
+        if (Object.hasOwn(data, "emotion")) lastEmotion = data.emotion;
+        if (!lastEmotion) $("tone").textContent = "Off";
         applyEmotionColors();
+      }else if(event.kind==="emotion"){
+        lastEmotion = data.estimate;
+        if (lastEmotion) applyEmotionColors();
+        else {$("tone").textContent = "Off"; $("tone").style.background = "transparent"; $("tone").style.color = "";}
       }else if(event.kind==="status"){
         $("capture-status").textContent=data;
         if(data==="Idle"&&active)await stop({flush:false});
-      }else if(event.kind==="warning"||event.kind==="error")showError(data);
+      }else if(event.kind==="warning"||event.kind==="error")showError(data,event.kind);
       else if(event.kind==="isl_settings") {
         $("auto-sign").checked = data.auto_sign;
         if (!data.auto_sign) signPlayback.stopCaptions();
@@ -183,9 +193,48 @@ async function poll(){
         signGeneration++; signPlayback.stop(); $("unknown").textContent = `ISL vocabulary updated: ${data.entries} loaded signs.`;
       }
     }
-  }catch(error){showError("Local companion unavailable: "+error.message);}
-  setTimeout(poll,300);
+  }catch(error){
+    showError("Local companion unavailable: "+error.message);
+    pollDelay = Math.min(5000, pollDelay * 2);
+    if (active || starting) await stop({flush:false});
+  }
+  setTimeout(poll,pollDelay);
 }
+let tabListSignature = "";
+async function refreshBrowserTabs() {
+  try {
+    const result = await request("/api/tabs");
+    extensionActive = Boolean(result.capture);
+    const profiles = result.profiles.filter(profile => profile.connected);
+    const signature = JSON.stringify(profiles);
+    if (signature !== tabListSignature) {
+      tabListSignature = signature;
+      const selected = $("browser-tabs").value;
+      $("browser-tabs").replaceChildren();
+      for (const profile of profiles) for (const tab of profile.tabs) {
+        const option = document.createElement("option");
+        option.value = JSON.stringify([profile.id, tab.id]); option.disabled = !tab.supported;
+        option.textContent = `${profile.browser} · Window ${tab.window_id} · ${tab.title}${tab.audible ? " · audio" : ""}${tab.discarded ? " · suspended" : ""}`;
+        option.title = tab.reason; $("browser-tabs").append(option);
+      }
+      if ([...$("browser-tabs").options].some(option => option.value === selected)) $("browser-tabs").value = selected;
+    }
+    $("tabs-status").textContent = result.capture ? "LIVE · " + result.capture.title + ". Use its browser extension to switch or stop capture."
+      : profiles.length ? "Real tabs from connected extensions. Open a tab, then invoke Audial-AI in its toolbar to grant capture access."
+      : "Connect the Audial-AI extension in Chrome or Edge to discover tabs. Manual Share tab audio remains available through the browser's source picker.";
+    $("focus-browser-tab").disabled = !$("browser-tabs").value;
+    setButtons();
+  } catch (error) {$("tabs-status").textContent = "Browser discovery disconnected. Start the desktop companion and reconnect the extension.";}
+  setTimeout(refreshBrowserTabs, 3000);
+}
+$("focus-browser-tab").addEventListener("click", async () => {
+  try {
+    const [profile, tab_id] = JSON.parse($("browser-tabs").value);
+    const result = await request("/api/browser-command", {profile, tab_id});
+    $("tabs-status").textContent = result.message;
+  } catch (error) {showError(error.message);}
+});
+refreshBrowserTabs();
 $("share").addEventListener("click",()=>start("shared"));$("microphone").addEventListener("click",()=>start("microphone"));
 $("stop").addEventListener("click",()=>stop());
 $("pause-audio").addEventListener("click",async()=>{try{await request("/api/pause",{paused:!paused,session_id:sessionId});paused=!paused;setButtons();}catch(error){showError(error.message);}});

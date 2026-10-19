@@ -61,6 +61,7 @@ class EmotionModel:
         if details["clipped_fraction"] > 0.05:
             accepted = False
         return {"tone": self.bundle["classes"][int(probabilities.argmax())] if accepted else "uncertain",
+                "top_class": self.bundle["classes"][int(probabilities.argmax())],
                 "reason": None if accepted else "clipped_audio" if details["clipped_fraction"] > 0.05 else "low_confidence",
                 "confidence": round(confidence, 4),
                 "probabilities": {k: round(float(v), 4) for k, v in zip(self.bundle["classes"], probabilities)},

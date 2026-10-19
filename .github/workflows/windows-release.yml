@@ -1,112 +1,121 @@
-name: Windows desktop validation and release
+name: Windows installers and acceptance
 on:
   push:
-    branches: [main]
+    branches: [main, 'codex/audial-desktop-upgrade']
     tags: ['v*']
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   windows:
-    runs-on: windows-latest
-    timeout-minutes: 60
+    runs-on: windows-2022
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [CPU, NVIDIA]
     env:
       QT_QPA_PLATFORM: offscreen
       ACCESSIBILITY_AI_HOME: ${{ github.workspace }}\ci-state
       HF_HUB_DISABLE_TELEMETRY: '1'
+      HF_HUB_DISABLE_XET: '1'
+      PYANNOTE_METRICS_ENABLED: '0'
+      DO_NOT_TRACK: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: pip
-          cache-dependency-path: requirements*.txt
-      - name: Install CPU dependencies
+          python-version: '3.12.14'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install compatible native runtime
         shell: pwsh
         run: |
-          python -m pip install torch==2.8.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cpu
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -m pip install -r requirements.txt -r requirements-build.txt
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Run Windows regression and startup checks
+          $index = if ('${{ matrix.runtime }}' -eq 'NVIDIA') { 'cu126' } else { 'cpu' }
+          python -m pip install torch==2.8.0 torchaudio==2.8.0 --index-url "https://download.pytorch.org/whl/$index"
+          if ($LASTEXITCODE -ne 0) { throw 'PyTorch runtime installation failed' }
+          python -m pip install -r requirements.txt -r requirements-overlap.txt -r requirements-build.txt -r requirements-dev.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Application dependencies failed' }
+          python -m pip check
+          if ($LASTEXITCODE -ne 0) { throw 'Dependency conflict' }
+          python -m pip freeze | Set-Content windows-resolved-dependencies.txt
+          python -m pip cache purge
+          python -c "from pyannote.audio.core.io import Audio; import torch; x,sr=Audio(sample_rate=16000)({'waveform':torch.zeros(1,16000),'sample_rate':16000}); assert x.shape == (1,16000)"
+          if ($LASTEXITCODE -ne 0) { throw 'Community-1 waveform runtime failed' }
+      - name: Regression and source startup
         shell: pwsh
         run: |
-          python -m pytest -q --junitxml=windows-tests.xml 2>&1 | Tee-Object -FilePath windows-test-output.txt
-          $regression_status = $LASTEXITCODE
-          '## Windows regression tests' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-          '```text' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-          Get-Content windows-test-output.txt | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-          if ($regression_status -ne 0) { exit $regression_status }
-          python -m app.main --smoke-test 2>&1 | Tee-Object -FilePath windows-startup-output.txt
-          $startup_status = $LASTEXITCODE
-          '## Native startup check' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-          '```text' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-          Get-Content windows-startup-output.txt | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-          if ($startup_status -ne 0) { exit $startup_status }
-          node tests/browser.test.js
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Build native executable directory
+          python -m pytest -q --junitxml=windows-tests.xml 2>&1 | Tee-Object windows-tests.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Windows regression failed' }
+          npm test
+          if ($LASTEXITCODE -ne 0) { throw 'Browser regressions failed' }
+          python -m app.main --smoke-test 2>&1 | Tee-Object windows-source-startup.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Source native UI failed' }
+      - name: Build versioned Setup.exe and checksums
         shell: pwsh
         run: |
-          python -m PyInstaller packaging/AccessibilityAI.spec --noconfirm 2>&1 | Tee-Object -FilePath windows-native-build-output.txt
-          $native_build_status = $LASTEXITCODE
-          if ($native_build_status -ne 0) { exit $native_build_status }
-          & .\dist\AccessibilityAI\AccessibilityAIWorker.exe --smoke-test 2>&1 | Tee-Object -FilePath windows-native-startup-output.txt
-          $native_startup_status = $LASTEXITCODE
-          if ($native_startup_status -ne 0) { exit $native_startup_status }
-          & .\dist\AccessibilityAI\AccessibilityAIWorker.exe --install-model emotion-wavlm 2>&1 | Tee-Object -FilePath windows-emotion-install-output.txt
-          $emotion_install_status = $LASTEXITCODE
-          if ($emotion_install_status -ne 0) { exit $emotion_install_status }
-          & .\dist\AccessibilityAI\AccessibilityAIWorker.exe --verify-emotion 2>&1 | Tee-Object -FilePath windows-emotion-inference-output.txt
-          $emotion_inference_status = $LASTEXITCODE
-          if ($emotion_inference_status -ne 0) { exit $emotion_inference_status }
-          Copy-Item README.md, LICENSE, LICENSE_UPLOADED, LICENSE_NOTICES.md -Destination dist\AccessibilityAI
-          Copy-Item docs -Destination dist\AccessibilityAI\docs -Recurse
-          try {
-            Compress-Archive -Path dist\AccessibilityAI -DestinationPath dist\AccessibilityAI-Windows-x64-native.zip -ErrorAction Stop
-          } catch {
-            $_ | Out-File -FilePath windows-native-zip-output.txt -Encoding utf8
-            throw
-          }
+          ./scripts/build_windows.ps1 -Runtime '${{ matrix.runtime }}'
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
+          $version = python -c 'from app import __version__; print(__version__)'
+          # Same payload packaged as a newer revision exercises the installer
+          # upgrade path. It does not validate a historical binary upgrade.
+          ./scripts/build_windows.ps1 -Runtime '${{ matrix.runtime }}' -Version "$version.1" -PayloadDir dist/AccessibilityAI
+          if ($LASTEXITCODE -ne 0) { throw 'Upgrade fixture build failed' }
+      - name: Actual installed Windows acceptance
+        shell: pwsh
+        run: |
+          $version = python -c 'from app import __version__; print(__version__)'
+          ./scripts/verify_windows.ps1 -Installer "dist/installers/Audial-AI-$version-Windows-x64-${{ matrix.runtime }}-Setup.exe" -UpgradeInstaller "dist/installers/Audial-AI-$version.1-Windows-x64-${{ matrix.runtime }}-Setup.exe"
+      - name: Actual extension/native capture in Chrome for Testing
+        if: matrix.runtime == 'CPU'
+        shell: pwsh
+        run: |
+          python -m playwright install chromium
+          if ($LASTEXITCODE -ne 0) { throw 'Chrome for Testing installation failed' }
+          $browser = python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()'
+          python -m scripts.verify_browser --browser "$browser" --native-host dist/AccessibilityAI/AccessibilityAIWorker.exe --output windows-browser-chromium
+          if ($LASTEXITCODE -ne 0) { throw 'Chrome for Testing tab capture failed' }
+      - name: Actual extension/native capture in Microsoft Edge
+        if: matrix.runtime == 'CPU'
+        shell: pwsh
+        run: |
+          $edge = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
+          if (-not (Test-Path $edge)) { throw 'Microsoft Edge is missing from the Windows runner' }
+          python -m scripts.verify_browser --browser "$edge" --native-host dist/AccessibilityAI/AccessibilityAIWorker.exe --output windows-browser-edge
+          if ($LASTEXITCODE -ne 0) { throw 'Microsoft Edge tab capture failed' }
+      - name: Stage only accepted installers
+        shell: pwsh
+        run: |
+          $version = python -c 'from app import __version__; print(__version__)'
+          New-Item -ItemType Directory -Force dist/accepted | Out-Null
+          Copy-Item "dist/installers/Audial-AI-$version-Windows-x64-${{ matrix.runtime }}-Setup.exe*" dist/accepted
+          Copy-Item build/build-info.json dist/accepted
       - uses: actions/upload-artifact@v4
         with:
-          name: AccessibilityAI-Windows-x64-native
-          path: |
-            dist/AccessibilityAI-Windows-x64-native.zip
-            windows-tests.xml
+          name: Audial-AI-Windows-x64-${{ matrix.runtime }}-Setup
+          path: dist/accepted/*
           retention-days: 30
-      - name: Report Windows checks
-        if: always()
-        shell: pwsh
-        run: |
-          foreach ($report_file in @('windows-test-output.txt', 'windows-startup-output.txt', 'windows-native-build-output.txt', 'windows-native-startup-output.txt', 'windows-emotion-install-output.txt', 'windows-emotion-inference-output.txt', 'windows-native-zip-output.txt')) {
-            if (Test-Path $report_file) {
-              ('## ' + $report_file) | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-              '```text' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-              Get-Content $report_file | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-              '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-              if ('${{ job.status }}' -ne 'success') {
-                $failure_excerpt = (Get-Content $report_file | Select-Object -Last 20) -join [System.Environment]::NewLine
-                $annotation = $failure_excerpt.Replace('%', '%25').Replace([string][char]13, '%0D').Replace([string][char]10, '%0A')
-                Write-Output ("::error title=Windows validation output::" + $annotation)
-              }
-            }
-          }
+          compression-level: 0
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Windows-validation-results
+          name: Windows-validation-${{ matrix.runtime }}
           path: |
             windows-tests.xml
-            windows-test-output.txt
-            windows-startup-output.txt
-            windows-native-build-output.txt
-            windows-native-startup-output.txt
-            windows-emotion-install-output.txt
-            windows-emotion-inference-output.txt
-            windows-native-zip-output.txt
+            windows-tests.txt
+            windows-source-startup.txt
+            windows-resolved-dependencies.txt
+            windows-acceptance/
+            windows-browser-chromium/
+            windows-browser-edge/
+            build/build-info.json
           retention-days: 14
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -118,12 +127,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: AccessibilityAI-Windows-x64-native
+          pattern: Audial-AI-Windows-x64-*-Setup
           path: release-assets
-      - name: Publish the validated Windows ZIP
+      - name: Publish accepted installers
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          artifact="$(find release-assets -name AccessibilityAI-Windows-x64-native.zip -type f -print -quit)"
-          test -n "$artifact"
-          gh release create "$GITHUB_REF_NAME" "$artifact" --title "AccessibilityAI $GITHUB_REF_NAME" --notes-file docs/release_notes.md
+          mapfile -d '' installers < <(find release-assets -type f \( -name '*-Setup.exe' -o -name '*-Setup.exe.sha256' \) -print0)
+          test "${#installers[@]}" -eq 4
+          gh release create "$GITHUB_REF_NAME" "${installers[@]}" --title "Audial-AI $GITHUB_REF_NAME" --notes-file docs/release_notes.md

@@ -1,0 +1,7 @@
+{
+  "name": "org.audialai.bridge",
+  "description": "Audial-AI local browser audio bridge",
+  "path": "..\\AccessibilityAIWorker.exe",
+  "type": "stdio",
+  "allowed_origins": ["chrome-extension://dojclhfndceededaacaeblikncmihnkb/"]
+}

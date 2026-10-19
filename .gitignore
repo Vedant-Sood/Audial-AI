@@ -13,6 +13,11 @@ datasets/raw/
 .env.*
 ci-state/
 windows-tests.xml
+windows-acceptance/
+windows-browser-*/
+windows-resolved-dependencies.txt
+windows-tests.txt
+windows-source-startup.txt
 models/**/encoder.pth
 models/**/encoder.download
 models/**/selected.joblib

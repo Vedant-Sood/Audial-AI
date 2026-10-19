@@ -66,10 +66,11 @@ export class LightBox {
     this.stop(); if(this.reducedMotion) return;
     const host=this.canvas.ownerDocument?.defaultView??globalThis;this.animationHost=host;
     const frames=this.sequence.frames, start=host.performance.now()-frames[this.frameIndex].timeMs/speed;
+    let drawnFrame = this.frameIndex;
     const tick=now=>{
       const time=(now-start)*speed;
       while(this.frameIndex+1<frames.length&&frames[this.frameIndex+1].timeMs<=time) this.frameIndex++;
-      this.draw(frames[this.frameIndex]);
+      if (drawnFrame !== this.frameIndex) {this.draw(frames[this.frameIndex]); drawnFrame = this.frameIndex;}
       if(this.frameIndex+1<frames.length) this.running=host.requestAnimationFrame(tick); else this.running=0;
     };
     this.running=host.requestAnimationFrame(tick);

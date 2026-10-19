@@ -1,6 +1,8 @@
 from pathlib import Path
 import hashlib
 import json
+import threading
+import numpy as np
 
 from accessibilityai_upgrade.predict import EmotionModel
 from app.utils.paths import project_root, data_root
@@ -8,6 +10,7 @@ from app.utils.paths import project_root, data_root
 
 class VoiceEmotion:
     def __init__(self, path=None):
+        self.lock = threading.Lock()
         selection = data_root() / "emotion_selection.json"
         self.source_name = "Bundled CREMA-D baseline"
         if path is None and selection.exists():
@@ -22,6 +25,10 @@ class VoiceEmotion:
         self.model = EmotionModel(path or project_root() / "models" / "emotion" / "emotion.joblib")
 
     def predict(self, audio):
+        audio = np.asarray(audio)
+        if audio.ndim != 1 or not np.isfinite(audio).all():
+            raise ValueError("Expression estimates require finite mono 16-kHz samples.")
         if not 6400 <= len(audio) <= 480000:
             return {"tone": "uncertain", "confidence": None, "reason": "segment_too_short_or_long"}
-        return self.model.predict_samples(audio)
+        with self.lock:
+            return self.model.predict_samples(audio)

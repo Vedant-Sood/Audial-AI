@@ -3,7 +3,7 @@ from html import escape
 import numpy as np
 from PySide6.QtCore import Qt, QPointF, QRectF
 from PySide6.QtGui import QColor, QPainter, QPen, QPainterPath, QImage, QPixmap
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QListWidget, QListWidgetItem
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QListWidget, QListWidgetItem, QListView
 from app.utils.palette import DEFAULT_EMOTION_COLORS, foreground
 
 
@@ -124,6 +124,8 @@ class TonePanel(QWidget):
         layout.addWidget(self.category)
 
     def set_emotion_colors(self, colors):
+        if self.emotion_colors == colors:
+            return
         self.emotion_colors = colors.copy()
         if self.last_emotion is not None:
             self.show_emotion(self.last_emotion)
@@ -176,6 +178,11 @@ class CaptionPanel(QWidget):
         self.legend.setWordWrap(True)
         layout.addWidget(self.legend)
         self.lines = QListWidget()
+        self.lines.setLayoutMode(QListView.Batched)
+        self.lines.setBatchSize(100)
+        self.visible_limit = 500
+        self._legend_state = None
+        self._caption_items = {}
         self.lines.setWordWrap(True)
         self.lines.setAccessibleName("Completed live transcript")
         self.lines.setMinimumHeight(210)
@@ -188,12 +195,19 @@ class CaptionPanel(QWidget):
 
     def refresh(self, session):
         self.lines.clear()
-        for c in session.captions:
+        self._caption_items.clear()
+        self.lines.setUpdatesEnabled(False)
+        for c in session.captions[-self.visible_limit:]:
             self.append_caption(session, c, scroll=False)
+        self.lines.setUpdatesEnabled(True)
         self.lines.scrollToBottom()
         self.update_legend(session)
 
     def update_legend(self, session):
+        state = tuple((speaker, s["name"], s["color"]) for speaker, s in session.speakers.items())
+        if state == self._legend_state:
+            return
+        self._legend_state = state
         items = []
         for s in session.speakers.values():
             color = QColor(s["color"])
@@ -202,6 +216,32 @@ class CaptionPanel(QWidget):
         self.legend.setText(" &nbsp; | &nbsp; ".join(items) or "No speakers yet")
 
     def append_caption(self, session, caption, scroll=True):
+        item = QListWidgetItem(self.caption_text(session, caption))
+        item.setForeground(QColor(session.speakers[caption.speaker]["color"]))
+        key = (caption.start, caption.end, caption.speaker)
+        item.setData(Qt.UserRole, key)
+        self._caption_items[key] = item
+        follow = getattr(self, "_scroll_pending", False) or self.lines.verticalScrollBar().value() >= self.lines.verticalScrollBar().maximum() - 4
+        self.lines.addItem(item)
+        while self.lines.count() > self.visible_limit:
+            removed = self.lines.takeItem(0)
+            self._caption_items.pop(tuple(removed.data(Qt.UserRole)), None)
+        self.update_legend(session)
+        if scroll and follow and not getattr(self, "_scroll_pending", False):
+            from PySide6.QtCore import QTimer
+            self._scroll_pending = True
+            def scroll_to_end():
+                self._scroll_pending = False
+                self.lines.scrollToBottom()
+            QTimer.singleShot(0, self, scroll_to_end)
+
+    def update_voice(self, session, caption):
+        item = self._caption_items.get((caption.start, caption.end, caption.speaker))
+        if item is not None:
+            item.setText(self.caption_text(session, caption))
+
+    @staticmethod
+    def caption_text(session, caption):
         c = caption
         speaker = session.speakers[c.speaker]
         certainty = "" if c.word_confidence is None else f" · ASR score {c.word_confidence:.0%}"
@@ -210,12 +250,7 @@ class CaptionPanel(QWidget):
             certainty += f" · voice {voice['f0_hz']:.0f} Hz"
         if voice.get("tone"):
             certainty += " · tone " + voice["tone"]
-        item = QListWidgetItem(f"{speaker['name']}  ·  {c.start:07.2f}s{certainty}\n{c.text}")
-        item.setForeground(QColor(speaker["color"]))
-        self.lines.addItem(item)
-        self.update_legend(session)
-        if scroll:
-            self.lines.scrollToBottom()
+        return f"{speaker['name']}  ·  {c.start:07.2f}s{certainty}\n{c.text}"
 
 
 class PoseCanvas(QWidget):

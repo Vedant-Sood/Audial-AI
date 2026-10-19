@@ -1,0 +1,44 @@
+{
+  "environment": {
+    "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+    "python": "3.12.14"
+  },
+  "workload": "5 batches of 500 captions on a visible 760x480 panel; settle layout and paint after each batch",
+  "baseline_commit": "65f6bc0609b4e7dfde31873ed5d18d8ea3e46368",
+  "before": {
+    "batch_seconds": [
+      2.5317079789999752,
+      7.641129568999986,
+      13.414168877000066,
+      18.356491985000048,
+      23.172227737999947
+    ],
+    "rss_bytes": [
+      55508992,
+      56057856,
+      56676352,
+      57282560,
+      57929728
+    ],
+    "rendered_rows": 2500,
+    "retained_captions": 2500
+  },
+  "after": {
+    "batch_seconds": [
+      0.032860251999863976,
+      0.025296382000078665,
+      0.024312798999972074,
+      0.026002073000199744,
+      0.02731006800013347
+    ],
+    "rss_bytes": [
+      55283712,
+      55480320,
+      55652352,
+      55824384,
+      55967744
+    ],
+    "rendered_rows": 500,
+    "retained_captions": 2500
+  }
+}

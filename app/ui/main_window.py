@@ -24,19 +24,26 @@ from app.ui.widgets import button, card, TonePanel, CaptionPanel, PoseCanvas, rg
 from app.ui.sign_lights import SignLightCanvas, FloatingSignWindow
 from app.utils.palette import DEFAULT_EMOTION_COLORS, foreground
 from app.services.text_input import read_text
+from app import __version__
+from app.ui.notifications import Notifications
+from app.ui.style import install_style
+from app.ui.model_setup import ModelSetup
 
 
 class MainWindow(QMainWindow):
     """Native workspace with shared caption/voice workers and explicit capture.
 
-    Everyday modes stay visible; model installation, training and diagnostics
-    are revealed through Advanced tools. Text playback never records audio.
+    Everyday modes and setup stay visible; training and diagnostics are
+    available through Advanced tools. Text playback never records audio.
     """
     TITLES = ["Start", "Captions", "Indian Sign Language", "Voice & emotion", "Conversation",
-              "Models", "Training", "Settings", "Sessions", "Privacy", "Diagnostics", "About"]
+              "Setup & models", "Training", "Settings", "Sessions", "Privacy", "Diagnostics", "About"]
 
-    def __init__(self):
+    def __init__(self, auto_setup=False):
         super().__init__()
+        install_style()
+        self.device_process = None
+        self._closing = False
         try:
             self.settings = Settings.load()
         except ValueError:
@@ -62,11 +69,11 @@ class MainWindow(QMainWindow):
         self.sign_canvases = []
         self.floating_display = None
         self.browser_service = None
-        self.setWindowTitle("ACCESSIBILITY AI")
+        self.setWindowTitle("Audial-AI")
         self.resize(1160, 800)
-        self.setMinimumSize(900, 640)
+        self.setMinimumSize(860, 600)
         self.setWindowIcon(QIcon(str(project_root() / "assets" / "icon.svg")))
-        self.setStyleSheet((project_root() / "assets" / "theme.qss").read_text())
+        self.setStyleSheet((project_root() / "assets" / "theme.qss").read_text().replace("@ASSETS@", (project_root() / "assets").as_posix()))
         central = QWidget()
         self.setCentralWidget(central)
         outer = QHBoxLayout(central)
@@ -76,7 +83,7 @@ class MainWindow(QMainWindow):
         side.setFixedWidth(196)
         sidebar = QVBoxLayout(side)
         sidebar.setContentsMargins(0, 20, 0, 12)
-        brand = QLabel("Accessibility\nAI")
+        brand = QLabel("Audial AI")
         brand.setObjectName("brand")
         sidebar.addWidget(brand)
         note = QLabel("Hear. See. Connect.")
@@ -88,11 +95,11 @@ class MainWindow(QMainWindow):
         self.nav.setAccessibleName("Application navigation")
         sidebar.addWidget(self.nav, 1)
         self.show_advanced = QCheckBox("Advanced tools")
-        self.show_advanced.setAccessibleName("Show models, training, privacy, diagnostics and about pages")
+        self.show_advanced.setAccessibleName("Show training, privacy, diagnostics and about pages")
         self.show_advanced.toggled.connect(self.toggle_advanced)
         sidebar.addWidget(self.show_advanced)
         self.toggle_advanced(False)
-        bottom = QLabel("Local processing\nVersion 0.3.1")
+        bottom = QLabel("Private by design\nVersion " + __version__)
         bottom.setObjectName("sideNote")
         sidebar.addWidget(bottom)
         outer.addWidget(side)
@@ -111,7 +118,11 @@ class MainWindow(QMainWindow):
         self.chip = QLabel("LOCAL INFERENCE")
         self.chip.setObjectName("chip")
         header.addWidget(self.chip)
+        header.addWidget(button("Notifications", lambda: self.notifications.show_history()))
         box.addLayout(header)
+        self.notifications = Notifications(self)
+        self.notifications.actionRequested.connect(self.resolve_notification)
+        box.addWidget(self.notifications)
         self.stack = QStackedWidget()
         box.addWidget(self.stack, 1)
         outer.addWidget(content, 1)
@@ -136,11 +147,14 @@ class MainWindow(QMainWindow):
         for panel in self.tone_panels:
             panel.colors = self.settings.intensity_colors.copy()
             panel.set_emotion_colors(self.settings.emotion_colors)
+        if auto_setup:
+            QTimer.singleShot(0, self, self.start_model_setup)
+            QTimer.singleShot(0, self, self.start_browser_service)
 
     def toggle_advanced(self, enabled):
-        for index in (5, 6, 9, 10, 11):
+        for index in (6, 9, 10, 11):
             self.nav.item(index).setHidden(not enabled)
-        if not enabled and self.nav.currentRow() in (5, 6, 9, 10, 11):
+        if not enabled and self.nav.currentRow() in (6, 9, 10, 11):
             self.nav.setCurrentRow(0)
 
     def page(self, description):
@@ -156,7 +170,7 @@ class MainWindow(QMainWindow):
     def navigate(self, index):
         if index < 0:
             return
-        if index in (5, 6, 9, 10, 11):
+        if index in (6, 9, 10, 11):
             self.show_advanced.setChecked(True)
         self.stack.setCurrentIndex(index)
         self.heading.setText(self.TITLES[index])
@@ -166,6 +180,7 @@ class MainWindow(QMainWindow):
             self.refresh_sessions()
         if index == 7:
             self.refresh_emotion_colors()
+            QTimer.singleShot(0, self, self.discover_devices)
 
     def home_page(self):
         p, layout = self.page("Choose an input, then follow captions, signs, and voice estimates in one place.")
@@ -184,9 +199,9 @@ class MainWindow(QMainWindow):
             inner.addWidget(button("Open " + title, lambda checked=False, n=target: self.nav.setCurrentRow(n)))
             grid.addWidget(frame, 0, i)
         layout.addLayout(grid)
-        setup, inner = card("First time here?", "Install a caption model once in Models. ISL playback and the bundled voice model are local. Choose emotion colors and your speech language in Settings.")
+        setup, inner = card("Your local workspace", "First-run setup prepares the full supported model catalogue automatically. You can follow progress, pause, retry, and review any gated model requirements in Setup & models.")
         row = QHBoxLayout()
-        row.addWidget(button("Manage models", lambda: self.nav.setCurrentRow(5)))
+        row.addWidget(button("View model setup", lambda: self.nav.setCurrentRow(5)))
         row.addWidget(button("Run diagnostics", lambda: self.nav.setCurrentRow(10)))
         inner.addLayout(row)
         layout.addWidget(setup)
@@ -354,7 +369,18 @@ class MainWindow(QMainWindow):
         return p
 
     def models_page(self):
-        p, layout = self.page("Downloads happen only when you click Install. User audio, video and transcripts are never part of these requests. Sizes are approximate until installed.")
+        p, layout = self.page("One setup prepares all supported model assets. Inference stays local, and models load only when a feature needs them. Recordings and training datasets are never part of setup requests.")
+        self.model_setup = ModelSetup(self.manager, self)
+        self.model_setup.failure.connect(lambda message: self.notify_worker(message, "error"))
+        self.model_setup.changed.connect(self.refresh_models)
+        layout.addWidget(self.model_setup)
+        advanced = QWidget()
+        advanced.setVisible(False)
+        reveal = QCheckBox("Show individual model tools for development")
+        reveal.toggled.connect(advanced.setVisible)
+        layout.addWidget(reveal)
+        layout.addWidget(advanced)
+        layout = QVBoxLayout(advanced)
         self.model_table = QTableWidget(0, 6)
         self.model_table.setHorizontalHeaderLabels(["Model", "Task", "Installed", "Size", "Device", "Precision"])
         self.model_table.setSelectionBehavior(QTableWidget.SelectRows)
@@ -380,6 +406,13 @@ class MainWindow(QMainWindow):
         self.model_log.setMaximumBlockCount(500)
         layout.addWidget(self.model_log, 1)
         return p
+
+    def start_model_setup(self):
+        if self._closing:
+            return
+        if not self.manager.installed("whisper-tiny"):
+            self.nav.setCurrentRow(5)
+        self.model_setup.start()
 
     def training_page(self):
         p, layout = self.page("Local PyTorch training using preprocessed real data. Live inference stops before training. Pause and Stop are honored after the current epoch and save latest.pt.")
@@ -445,15 +478,7 @@ class MainWindow(QMainWindow):
         form.addRow("Speech language", self.language_box)
         self.mic_box = QComboBox()
         self.mic_box.addItem("Default microphone", None)
-        try:
-            import sounddevice as sd
-            for index, device in enumerate(sd.query_devices()):
-                if device["max_input_channels"]:
-                    self.mic_box.addItem(device["name"], index)
-        except Exception:
-            # Device enumeration is optional: absent PortAudio/drivers must not
-            # prevent text playback, file input, settings or model management.
-            self.mic_box.setToolTip("Device discovery is unavailable. Use the default input or check Diagnostics.")
+        self.mic_box.setToolTip("Discovering audio devices in the background…")
         if self.settings.microphone is not None and self.mic_box.findData(self.settings.microphone) < 0:
             self.mic_box.addItem("Saved microphone " + str(self.settings.microphone), self.settings.microphone)
         self.mic_box.setCurrentIndex(max(0, self.mic_box.findData(self.settings.microphone)))
@@ -550,7 +575,69 @@ class MainWindow(QMainWindow):
         return p
 
     def alert(self, message):
-        QMessageBox.warning(self, "Accessibility AI", str(message))
+        self.notifications.publish(str(message), "warning")
+
+    def resolve_notification(self, action):
+        if action == "browser":
+            self.open_browser()
+        else:
+            self.nav.setCurrentRow({"models": 5, "settings": 7, "diagnostics": 10}.get(action, 10))
+
+    def notify_worker(self, message, severity):
+        text = str(message)
+        lower = text.lower()
+        action = "models" if any(word in lower for word in ("model", "checkpoint", "install", "download")) else "settings" if any(word in lower for word in ("microphone", "camera", "audio device", "cuda", "gpu")) else "diagnostics"
+        self.notifications.publish(text, severity, action=action)
+
+    def discover_devices(self):
+        if self._closing or self.device_process is not None:
+            return
+        proc = QProcess(self)
+        self.device_process = proc
+        proc.setProcessChannelMode(QProcess.SeparateChannels)
+        proc.setWorkingDirectory(str(project_root()))
+        output = bytearray()
+        def read_output():
+            if self.device_process is proc:
+                output.extend(bytes(proc.readAllStandardOutput())[:max(0, 262144 - len(output))])
+        proc.readyReadStandardOutput.connect(read_output)
+        def done(code, status):
+            if self.device_process is not proc:
+                return
+            try:
+                if code != 0:
+                    raise RuntimeError("Audio device discovery failed. Check your device and Windows privacy permissions.")
+                devices = json.loads(output)
+                selected = self.mic_box.currentData()
+                for device in devices:
+                    if self.mic_box.findData(device["index"]) < 0:
+                        self.mic_box.addItem(device["name"], device["index"])
+                self.mic_box.setCurrentIndex(max(0, self.mic_box.findData(selected)))
+                self.mic_box.setToolTip("Available audio inputs. Device access is checked when you start listening.")
+            except (ValueError, KeyError, RuntimeError) as error:
+                self.notify_worker(str(error), "warning")
+            self.device_process = None
+            proc.deleteLater()
+        proc.finished.connect(done)
+        proc.errorOccurred.connect(lambda _: self.notify_worker("Could not start audio device discovery: " + proc.errorString(), "warning"))
+        executable = Path(sys.executable)
+        if getattr(sys, "frozen", False):
+            executable = executable.with_name("AccessibilityAIWorker.exe")
+        elif sys.platform == "win32" and executable.name.lower() == "pythonw.exe":
+            executable = executable.with_name("python.exe")
+        proc.start(str(executable), ["--list-devices"] if getattr(sys, "frozen", False) else ["-m", "app.main", "--list-devices"])
+        QTimer.singleShot(10000, proc, lambda: proc.kill() if proc.state() != QProcess.NotRunning else None)
+
+    def cancel_device_discovery(self):
+        proc = self.device_process
+        self.device_process = None
+        if proc is not None:
+            proc.readyReadStandardOutput.disconnect()
+            proc.finished.disconnect()
+            proc.errorOccurred.disconnect()
+            proc.kill()
+            proc.waitForFinished(500)
+            proc.deleteLater()
 
     def busy(self):
         return self.engine.running or (self.camera.thread and self.camera.thread.is_alive()) or (self.training_process and self.training_process.state() != QProcess.NotRunning)
@@ -723,13 +810,29 @@ class MainWindow(QMainWindow):
         proc.setWorkingDirectory(str(project_root()))
         proc.setProcessChannelMode(QProcess.MergedChannels)
         proc.readyReadStandardOutput.connect(lambda: log.appendPlainText(bytes(proc.readAllStandardOutput()).decode(errors="replace").rstrip()))
+        completed = False
         def done(code, status):
+            nonlocal completed
+            if completed:
+                return
+            completed = True
             log.appendPlainText(f"Process exited: {code}")
+            if code != 0:
+                self.notify_worker("Background operation failed. Open diagnostics for details; retry the operation after resolving its reported cause.", "error")
             if finished:
                 finished(code)
+            if proc in self.processes:
+                self.processes.remove(proc)
+            if self.training_process is proc:
+                self.training_process = None
             self.refresh_models()
+            proc.deleteLater()
         proc.finished.connect(done)
-        proc.errorOccurred.connect(lambda e: log.appendPlainText(f"Could not launch process: {proc.errorString()}"))
+        def failed(error):
+            self.notify_worker("Could not launch background operation: " + proc.errorString(), "error")
+            if error == QProcess.FailedToStart:
+                done(1, QProcess.CrashExit)
+        proc.errorOccurred.connect(failed)
         executable = Path(sys.executable)
         if getattr(sys, "frozen", False):
             executable = executable.with_name("AccessibilityAIWorker.exe")
@@ -920,15 +1023,25 @@ class MainWindow(QMainWindow):
 
     def open_browser(self):
         try:
+            self.start_browser_service()
             if self.browser_service is None:
-                from app.services.browser import BrowserService
-                self.browser_service = BrowserService(self.engine, self.settings, vocabulary=self.isl)
-                self.browser_service.start()
+                return
             import webbrowser
             webbrowser.open(self.browser_service.url)
             self.statusBar().showMessage("Browser companion: " + self.browser_service.url)
         except Exception as error:
             self.alert(error)
+
+    def start_browser_service(self):
+        if self._closing or self.browser_service is not None:
+            return
+        try:
+            from app.services.browser import BrowserService
+            self.browser_service = BrowserService(self.engine, self.settings, vocabulary=self.isl)
+            self.browser_service.start()
+        except Exception as error:
+            self.browser_service = None
+            self.notify_worker("Browser bridge could not start: " + str(error), "error")
 
     def play_signs(self, text, append=False):
         try:
@@ -1198,6 +1311,24 @@ class MainWindow(QMainWindow):
                 for panel in self.tone_panels:
                     panel.set_emotion_colors(self.settings.emotion_colors)
                     panel.update_features(data)
+            elif kind == "emotion":
+                for panel in self.tone_panels:
+                    if data["estimate"] is not None:
+                        panel.show_emotion(data["estimate"])
+                    else:
+                        panel.last_emotion = None
+                        panel.emotion_badge.setText("Expression estimates are off")
+                        panel.emotion_badge.setStyleSheet("")
+                        panel.emotion_detail.setText("Objective prosody remains available. Enable experimental estimates in Settings.")
+            elif kind == "caption_voice":
+                for caption in reversed(self.session.captions[-40:]):
+                    if (caption.start, caption.end, caption.speaker) == (data["start"], data["end"], data["speaker"]):
+                        estimate = data["estimate"]
+                        caption.voice = {**caption.voice, "tone": estimate["tone"], "tone_confidence": estimate.get("confidence")}
+                        for panel in self.caption_panels:
+                            panel.update_voice(self.session, caption)
+                        self.session_dirty = True
+                        break
             elif kind == "frame":
                 self.camera_label.setPixmap(rgb_pixmap(data, self.camera_label.size()))
             elif kind == "pose" and self.current_sign_step is None:
@@ -1214,6 +1345,8 @@ class MainWindow(QMainWindow):
                         self.speak(data["label"])
             elif kind in {"error", "warning", "status"}:
                 self.statusBar().showMessage(data)
+                if kind in {"error", "warning"}:
+                    self.notify_worker(data, kind)
                 if kind == "status" and data in {"Idle", "Paused"}:
                     for panel in self.caption_panels:
                         panel.partial.setText("Audio stopped. Start the microphone or open a local file." if data == "Idle" else "Audio paused.")
@@ -1239,12 +1372,14 @@ class MainWindow(QMainWindow):
         if self.tts:
             if self.tts.error:
                 self.camera_status.setText("Local speech synthesis: " + self.tts.error)
+                self.notify_worker("Local speech synthesis: " + self.tts.error, "error")
                 self.tts.error = None
             if self.tts_resume_audio and not self.tts.speaking.is_set():
                 self.engine.pause(False)
                 self.tts_resume_audio = False
 
     def closeEvent(self, event):
+        self.cancel_device_discovery()
         if self.training_process and self.training_process.state() != QProcess.NotRunning:
             self.alert("Stop training and wait for its checkpoint before closing the app.")
             event.ignore()
@@ -1269,4 +1404,6 @@ class MainWindow(QMainWindow):
             self.tts.close()
         if self.browser_service:
             self.browser_service.stop()
+        self.model_setup.shutdown()
+        self._closing = True
         event.accept()
