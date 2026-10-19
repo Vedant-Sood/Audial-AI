@@ -1,0 +1,201 @@
+{
+  "source_commit": "dfd4a14802c1f2c227aa8ddd168d089084270383",
+  "source_job_url": "https://github.com/Vedant-Sood/Audial-AI/actions/runs/39312286357/job/118264685232",
+  "automation": "Playwright 1.64.0, normal Windows sandbox enabled, no disable-gpu flag",
+  "result": "FAIL; external browser/automation environment blocker. No pass is claimed for suspension/restoration. Physical Windows/laptop behavior is unverified.",
+  "browser_process_exit_code": 3221225477,
+  "browser_process_exit_hex": "0xC0000005",
+  "official_stable_update": {
+    "source": "https://edgeupdates.microsoft.com/api/products?view=enterprise",
+    "channel": "Stable",
+    "before": "155.0.4283.45",
+    "requested": "155.0.4283.62",
+    "installer_sha256": "20119979eb1670f670d38c093fd1c61f5a91d880c473f8614825ce9aef35f68a",
+    "after": "155.0.4283.62"
+  },
+  "product_transport": {
+    "platform": "Windows-2022Server-10.0.20348-SP0",
+    "scope": "Real extension/native-bridge PCM transport with generated tones; ASR model is replaced only for this transport test",
+    "lifecycle_events": [
+      {
+        "event": "suspended tab target closed",
+        "stage": "discard"
+      },
+      {
+        "event": "first tab closed",
+        "stage": "discard"
+      },
+      {
+        "event": "context closed",
+        "stage": "discard"
+      },
+      {
+        "event": "browser disconnected",
+        "stage": "discard"
+      }
+    ],
+    "browser_version": "155.0.4283.62",
+    "developer_mode": "PASS; enabled through the real browser extension setup UI",
+    "initial_background": "chrome-extension://dojclhfndceededaacaeblikncmihnkb/service-worker.js",
+    "real_tab_discovery": "PASS across two actual browser windows",
+    "reload_and_navigation_identity": "PASS; actual tab ID retained",
+    "restricted_pages": "PASS using actual browser APIs",
+    "toolbar_commands": [
+      {
+        "description": "",
+        "name": "_execute_action",
+        "shortcut": "Ctrl+Shift+Y"
+      }
+    ],
+    "source_capture_and_switching": [
+      {
+        "expected_hz": 440,
+        "received_hz": 440.0,
+        "samples": 32000,
+        "expected_tab_id": 1253183887,
+        "actual_tab_id": 1253183887
+      },
+      {
+        "expected_hz": 1000,
+        "received_hz": 1000.0,
+        "samples": 32000,
+        "expected_tab_id": 1253183895,
+        "actual_tab_id": 1253183895
+      }
+    ],
+    "window_focus": [
+      {
+        "requested": "Audial source 440 Hz",
+        "foreground": "Audial source 440 Hz and 2 more pages - Profile 1 - Microsoft\u200b Edge",
+        "matched": true
+      },
+      {
+        "requested": "Audial source 1000 Hz",
+        "foreground": "Audial source 1000 Hz and 1 more page - Profile 1 - Microsoft\u200b Edge",
+        "matched": true
+      },
+      {
+        "requested": "Audial source 440 Hz",
+        "foreground": "Audial source 440 Hz and 1 more page - Profile 1 - Microsoft\u200b Edge",
+        "matched": true
+      }
+    ],
+    "stop_and_release": "PASS",
+    "closed_tab_removal": "PASS",
+    "extension_background_restart": "PASS; real extension reloaded and metadata restored",
+    "desktop_disconnect_releases_audio": "PASS; actual tab stream and offscreen document stopped",
+    "desktop_service_reconnection": "PASS; fresh bridge token/port, tab list restored automatically",
+    "discard_result": {
+      "id": 1253183912,
+      "active": false,
+      "discarded": true,
+      "windowId": 1253183877,
+      "status": "unloaded"
+    },
+    "discard_identity": {
+      "before": 1253183908,
+      "after": 1253183912
+    },
+    "suspend_restore": {
+      "status": "FAIL",
+      "error": "Page.wait_for_timeout: Target page, context or browser has been closed"
+    },
+    "bridge_at_suspension_failure": {
+      "profiles": [
+        {
+          "id": "aa0c99e8-6486-42bd-9c73-5b9515b45cb0",
+          "browser": "Microsoft Edge",
+          "tabs": [
+            {
+              "id": 1253183887,
+              "window_id": 1253183877,
+              "title": "Audial source 440 Hz",
+              "supported": true,
+              "reason": "Capture requires invoking Audial-AI in this tab's toolbar.",
+              "audible": true,
+              "discarded": false
+            },
+            {
+              "id": 1253183879,
+              "window_id": 1253183877,
+              "title": "about:blank",
+              "supported": false,
+              "reason": "Browser settings, extension stores and other restricted pages cannot be captured. Choose a regular web tab.",
+              "audible": false,
+              "discarded": false
+            },
+            {
+              "id": 1253183908,
+              "window_id": 1253183877,
+              "title": "Audial source 1000 Hz",
+              "supported": true,
+              "reason": "Capture requires invoking Audial-AI in this tab's toolbar.",
+              "audible": false,
+              "discarded": false
+            },
+            {
+              "id": 1253183900,
+              "window_id": 1253183894,
+              "title": "Audial-AI \u00b7 local conversation workspace",
+              "supported": true,
+              "reason": "Capture requires invoking Audial-AI in this tab's toolbar.",
+              "audible": false,
+              "discarded": false
+            },
+            {
+              "id": 1253183905,
+              "window_id": 1253183894,
+              "title": "Audial browser acceptance controller",
+              "supported": false,
+              "reason": "Browser settings, extension stores and other restricted pages cannot be captured. Choose a regular web tab.",
+              "audible": false,
+              "discarded": false
+            }
+          ],
+          "connected": true
+        }
+      ],
+      "capture": null
+    },
+    "suspension_diagnostic_error": "Page.evaluate: Target page, context or browser has been closed",
+    "suspended_cleanup_error": "Page.evaluate: Target page, context or browser has been closed",
+    "failure": "Tab suspension: Page.wait_for_timeout: Target page, context or browser has been closed; Suspended-tab cleanup: Page.evaluate: Target page, context or browser has been closed"
+  },
+  "minimal_reproduction": {
+    "platform": "Windows-2022Server-10.0.20348-SP0",
+    "scope": "Real Chrome tabs API with a minimal tabs-only extension; no Audial product JS, native host, capture, audio or inference",
+    "browser_version": "155.0.4283.62",
+    "discard_result": {
+      "active": false,
+      "audible": false,
+      "autoDiscardable": true,
+      "discarded": true,
+      "frozen": false,
+      "groupId": -1,
+      "height": 0,
+      "highlighted": false,
+      "id": 666005590,
+      "incognito": false,
+      "index": 2,
+      "lastAccessed": 1792438709000.595,
+      "mutedInfo": {
+        "muted": false
+      },
+      "openerTabId": 666005583,
+      "pinned": false,
+      "selected": false,
+      "splitViewId": -1,
+      "status": "unloaded",
+      "title": "Discard isolation fixture",
+      "url": "http://127.0.0.1:57558/",
+      "width": 0,
+      "windowId": 666005573
+    },
+    "discard_identity": {
+      "before": 666005587,
+      "after": 666005590
+    },
+    "minimal_discard_restore": "FAIL",
+    "failure": "Page.wait_for_timeout: Target page, context or browser has been closed"
+  }
+}

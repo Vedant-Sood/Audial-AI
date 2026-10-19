@@ -55,6 +55,7 @@ jobs:
           python -c "from pyannote.audio.core.io import Audio; import torch; x,sr=Audio(sample_rate=16000)({'waveform':torch.zeros(1,16000),'sample_rate':16000}); assert x.shape == (1,16000)"
           if ($LASTEXITCODE -ne 0) { throw 'Community-1 waveform runtime failed' }
       - name: Regression and source startup
+        id: regression
         shell: pwsh
         run: |
           python -m pytest -q --junitxml=windows-tests.xml 2>&1 | Tee-Object windows-tests.txt
@@ -75,6 +76,7 @@ jobs:
           ./scripts/build_windows.ps1 -Runtime '${{ matrix.runtime }}' -Version "$version.1" -PayloadDir dist/AccessibilityAI 2>&1 | Tee-Object windows-upgrade-build.txt
           if ($LASTEXITCODE -ne 0) { throw 'Upgrade fixture build failed' }
       - name: Actual extension/native capture in Chrome for Testing
+        id: chrome_acceptance
         if: ${{ !cancelled() && steps.build_installer.outcome == 'success' && matrix.runtime == 'CPU' }}
         shell: pwsh
         run: |
@@ -84,15 +86,22 @@ jobs:
           python -m scripts.verify_browser --browser "$browser" --native-host dist/AccessibilityAI/AccessibilityAIWorker.exe --output windows-browser-chromium 2>&1 | Tee-Object windows-browser-chromium.txt
           if ($LASTEXITCODE -ne 0) { throw 'Chrome for Testing tab capture failed' }
       - name: Actual extension/native capture in Microsoft Edge
+        id: edge_acceptance
         if: ${{ !cancelled() && steps.build_installer.outcome == 'success' && matrix.runtime == 'CPU' }}
+        env:
+          DEBUG: pw:browser
         shell: pwsh
         run: |
           ./scripts/prepare_edge_ci.ps1 -Output windows-browser-edge/edge-runtime.json
           $edge = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
           if (-not (Test-Path $edge)) { throw 'Microsoft Edge is missing from the Windows runner' }
           python -m scripts.verify_browser --browser "$edge" --native-host dist/AccessibilityAI/AccessibilityAIWorker.exe --output windows-browser-edge 2>&1 | Tee-Object windows-browser-edge.txt
-          if ($LASTEXITCODE -ne 0) { throw 'Microsoft Edge tab capture failed' }
+          if ($LASTEXITCODE -ne 0) {
+            python -m scripts.diagnose_browser_discard --browser "$edge" --output windows-browser-edge/minimal-discard.json 2>&1 | Tee-Object windows-browser-edge/minimal-discard.txt
+            throw 'Microsoft Edge tab capture failed; isolated discard diagnostics are retained'
+          }
       - name: Actual installed Windows acceptance
+        id: installed_acceptance
         if: ${{ !cancelled() && steps.build_installer.outcome == 'success' }}
         shell: pwsh
         run: |
@@ -103,14 +112,29 @@ jobs:
             $report = Get-Content $file -Raw | ConvertFrom-Json | ConvertTo-Json -Depth 12 -Compress
             Write-Output ('::notice title=Installed Windows acceptance::' + $report.Replace('%', '%25').Replace([string][char]13, '%0D').Replace([string][char]10, '%0A'))
           }
-      - name: Stage only accepted installers
+      - name: Stage installers after passed Windows lifecycle acceptance
+        id: stage_installer
+        if: ${{ !cancelled() && steps.regression.outcome == 'success' && steps.installed_acceptance.outcome == 'success' }}
         shell: pwsh
         run: |
           $version = python -c 'from app import __version__; print(__version__)'
           New-Item -ItemType Directory -Force dist/accepted | Out-Null
           Copy-Item "dist/installers/Audial-AI-$version-Windows-x64-${{ matrix.runtime }}-Setup.exe*" dist/accepted
           Copy-Item build/build-info.json dist/accepted
+          # A browser failure remains a failed job and blocks tagged releases.
+          # Preserve independently passed installer results for review/download.
+          $status = [ordered]@{
+            source_commit = $env:GITHUB_SHA
+            runtime = '${{ matrix.runtime }}'
+            regression = '${{ steps.regression.outcome }}'
+            installed_lifecycle_and_inference = '${{ steps.installed_acceptance.outcome }}'
+            chrome_transport = '${{ steps.chrome_acceptance.outcome }}'
+            edge_transport = '${{ steps.edge_acceptance.outcome }}'
+            note = 'Installer lifecycle and inference must pass before this artifact is produced. Browser failures remain failures and prevent a tagged release; see the run validation artifacts for their exact scope.'
+          }
+          $status | ConvertTo-Json | Set-Content dist/accepted/acceptance-status.json -Encoding utf8
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        if: ${{ !cancelled() && steps.stage_installer.outcome == 'success' }}
         with:
           name: Audial-AI-Windows-x64-${{ matrix.runtime }}-Setup
           path: dist/accepted/*

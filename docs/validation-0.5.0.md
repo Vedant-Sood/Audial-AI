@@ -60,8 +60,14 @@ hardware. These results do not establish behavior on Windows or an RTX 4060.
   [Exact result](validation-0.5.0/windows-browser-chromium.json). Discard replaces
   the real tab ID; both its new identity and removal of the old entry are checked.
   Chrome's supported Developer mode UI must be enabled for unpacked reloads.
-  Edge 155 has passed the other transport checks; its final suspended-tab check
-  remains pending. CPU artifact publication is still gated on it. The fast workflow packages
+  Edge 155 has passed the other transport checks. Current Stable 155.0.4283.62
+  still crashes with process exit 0xC0000005 during discard. A separate minimal
+  tabs-only extension reproduces the crash without any Audial product JS, audio,
+  native host or inference, including with normal graphics and Windows sandbox
+  settings. This is an external browser/automation environment blocker, not a
+  passed suspended-tab check. Physical-laptop behavior is unverified.
+  [Reproduction evidence](validation-0.5.0/windows-browser-edge.json).
+  The fast workflow packages
   the product native host independently; the release workflow checks the complete
   desktop worker. Generated tones establish transport/source identity, not ASR.
 - Signing: no certificate configured; installer acceptance requires/report NotSigned.
@@ -85,10 +91,15 @@ readiness to reach the actual denial; it starts no ASR or physical microphone.
 CI attempts are linked on the branch. Initial runner failures (unavailable
 Windows Python patch, then global pipx/filelock contamination) were diagnosed;
 Windows builds now use available Python 3.12.10 in an isolated venv. Actual
-final full browser acceptance remains pending. Acceptance now retains
+Edge suspended-tab acceptance remains blocked as described above. Acceptance retains
 partial progress, model setup state and worker errors, and publishes failure
 excerpts when authenticated Actions logs cannot be reached from this environment.
 No blocked check is counted as passed.
+
+Installer artifacts require successful regression and installed lifecycle plus
+offline/streaming inference. Their `acceptance-status.json` includes the separate
+browser outcomes. A failed browser check remains a failed job and prevents a
+tagged release; it does not discard an independently validated installer.
 
 The installed check also runs `--verify-live-inference`: the supplied recording
 is software-fed in real-time 20-ms PCM blocks through the actual capture loop,

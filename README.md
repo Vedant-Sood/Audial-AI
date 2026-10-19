@@ -18,7 +18,9 @@ from [Windows Actions](https://github.com/Vedant-Sood/Audial-AI/actions/workflow
 or a published [release](https://github.com/Vedant-Sood/Audial-AI/releases).
 Both runtime variants have passed installed Windows lifecycle and offline
 inference checks. The [NVIDIA installer artifact](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39254818531/artifacts/12190252072)
-is available; CPU publication is still gated on full browser acceptance. See the
+is available. New installer artifacts require regression, installed lifecycle,
+offline inference and streaming inference to pass; their `acceptance-status.json`
+records separate browser results. Browser failures block tagged releases. See the
 [current validation report](docs/validation-0.5.0.md) before choosing a build.
 The older 0.4.1 ZIP release does not contain these changes.
 
@@ -58,6 +60,12 @@ sources, open the other tab and invoke its toolbar action again. **Stop** releas
 tracks and audio resources. The popup lists tabs across windows; the companion
 can focus a chosen tab but cannot grant capture permission on your behalf.
 Restricted pages explain their limitation. Microphone capture is always explicit.
+
+Chrome for Testing 156 passed the full Windows transport suite. Edge Stable
+155.0.4283.62 passed capture, switching, reload and reconnection, but crashes in
+the hosted Windows Server/Playwright tab-discard test, including a minimal
+tabs-only extension without Audial's audio or native bridge. Its suspended-tab
+acceptance remains failed; behavior on a physical Windows laptop is unverified.
 
 ## Responsiveness and notifications
 
