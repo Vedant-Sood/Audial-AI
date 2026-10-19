@@ -156,6 +156,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
             "platform": platform.platform(),
             "scope": "Real extension/native-bridge PCM transport with generated tones; ASR model is replaced only for this transport test",
         }
+        failures = []
         try:
             with sync_playwright() as playwright:
                 context = playwright.chromium.launch_persistent_context(
@@ -224,23 +225,44 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 suspended = context.new_page()
                 suspended.goto(base + "/suspended")
                 suspended_id = tab_id(suspended)
-                first.bring_to_front()
-                worker.evaluate("id => chrome.tabs.discard(id)", suspended_id)
-                wait_until(
-                    lambda: any(
-                        tab["id"] == suspended_id and tab["discarded"] for tab in tabs()
+                try:
+                    # A tab remains active in its own window even when another
+                    # window is focused. Discard requires a different active tab
+                    # in this exact window.
+                    discarded = worker.evaluate(
+                        """async id => {
+                          const tab = await chrome.tabs.get(id);
+                          const other = (await chrome.tabs.query({windowId:tab.windowId})).find(item=>item.id!==id)
+                            || await chrome.tabs.create({windowId:tab.windowId,url:'about:blank',active:false});
+                          await chrome.tabs.update(other.id,{active:true});
+                          return chrome.tabs.discard(id);
+                        }""",
+                        suspended_id,
                     )
-                )
-                worker.evaluate(
-                    "id => chrome.tabs.update(id,{active:true})", suspended_id
-                )
-                wait_until(
-                    lambda: any(
-                        tab["id"] == suspended_id and not tab["discarded"]
-                        for tab in tabs()
+                    report["discard_result"] = discarded
+                    assert discarded and discarded["discarded"], (
+                        "Browser declined the real discard request", discarded
                     )
-                )
-                suspended.close()
+                    wait_until(
+                        lambda: any(
+                            tab["id"] == suspended_id and tab["discarded"] for tab in tabs()
+                        )
+                    )
+                    worker.evaluate(
+                        "id => chrome.tabs.update(id,{active:true})", suspended_id
+                    )
+                    wait_until(
+                        lambda: any(
+                            tab["id"] == suspended_id and not tab["discarded"]
+                            for tab in tabs()
+                        )
+                    )
+                    report["suspend_restore"] = "PASS using actual browser APIs"
+                except Exception as error:
+                    failures.append("Tab suspension: " + str(error))
+                    report["suspend_restore"] = {"status": "FAIL", "error": str(error)}
+                finally:
+                    worker.evaluate("id => chrome.tabs.remove(id).catch(()=>{})", suspended_id)
                 restricted = context.new_page()
                 restricted.goto("chrome://settings/")
                 restricted_id = tab_id(restricted)
@@ -251,9 +273,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     )
                 )
                 restricted.close()
-                report["suspend_restore_and_restricted_pages"] = (
-                    "PASS using actual browser APIs"
-                )
+                report["restricted_pages"] = "PASS using actual browser APIs"
                 viewer = context.new_page()
                 viewer.goto(service.url)
                 viewer.locator("#browser-tabs option").nth(1).wait_for(state="attached")
@@ -386,6 +406,8 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     "PASS; fresh bridge token/port, tab list restored automatically"
                 )
                 context.close()
+                if failures:
+                    raise AssertionError("; ".join(failures))
         except Exception as error:
             report["failure"] = str(error)
             raise

@@ -1,0 +1,86 @@
+name: Windows browser transport acceptance
+on:
+  push:
+    branches: [main, 'codex/audial-desktop-upgrade', 'codex/audial-browser-validation']
+    paths:
+      - 'browser-extension/**'
+      - 'browser/**'
+      - 'app/services/browser*.py'
+      - 'app/services/native_host.py'
+      - 'scripts/verify_browser.py'
+      - 'scripts/package_extension.py'
+      - 'native_host.py'
+      - '.github/workflows/windows-browser.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: browser-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [Chromium, Edge]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12.10'
+      - name: Isolate transport tooling
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot create browser test environment' }
+          "$env:GITHUB_WORKSPACE\.venv\Scripts" | Out-File $env:GITHUB_PATH -Append -Encoding utf8
+      - name: Build the isolated native host
+        shell: pwsh
+        run: |
+          # The exact product native-host module, packaged independently for
+          # fast transport feedback. The release workflow separately verifies
+          # the complete installed desktop worker; this job runs no ASR.
+          python -m pip install numpy==2.3.5 scipy==1.17.0 playwright==1.58.0 pyinstaller==6.16.0
+          if ($LASTEXITCODE -ne 0) { throw 'Browser test dependencies failed' }
+          python -m pip check
+          if ($LASTEXITCODE -ne 0) { throw 'Browser dependency conflict' }
+          python -m PyInstaller --onefile --console --noconfirm --clean --name AudialAINativeAcceptance --distpath build/browser-native --workpath build/browser-work --specpath build/browser-spec native_host.py 2>&1 | Tee-Object windows-browser-native-build.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Isolated native-host packaging failed' }
+      - name: Actual tab lifecycle and native PCM capture
+        shell: pwsh
+        run: |
+          if ('${{ matrix.browser }}' -eq 'Chromium') {
+            python -m playwright install chromium
+            if ($LASTEXITCODE -ne 0) { throw 'Chrome for Testing installation failed' }
+            $browser = python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()'
+          } else {
+            $browser = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
+          }
+          python -m scripts.verify_browser --browser "$browser" --native-host build/browser-native/AudialAINativeAcceptance.exe --output windows-browser-current 2>&1 | Tee-Object windows-browser-current.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Actual browser transport acceptance failed' }
+      - name: Publish failure excerpts
+        if: failure()
+        shell: pwsh
+        run: |
+          $files = @('windows-browser-current.txt', 'windows-browser-native-build.txt')
+          $files += @(Get-ChildItem windows-browser-current -Filter '*.json' -ErrorAction SilentlyContinue | ForEach-Object FullName)
+          foreach ($file in $files) {
+            if (Test-Path $file) {
+              $excerpt = (Get-Content $file | Select-Object -Last 45) -join [Environment]::NewLine
+              $annotation = $excerpt.Replace('%', '%25').Replace([string][char]13, '%0D').Replace([string][char]10, '%0A')
+              Write-Output ("::error::" + $annotation)
+            }
+          }
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        if: always()
+        with:
+          name: Browser-acceptance-${{ matrix.browser }}
+          path: |
+            windows-browser-current/
+            windows-browser-current.txt
+            windows-browser-native-build.txt
+          retention-days: 14
