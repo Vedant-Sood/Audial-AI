@@ -127,7 +127,14 @@ try {
 } finally {
     $report | ConvertTo-Json -Depth 5 | Set-Content "$Output\installer-acceptance.json" -Encoding utf8
     if ($desktopProcess -and -not $desktopProcess.HasExited) { Stop-Process -Id $desktopProcess.Id -Force }
-    if (Test-Path "$state\model-setup.json") { Copy-Item "$state\model-setup.json" "$Output\model-setup.json" -Force }
+    if (Test-Path "$state\model-setup.json") {
+        Copy-Item "$state\model-setup.json" "$Output\model-setup.json" -Force
+        $setupStatus = Get-Content "$state\model-setup.json" -Raw | ConvertFrom-Json
+        $setupStatus.models.PSObject.Properties | ForEach-Object {
+            $model = $_.Value
+            "$($model.model): $($model.state) $(if ($model.PSObject.Properties.Name -contains 'message') { $model.message })"
+        } | Set-Content "$Output\model-summary.txt" -Encoding utf8
+    }
     if (Test-Path "$state\startup-error.log") { Copy-Item "$state\startup-error.log" "$Output\startup-error.log" -Force }
     if ($previousRoot) { $env:ACCESSIBILITY_AI_HOME = $previousRoot } else { Remove-Item Env:ACCESSIBILITY_AI_HOME -ErrorAction SilentlyContinue }
     if ($previousQt) { $env:QT_QPA_PLATFORM = $previousQt } else { Remove-Item Env:QT_QPA_PLATFORM -ErrorAction SilentlyContinue }

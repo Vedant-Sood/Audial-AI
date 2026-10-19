@@ -11,18 +11,18 @@ if __name__ == "__main__":
         from app.main import main
         main()
     except Exception:
-        import os
-        from pathlib import Path
         import sys
         import traceback
-        base = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "AccessibilityAI"
-        base.mkdir(parents=True, exist_ok=True)
-        log = base / "startup-error.log"
+        from app.utils.paths import data_root
+        log = data_root() / "startup-error.log"
         log.write_text(traceback.format_exc(), encoding="utf-8")
-        if sys.platform == "win32" and "--smoke-test" not in sys.argv:
+        # Worker failures belong in their captured diagnostics and desktop
+        # notification, rather than a dialog blocking an unattended operation.
+        gui_launch = not any(argument.startswith("--") for argument in sys.argv[1:])
+        if sys.platform == "win32" and gui_launch:
             import ctypes
-            ctypes.windll.user32.MessageBoxW(None, "AccessibilityAI could not start.\nDetails: " + str(log),
-                                           "AccessibilityAI", 0x10)
+            ctypes.windll.user32.MessageBoxW(None, "Audial-AI could not start.\nDetails: " + str(log),
+                                           "Audial-AI", 0x10)
         else:
             traceback.print_exc()
         sys.exit(1)

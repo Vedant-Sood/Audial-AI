@@ -292,9 +292,16 @@ class CatalogueInstaller:
             with urllib.request.urlopen(
                 urllib.request.Request(spec.source, method="HEAD"), timeout=30
             ) as response:
+                # Google may send CRC32C and MD5 in separate header fields.
+                # HTTPMessage.get() returns only the first, losing MD5.
+                values = (
+                    response.headers.get_all("x-goog-hash", [])
+                    if hasattr(response.headers, "get_all")
+                    else [response.headers.get("x-goog-hash", "")]
+                )
                 checksums = dict(
                     value.strip().split("=", 1)
-                    for value in response.headers.get("x-goog-hash", "").split(",")
+                    for value in ",".join(values).split(",")
                     if "=" in value
                 )
                 if "md5" not in checksums:

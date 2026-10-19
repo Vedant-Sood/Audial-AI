@@ -61,6 +61,28 @@ def test_bundled_runtime_requirements_are_in_the_same_catalogue():
     assert {"silero-vad", "system-tts", "emotion-baseline", "sign-local", "emotion-wavlm", "whisper-tiny", "whisper-small", "whisper-medium", "ecapa", "pyannote", "hand-pose", "body-pose"} <= ids
 
 
+def test_pose_metadata_preserves_md5_from_duplicate_google_hash_headers(tmp_path, monkeypatch):
+    import base64
+    from email.message import Message
+    from app.models.manager import REGISTRY
+
+    content = b"pose fixture"
+    response = Response()
+    response.headers = Message()
+    response.headers.add_header("x-goog-hash", "crc32c=fixture")
+    response.headers.add_header("x-goog-hash", "md5=" + base64.b64encode(hashlib.md5(content).digest()).decode())
+    response.headers["x-goog-generation"] = "123456"
+    response.headers["Content-Length"] = str(len(content))
+    monkeypatch.setattr("urllib.request.urlopen", lambda *args, **kwargs: response)
+    installer = CatalogueInstaller(ModelManager(tmp_path / "models"))
+    resolved, = installer.resolve_assets(REGISTRY["hand-pose"])
+    assert resolved.algorithm == "md5"
+    assert resolved.digest == hashlib.md5(content).hexdigest()
+    assert resolved.size == len(content)
+    assert resolved.revision == "123456"
+    assert resolved.url.endswith("?generation=123456")
+
+
 def test_setup_preserves_an_explicit_bundled_emotion_selection(tmp_path, monkeypatch):
     from app.inference.emotion import VoiceEmotion
     from app.utils.paths import atomic_json, data_root

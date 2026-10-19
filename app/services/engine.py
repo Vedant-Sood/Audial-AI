@@ -9,7 +9,6 @@ from app.audio.capture import Microphone, UtteranceBuffer, ExternalAudio, System
 from app.audio.features import prosody, mfcc_features
 from app.inference.asr import WhisperASR
 from app.inference.diarization import ECAPADiarizer, OverlapDiarizer, reconcile_words
-from app.inference.sign import LocalClassifier
 from app.models.manager import ModelManager
 from app.utils.config import PRESETS
 
@@ -123,6 +122,7 @@ class AudioEngine:
                     else:
                         self.diarizer = ECAPADiarizer(self.manager.path("ecapa"), "cpu")
             if self.settings.prosody_classifier and self.manager.installed("prosody-local"):
+                from app.inference.sign import LocalClassifier
                 self.prosody_model = LocalClassifier(self.manager.path("prosody-local") / "best.pt", "prosody")
             if self.settings.prosody_classifier:
                 from app.inference.emotion import VoiceEmotion
@@ -356,6 +356,7 @@ class CameraEngine:
             if not all(self.manager.installed(m) for m in ["hand-pose", "body-pose"]):
                 raise FileNotFoundError("Install hand and body pose assets on Models before using the webcam.")
             extractor = PoseExtractor(self.manager.path("hand-pose") / "model.task", self.manager.path("body-pose") / "model.task")
+            from app.inference.sign import LocalClassifier
             model = LocalClassifier(self.manager.path("sign-local") / "best.pt", "sign") if self.manager.installed("sign-local") else None
             cap = cv2.VideoCapture(self.settings.camera)
             if not cap.isOpened():

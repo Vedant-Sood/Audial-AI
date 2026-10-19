@@ -64,6 +64,7 @@ jobs:
           python -m app.main --smoke-test 2>&1 | Tee-Object windows-source-startup.txt
           if ($LASTEXITCODE -ne 0) { throw 'Source native UI failed' }
       - name: Build versioned Setup.exe and checksums
+        id: build_installer
         shell: pwsh
         run: |
           ./scripts/build_windows.ps1 -Runtime '${{ matrix.runtime }}' 2>&1 | Tee-Object windows-build.txt
@@ -73,13 +74,8 @@ jobs:
           # upgrade path. It does not validate a historical binary upgrade.
           ./scripts/build_windows.ps1 -Runtime '${{ matrix.runtime }}' -Version "$version.1" -PayloadDir dist/AccessibilityAI 2>&1 | Tee-Object windows-upgrade-build.txt
           if ($LASTEXITCODE -ne 0) { throw 'Upgrade fixture build failed' }
-      - name: Actual installed Windows acceptance
-        shell: pwsh
-        run: |
-          $version = python -c 'from app import __version__; print(__version__)'
-          ./scripts/verify_windows.ps1 -Installer "dist/installers/Audial-AI-$version-Windows-x64-${{ matrix.runtime }}-Setup.exe" -UpgradeInstaller "dist/installers/Audial-AI-$version.1-Windows-x64-${{ matrix.runtime }}-Setup.exe" 2>&1 | Tee-Object windows-acceptance.txt
       - name: Actual extension/native capture in Chrome for Testing
-        if: matrix.runtime == 'CPU'
+        if: ${{ !cancelled() && steps.build_installer.outcome == 'success' && matrix.runtime == 'CPU' }}
         shell: pwsh
         run: |
           python -m playwright install chromium
@@ -88,13 +84,19 @@ jobs:
           python -m scripts.verify_browser --browser "$browser" --native-host dist/AccessibilityAI/AccessibilityAIWorker.exe --output windows-browser-chromium 2>&1 | Tee-Object windows-browser-chromium.txt
           if ($LASTEXITCODE -ne 0) { throw 'Chrome for Testing tab capture failed' }
       - name: Actual extension/native capture in Microsoft Edge
-        if: matrix.runtime == 'CPU'
+        if: ${{ !cancelled() && steps.build_installer.outcome == 'success' && matrix.runtime == 'CPU' }}
         shell: pwsh
         run: |
           $edge = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
           if (-not (Test-Path $edge)) { throw 'Microsoft Edge is missing from the Windows runner' }
           python -m scripts.verify_browser --browser "$edge" --native-host dist/AccessibilityAI/AccessibilityAIWorker.exe --output windows-browser-edge 2>&1 | Tee-Object windows-browser-edge.txt
           if ($LASTEXITCODE -ne 0) { throw 'Microsoft Edge tab capture failed' }
+      - name: Actual installed Windows acceptance
+        if: ${{ !cancelled() && steps.build_installer.outcome == 'success' }}
+        shell: pwsh
+        run: |
+          $version = python -c 'from app import __version__; print(__version__)'
+          ./scripts/verify_windows.ps1 -Installer "dist/installers/Audial-AI-$version-Windows-x64-${{ matrix.runtime }}-Setup.exe" -UpgradeInstaller "dist/installers/Audial-AI-$version.1-Windows-x64-${{ matrix.runtime }}-Setup.exe" 2>&1 | Tee-Object windows-acceptance.txt
       - name: Stage only accepted installers
         shell: pwsh
         run: |

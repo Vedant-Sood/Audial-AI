@@ -7,7 +7,7 @@ Development environment: Debian 13 x86_64, Python 3.12.14, Qt/PySide6 6.8.3,
 Torch/Torchaudio 2.8.0 CPU, 5 available CPU cores, no GPU or physical capture
 hardware. These results do not establish behavior on Windows or an RTX 4060.
 
-- Linux Python regression: 102 passed, one Windows Credential Manager API test
+- Linux Python regression: 106 passed, one Windows Credential Manager API test
   skipped; Node regression: 19 passed. The preceding Windows CI revision ran
   all 101 tests then present successfully on both runtime variants.
 - Real offscreen native startup, bundled ISL playback and silence abstention: passed.
@@ -28,6 +28,12 @@ hardware. These results do not establish behavior on Windows or an RTX 4060.
   acceptance failed; those builds are not published as accepted artifacts.
   First launch, upgrades, uninstall, native PCM capture and the offline ASR
   pipeline still require passing acceptance.
+- The subsequent [CPU run 39252467405](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39252467405/job/118059403371)
+  passed 103 Windows tests, actual fresh install, shortcuts/native registration,
+  native first launch/automatic setup and the installed startup smoke check.
+  Full setup failed while reading Google's repeated checksum headers; WavLM and
+  bundled assets installed successfully. The resolver now reads every hash header
+  and retains the authoritative MD5 rather than losing it behind the CRC32C field.
 - Signing: no certificate configured; installer acceptance requires/report NotSigned.
 
 The same-workload settled Qt caption benchmark uses five batches of 500 rows,
@@ -53,3 +59,9 @@ installer/native capture acceptance is still pending. Acceptance now retains
 partial progress, model setup state and worker errors, and publishes failure
 excerpts when authenticated Actions logs cannot be reached from this environment.
 No blocked check is counted as passed.
+
+Moving the sign classifier import into its owning workers avoids importing
+PyTorch during desktop module import. Three fresh processes measured 1.841–1.996 s
+and about 257 MB RSS before, versus 0.777–0.859 s and about 111 MB after on this
+same Linux CPU host. This measures module import, not first paint, total Windows
+launch time or inference. Exact samples are in `startup-import.json`.

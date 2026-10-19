@@ -256,9 +256,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 )
                 viewer = context.new_page()
                 viewer.goto(service.url)
-                viewer.wait_for_function(
-                    "document.querySelector('#browser-tabs').options.length >= 2"
-                )
+                viewer.locator("#browser-tabs option").nth(1).wait_for(state="attached")
                 viewer.screenshot(
                     path=str(args.output / "browser-with-real-tabs.png"), full_page=True
                 )
@@ -388,6 +386,9 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     "PASS; fresh bridge token/port, tab list restored automatically"
                 )
                 context.close()
+        except Exception as error:
+            report["failure"] = str(error)
+            raise
         finally:
             service.stop()
             tone_server.shutdown()
@@ -403,9 +404,9 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                             winreg.HKEY_CURRENT_USER, key_path
                         ) as key:
                             winreg.SetValueEx(key, "", 0, winreg.REG_SZ, previous)
-        (args.output / "extension-acceptance.json").write_text(
-            json.dumps(report, indent=2) + "\n"
-        )
+            (args.output / "extension-acceptance.json").write_text(
+                json.dumps(report, indent=2) + "\n"
+            )
         print(json.dumps(report), flush=True)
 
 

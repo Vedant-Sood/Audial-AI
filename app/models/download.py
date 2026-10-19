@@ -111,9 +111,14 @@ class Downloader:
         if asset.size is not None and start > asset.size:
             part.unlink()
             start = 0
-        if asset.size is not None and start == asset.size and self.valid(part, asset):
-            os.replace(part, path)
-            return path
+        if asset.size is not None and start == asset.size:
+            if self.valid(part, asset):
+                os.replace(part, path)
+                return path
+            # A crash can leave a full-length, corrupt part before verification.
+            # Asking for bytes after EOF would otherwise repeat HTTP 416 forever.
+            part.unlink()
+            start = 0
         remaining = max(0, (asset.size or 0) - start)
         if self.disk_usage(self.root).free < remaining + 64 * 1024 * 1024:
             raise OSError(
@@ -123,7 +128,8 @@ class Downloader:
         if start:
             headers["Range"] = f"bytes={start}-"
         request = urllib.request.Request(asset.url, headers=headers)
-        if self.token and urlparse(asset.url).hostname == "huggingface.co":
+        target = urlparse(asset.url)
+        if self.token and target.scheme == "https" and target.hostname == "huggingface.co":
             # Send credentials only to the Hub, never to a redirected CDN or
             # another model host. Hub redirects carry their own signed access.
             request.add_unredirected_header("Authorization", "Bearer " + self.token)

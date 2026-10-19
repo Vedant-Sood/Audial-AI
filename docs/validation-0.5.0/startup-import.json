@@ -1,0 +1,37 @@
+{
+  "scope": "Fresh-process desktop module import only, not first paint or inference; same Linux CPU environment",
+  "before": [
+    {
+      "seconds": 1.8409986159967957,
+      "rss": 257323008,
+      "torch_imported": true
+    },
+    {
+      "seconds": 1.9963924459989357,
+      "rss": 257335296,
+      "torch_imported": true
+    },
+    {
+      "seconds": 1.912057408997498,
+      "rss": 257347584,
+      "torch_imported": true
+    }
+  ],
+  "after": [
+    {
+      "seconds": 0.7774536800025089,
+      "rss": 111058944,
+      "torch_imported": false
+    },
+    {
+      "seconds": 0.8454660849965876,
+      "rss": 111054848,
+      "torch_imported": false
+    },
+    {
+      "seconds": 0.8590220119986043,
+      "rss": 111038464,
+      "torch_imported": false
+    }
+  ]
+}

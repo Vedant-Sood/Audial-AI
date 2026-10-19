@@ -45,6 +45,15 @@ def test_ignored_range_restarts_instead_of_duplicating_bytes(tmp_path):
     assert downloader.fetch(asset()).read_bytes() == b"verified model bytes"
 
 
+def test_full_length_corrupt_part_restarts_without_an_eof_range(tmp_path):
+    data = b"verified model bytes"
+    (tmp_path / "model.bin.part").write_bytes(b"x" * len(data))
+    def open_(request, timeout):
+        assert request.get_header("Range") is None
+        return Response(data)
+    assert Downloader(tmp_path, opener=open_).fetch(asset()).read_bytes() == data
+
+
 def test_corrupt_complete_file_is_rejected_and_partial_network_data_is_retained(tmp_path):
     downloader = Downloader(tmp_path, opener=lambda *a, **k: Response(b"wrong model bytes!!!"))
     with pytest.raises(OSError, match="integrity"):
@@ -87,9 +96,11 @@ def test_gated_token_is_sent_only_to_hub_and_is_not_forwarded_on_redirect(tmp_pa
     downloader = Downloader(tmp_path, opener=open_, token="hf_fixture_only")
     downloader.fetch(gated)
     downloader.fetch(original)
+    downloader.fetch(Asset("http://huggingface.co/repo/model.bin", "plaintext.bin", original.digest, size=original.size))
     assert requests[0].unredirected_hdrs["Authorization"] == "Bearer hf_fixture_only"
     assert "Authorization" not in requests[0].headers
     assert "Authorization" not in requests[1].unredirected_hdrs
+    assert "Authorization" not in requests[2].unredirected_hdrs
 
 
 def test_secure_hub_redirect_keeps_auth_only_on_the_https_hub():
