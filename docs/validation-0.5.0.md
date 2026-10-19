@@ -26,14 +26,27 @@ hardware. These results do not establish behavior on Windows or an RTX 4060.
   [Actions run 39247313393](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39247313393),
   producing 467,814,008-byte and 2,059,306,411-byte unsigned installers. Installed
   acceptance failed; those builds are not published as accepted artifacts.
-  First launch, upgrades, uninstall, native PCM capture and the offline ASR
-  pipeline still require passing acceptance.
+  That run did not establish installed lifecycle or native PCM capture.
 - The subsequent [CPU run 39252467405](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39252467405/job/118059403371)
   passed 103 Windows tests, actual fresh install, shortcuts/native registration,
   native first launch/automatic setup and the installed startup smoke check.
   Full setup failed while reading Google's repeated checksum headers; WavLM and
   bundled assets installed successfully. The resolver now reads every hash header
   and retains the authoritative MD5 rather than losing it behind the CRC32C field.
+- [CPU job 118067771068](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39254818531/job/118067771068)
+  then passed 107 Windows tests and the full installed acceptance: fresh install,
+  shortcuts/native registration, native first launch, complete public catalogue,
+  gated Needs action, actual offline captions/expression/prosody, upgrade fixture,
+  reinstall, default data preservation and explicit purge. With sockets blocked,
+  the supplied speech produced “Kids are talking by the door.” First caption:
+  2.354 s; expression: 5.249 s; total: 5.269 s, with workers released.
+  [Exact result](validation-0.5.0/windows-offline-cpu.json). This is hosted Windows
+  imported-file inference, not live capture or an RTX 4060 measurement.
+  Both browsers passed real two-window discovery, reload and navigation before
+  the discard check failed. CPU artifact publication remains gated on browser
+  acceptance. A short separate Windows workflow now provides browser transport
+  feedback with an independently packaged copy of the product native-host module;
+  the release workflow still checks the complete desktop worker.
 - Signing: no certificate configured; installer acceptance requires/report NotSigned.
 
 The same-workload settled Qt caption benchmark uses five batches of 500 rows,

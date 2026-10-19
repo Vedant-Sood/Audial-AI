@@ -1,0 +1,20 @@
+{
+  "source_commit": "104c238c2f41f50c39e99ac9ac9ca3c588ebc526",
+  "source_job_url": "https://github.com/Vedant-Sood/Audial-AI/actions/runs/39254818531/job/118067771068",
+  "environment": "Hosted Windows Server 2022 x64, Python 3.12.10, actual installed CPU runtime. Physical RTX 4060 laptop validation remains pending.",
+  "scope": "Supplied 3.303-second mono speech file at 48 kHz, resampled to 16 kHz by the real pipeline. This records imported-file inference; live microphone capture remains untested.",
+  "sample_sha256": "c467aad2ca80b089dbd4c2ba0dd16be508e4ce08230f46d36a208b859dc7fbac",
+  "observed_result": {
+    "offline_pipeline": "PASS",
+    "microphone_started": false,
+    "captions": 1,
+    "caption_text": "Kids are talking by the door.",
+    "first_caption_seconds": 2.354139400000008,
+    "first_caption_expression_seconds": 5.249034100000017,
+    "total_seconds": 5.268885599999976,
+    "workers_released": true,
+    "network_connections": "blocked during the entire inference check"
+  },
+  "installed_lifecycle": "The Actual installed Windows acceptance step succeeded, covering fresh install, shortcuts/native registration, first launch/automatic setup, complete public catalogue, gated Needs action, offline inference, upgrade fixture, reinstall, default data preservation and explicit purge.",
+  "artifact_status": "CPU publication is still gated on passing browser capture acceptance; this report is not an accepted installer download."
+}

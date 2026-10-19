@@ -69,7 +69,9 @@ jobs:
           $files = @('windows-browser-current/extension-acceptance.json', 'windows-browser-current.txt', 'windows-browser-native-build.txt')
           foreach ($file in $files) {
             if (Test-Path $file) {
-              $excerpt = (Get-Content $file | Select-Object -Last 45) -join [Environment]::NewLine
+              $excerpt = if ($file.EndsWith('.json')) {
+                Get-Content $file -Raw | ConvertFrom-Json | ConvertTo-Json -Depth 12 -Compress
+              } else { (Get-Content $file | Select-Object -Last 45) -join [Environment]::NewLine }
               if (-not $excerpt.Trim()) { continue }
               $annotation = $excerpt.Replace('%', '%25').Replace([string][char]13, '%0D').Replace([string][char]10, '%0A')
               Write-Output ("::error::" + $annotation)

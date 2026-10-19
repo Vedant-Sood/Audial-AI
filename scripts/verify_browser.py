@@ -246,8 +246,41 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                         # Renderer events do not grant activeTab; invoke the
                         # real toolbar action through the OS shortcut.
                         import ctypes
+                        from ctypes import wintypes
 
                         user32 = ctypes.windll.user32
+                        user32.GetForegroundWindow.restype = wintypes.HWND
+                        user32.GetWindowTextLengthW.argtypes = [wintypes.HWND]
+                        user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+                        user32.IsWindowVisible.argtypes = [wintypes.HWND]
+                        user32.SetForegroundWindow.argtypes = [wintypes.HWND]
+                        user32.IsIconic.argtypes = [wintypes.HWND]
+                        user32.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+                        matches = []
+                        desired = page.title()
+                        def title(handle):
+                            text = ctypes.create_unicode_buffer(user32.GetWindowTextLengthW(handle) + 1)
+                            user32.GetWindowTextW(handle, text, len(text))
+                            return text.value
+                        callback = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+                        @callback
+                        def visit(handle, parameter):
+                            if user32.IsWindowVisible(handle) and desired in title(handle):
+                                matches.append(handle)
+                            return True
+                        user32.EnumWindows.argtypes = [callback, wintypes.LPARAM]
+                        user32.EnumWindows(visit, 0)
+                        if not matches:
+                            raise AssertionError("No visible browser window for " + desired)
+                        handle = matches[-1]
+                        if user32.IsIconic(handle):
+                            user32.ShowWindow(handle, 9)
+                        user32.SetForegroundWindow(handle)
+                        page.wait_for_timeout(250)
+                        foreground = user32.GetForegroundWindow()
+                        report.setdefault("window_focus", []).append({"requested": desired, "foreground": title(foreground), "matched": foreground == handle})
+                        if foreground != handle:
+                            raise AssertionError("Windows did not focus the actual browser window")
                         for key in [0x11, 0x10, 0x59]:
                             user32.keybd_event(key, 0, 0, 0)
                         for key in [0x59, 0x10, 0x11]:
@@ -280,6 +313,12 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                                 candidate.wait_for_selector("#capture-current")
                                 return candidate
                         page.wait_for_timeout(100)
+                    cdp = context.browser.new_browser_cdp_session()
+                    report["targets_after_toolbar_action"] = [
+                        {key: target[key] for key in ["type", "url", "title"]}
+                        for target in cdp.send("Target.getTargets")["targetInfos"]
+                    ]
+                    cdp.detach()
                     raise AssertionError(
                         "Browser toolbar action did not open its real popup"
                     )
@@ -382,7 +421,9 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                         }""",
                         suspended_id,
                     )
-                    report["discard_result"] = discarded
+                    report["discard_result"] = {
+                        key: discarded.get(key) for key in ["id", "active", "discarded", "windowId", "status"]
+                    } if discarded else None
                     assert discarded and discarded["discarded"], (
                         "Browser declined the real discard request", discarded
                     )
