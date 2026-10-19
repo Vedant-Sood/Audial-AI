@@ -1,0 +1,55 @@
+{
+  "source_commit": "b9143e6bf51f97f5f02c4d948cabf244408001d0",
+  "source_job_url": "https://github.com/Vedant-Sood/Audial-AI/actions/runs/39313088342/job/118267477539",
+  "environment": "Hosted Windows Server 2022 x64, Python 3.12.10, installed CPU runtime. Fresh worker process for each inference check; no physical microphone, camera or NVIDIA GPU.",
+  "installed_lifecycle": {
+    "platform": "Microsoft Windows NT 10.0.20348.0",
+    "scope": "Actual per-user installer and native runtime on a disposable Windows CI account",
+    "fresh_install": "PASS",
+    "shortcuts_and_native_registration": "PASS",
+    "native_first_launch_and_automatic_setup": "PASS",
+    "complete_public_catalogue": "PASS; gated Community-1 correctly requires user acceptance and token",
+    "offline_caption_expression_prosody": "PASS",
+    "streaming_caption_expression_prosody": "PASS (real-time software-fed supplied speech through the capture loop; no physical microphone or browser transport)",
+    "upgrade_data_preservation": "PASS (same runtime payload packaged with incremented installer version; historical binary upgrade still requires the old installer)",
+    "reinstall_data_preservation": "PASS",
+    "offline_native_relaunch": "PASS",
+    "uninstall_preserves_data_by_default": "PASS",
+    "explicit_uninstall_purge": "PASS",
+    "installer_sha256": "e0f39cd9972f60ef32f61db793a1bfcf83c2ec2d256a0403275e87c071beb8f9",
+    "authenticode": "NotSigned"
+  },
+  "offline_file_inference": {
+    "offline_pipeline": "PASS",
+    "audio_source": "Imported supplied speech file",
+    "microphone_started": false,
+    "captions": 1,
+    "caption_text": "Kids are talking by the door.",
+    "first_caption_seconds": 4.792843399999811,
+    "first_caption_expression_seconds": 38.56047489999992,
+    "total_seconds": 38.60003349999988,
+    "workers_released": true,
+    "network_connections": "blocked during the entire inference check"
+  },
+  "software_fed_streaming_inference": {
+    "live_capture_pipeline": "PASS",
+    "audio_source": "Real-time software-fed supplied speech through ExternalAudio and the capture loop; no browser transport or physical device",
+    "microphone_started": false,
+    "captions": 1,
+    "caption_text": "Kids are talking by the door.",
+    "first_caption_seconds": 7.351889799999981,
+    "first_caption_expression_seconds": 40.669991499999924,
+    "total_seconds": 40.75713420000011,
+    "workers_released": true,
+    "network_connections": "blocked during the entire inference check"
+  },
+  "installer_artifact": {
+    "url": "https://github.com/Vedant-Sood/Audial-AI/actions/runs/39313088342/artifacts/12217668150",
+    "name": "Audial-AI-Windows-x64-CPU-Setup",
+    "display_size": "446 MB",
+    "retention_days": 30,
+    "artifact_zip_sha256": "8534ec3ff41fc396e2d6273acdb4b1635a48ef9bef81ed4f3fbbc26a9379d4a9"
+  },
+  "ci_status": "CPU job fails only its separate Edge discard transport step. Installed lifecycle and both real inference checks passed; artifact includes acceptance-status.json. Tagged release remains blocked.",
+  "latency_limit": "Current cold Windows expression latency is about 39-41 seconds, substantially slower than the earlier 104c238 Windows run and Linux CPU benchmark. These hosts/process timings are not a same-hardware before/after or RTX 4060 measurement. Captions arrive before the asynchronous expression result. Warm repeated Windows expression latency and target-laptop performance remain unmeasured."
+}

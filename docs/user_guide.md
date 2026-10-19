@@ -92,8 +92,9 @@ occurrence counts; acknowledging an alert does not delete its history. Keyboard
 focus has one amber outline. Clicking a control does not leave a dotted frame.
 The latest 500 caption rows stay visible; exports contain the complete session.
 
-For browser meetings, load the installed `browser-extension` folder in Chrome or
-Edge, pin Audial-AI, and invoke its toolbar popup while the desired tab is active.
+For browser meetings, enable **Developer mode** on Chrome or Edge's extensions
+page, use **Load unpacked** to select the installed `browser-extension` folder,
+pin Audial-AI, and invoke its toolbar popup while the desired tab is active.
 **Capture this tab** requires that browser gesture. Its LIVE badge and source
 title show what is captured. The tab list spans windows; **Open selected tab**
 focuses a source so you can invoke its toolbar action. **Stop** releases capture.

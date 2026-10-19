@@ -16,11 +16,13 @@ End users do not install Python, Git, Node or build tools.
 Download only a successfully validated `Audial-AI-Windows-x64-*-Setup` artifact
 from [Windows Actions](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml)
 or a published [release](https://github.com/Vedant-Sood/Audial-AI/releases).
-Both runtime variants have passed installed Windows lifecycle and offline
-inference checks. The [NVIDIA installer artifact](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39254818531/artifacts/12190252072)
-is available. New installer artifacts require regression, installed lifecycle,
-offline inference and streaming inference to pass; their `acceptance-status.json`
-records separate browser results. Browser failures block tagged releases. See the
+Both runtime variants passed installed Windows lifecycle, offline inference and
+real software-fed streaming inference at source `b9143e6`:
+[CPU installer artifact](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39313088342/artifacts/12217668150)
+(446 MB) or [NVIDIA installer artifact](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39313088342/artifacts/12218529231)
+(1.92 GB). Artifact ZIPs include Setup.exe, its checksum, build metadata and
+`acceptance-status.json`. GitHub sign-in may be required; retention is 30 days.
+The separate Edge discard check remains failed and blocks tagged releases. See the
 [current validation report](docs/validation-0.5.0.md) before choosing a build.
 The older 0.4.1 ZIP release does not contain these changes.
 

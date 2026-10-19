@@ -1,18 +1,33 @@
 # Troubleshooting
 
-**Python not found:** install Python 3.11 x64 with the launcher, then rerun setup.bat. The project uses its own `.venv`; it does not modify a global Python installation.
+Normal Windows installations use Setup.exe and include their runtime. Python,
+Git, Node and build tools are unnecessary for end users. The source-only setup
+commands below apply to developers and older source distributions.
 
-**No CUDA / DLL error:** update the NVIDIA driver through its normal supported installer and rerun hardware checks. Paired Torch/torchaudio 2.8 CUDA wheels are selected by setup when NVIDIA is detected. CTranslate2 needs CUDA 12/cuDNN 9 libraries; the app exposes Torch's DLL directory on Windows. Try FAST / CPU or `setup.bat --cpu` if the CUDA path is still unavailable. The presence of nvidia-smi alone is not proof that PyTorch/ASR acceleration works.
+**No CUDA / DLL error:** the NVIDIA installer includes matching Torch/Torchaudio
+2.8.0 CUDA 12.6 libraries; a compatible NVIDIA driver is still required. Update
+that driver through its supported installer and inspect Diagnostics. Select CPU
+and FAST in Settings if acceleration is unavailable. The presence of nvidia-smi
+alone does not prove that PyTorch or ASR acceleration works. Source developers
+can use `setup.bat --cpu` for a matched CPU environment.
 
 **Microphone fails:** allow desktop apps under Windows privacy settings; close another app holding exclusive capture; inspect indexes in Diagnostics and save the desired index in Settings. The input path requests 16-kHz mono. Some devices/host APIs need a compatible Windows recording format or another device. Hardware validation failure is recorded, not hidden.
 
 **Webcam fails:** allow camera access for desktop apps, close conflicting camera applications, then try another camera index. Pose assets must be installed first. The webcam starts only after its button is clicked.
 
-**No captions:** install the model required by the chosen preset. Install ECAPA or choose Speaker backend=off. Speak at normal volume; noise/very quiet input may fail VAD. A language code can be set explicitly. Raw ASR scores and a speaker colour do not guarantee correctness.
+**No captions:** open **Setup & models** and check the chosen preset's readiness;
+automatic setup prepares every supported asset. Retry failed downloads, or
+select a ready preset. Speaker information needs its backend's assets; leave
+that setting off for simple captions. Noise/very quiet input may fail VAD. Set
+the speech language in Settings. Raw ASR scores and a speaker colour do not
+guarantee correctness.
 
 **Caption queue warnings:** choose FAST, disable partial updates, or use a faster device. Dropped input keeps timestamp gaps. A queue-full warning means some speech was not captioned; no artificial transcript is generated to fill it.
 
-**Download interrupted / model not installed:** retry Install when capture/training is stopped. `.installing` folders retain resumable downloads but are not treated as installed. Gated models require upstream acceptance and a locally configured HF_TOKEN. Do not paste tokens into saved app documents.
+**Download interrupted / model not installed:** use **Retry** on **Setup & models**.
+Incomplete files remain resumable and are not treated as installed. Gated
+Community-1 requires upstream acceptance and **Save access token**; Windows
+Credential Manager holds that credential. Public models need no token.
 
 **Wrong sign / uncertain label:** the bundled model knows only four isolated signs. Show both hands and upper body, record a complete sign, and review/edit the result before speaking. Collect signer-independent validation data before expanding its role.
 
@@ -20,7 +35,9 @@
 
 **Training fails:** dataset NPZ needs a real-data provenance JSON with matching schema beside it and nonempty train/val/test partitions. On CUDA OOM reduce batch, increase accumulation and resume latest.pt. Stop live capture before training. For a new dataset/config create a new output directory.
 
-**SmartScreen / signing:** builds are unsigned until a publisher signs them. This project does not bypass Windows security. Use the Python source launch workflow while a signed installer is unavailable.
+**Signing:** installers are unsigned; acceptance records `NotSigned`. Check the
+adjacent SHA256 file against the downloaded installer. SHA256 identifies the
+bytes and does not establish a signed publisher identity.
 
 **Cloud MediaPipe GLES error:** a normal Linux machine needs libgles2/libegl1. During this cloud run the missing libgles2 package was extracted into a scoped dependency directory and provided through LD_LIBRARY_PATH. No such adjustment is required for the Windows wheel.
 
@@ -32,7 +49,9 @@ and reuses valid files. A full corrupt file is rejected and fetched again. Free
 storage when the message reports insufficient disk space; no marker is promoted
 until integrity verification completes. Each model's installed receipt records
 source revision, license and hashes. Reading a receipt is not proof of successful
-inference; `--verify-inference` provides a separate real offline pipeline check.
+inference. Advanced `--verify-inference` and `--verify-live-inference` commands
+check real file and software-fed streaming pipelines with sockets blocked;
+neither opens a physical microphone.
 
 For Community-1, accept the upstream model terms and use **Save access token**.
 The native Windows distribution stores it in Credential Manager, not settings or
@@ -48,8 +67,10 @@ remain in the unresolved summary until dismissed/acknowledged. A worker startup
 or missing audio device now reaches this same interface. GPU failures explicitly
 fall back to CPU; choose FAST for lower CPU latency.
 
-For browser discovery, start the desktop, install/load the bundled Chrome/Edge
-extension, pin it and open its toolbar popup. The installer registers only the
+For browser discovery, start the desktop, enable **Developer mode** on
+`chrome://extensions` or `edge://extensions`, use **Load unpacked** to select the
+bundled extension folder, then pin it and open its toolbar popup. Developer mode
+must stay enabled for Chrome's unpacked reloads. The installer registers only the
 native host; ordinary webpages cannot enumerate other tabs. The popup's connection
 status distinguishes a missing bridge from a missing ASR model. Open a regular
 web tab and invoke its toolbar action before **Capture this tab**. Focusing a tab
@@ -65,7 +86,15 @@ browser blocking unpacked extensions requires its administrator's approved
 installation route. Manual **Share tab / app audio** is still a supported picker;
 it never substitutes the microphone silently.
 
-For normal installer users, Python-not-found, `setup.bat` and portable BAT advice
-above applies only to older/source distributions. Current native installers need
-neither Python nor Node installed separately. See the current validation report
-for Windows build status and actual limitations.
+Chrome for Testing 156 passed the full transport lifecycle on hosted Windows.
+Edge Stable 155.0.4283.62 passes capture, source switching and reconnection there,
+but its discard test crashes the browser with 0xC0000005. The same failure occurs
+with an independent minimal tabs-only extension without Audial JS/native/audio.
+This check remains failed in the Windows Server/Playwright environment; behavior
+on a physical laptop is unverified. See [exact evidence](validation-0.5.0/windows-browser-edge.json)
+and the standalone reproduction in `scripts/diagnose_browser_discard.py`.
+
+**Source development: Python not found:** install Python 3.11 or 3.12 x64 with
+its launcher and rerun `setup.bat`. The project uses its own `.venv` and leaves
+global Python unchanged. See the current validation report for actual Windows
+build status and limitations.

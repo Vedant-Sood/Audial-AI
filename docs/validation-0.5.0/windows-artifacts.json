@@ -1,0 +1,35 @@
+{
+  "source_commit": "b9143e6bf51f97f5f02c4d948cabf244408001d0",
+  "run_url": "https://github.com/Vedant-Sood/Audial-AI/actions/runs/39313088342",
+  "retention": "Installer artifacts: 30 days; validation artifacts: 14 days. GitHub sign-in may be required.",
+  "artifacts": [
+    {
+      "id": "12217668150",
+      "name": "Audial-AI-Windows-x64-CPU-Setup",
+      "artifact_zip_sha256": "8534ec3ff41fc396e2d6273acdb4b1635a48ef9bef81ed4f3fbbc26a9379d4a9",
+      "display_size": "446 MB",
+      "url": "https://github.com/Vedant-Sood/Audial-AI/actions/runs/39313088342/artifacts/12217668150"
+    },
+    {
+      "id": "12218529231",
+      "name": "Audial-AI-Windows-x64-NVIDIA-Setup",
+      "artifact_zip_sha256": "7391812a3c6d3ee654f22ebef97662e455ba4bd9574d1c2e3aee583630e6d1d8",
+      "display_size": "1.92 GB",
+      "url": "https://github.com/Vedant-Sood/Audial-AI/actions/runs/39313088342/artifacts/12218529231"
+    },
+    {
+      "id": "12217753028",
+      "name": "Windows-validation-CPU",
+      "artifact_zip_sha256": "001288acd6722cea11e0c22b7c281d52f097a80dbaa643e209ea1fe29a5b4c29",
+      "display_size": "1020 KB",
+      "url": "https://github.com/Vedant-Sood/Audial-AI/actions/runs/39313088342/artifacts/12217753028"
+    },
+    {
+      "id": "12218813955",
+      "name": "Windows-validation-NVIDIA",
+      "artifact_zip_sha256": "ffac00b459edf5f30346100824db071234c4193ecaf99d3f5aee7133ddb52128",
+      "display_size": "702 KB",
+      "url": "https://github.com/Vedant-Sood/Audial-AI/actions/runs/39313088342/artifacts/12218813955"
+    }
+  ]
+}

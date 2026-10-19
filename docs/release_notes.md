@@ -1,7 +1,8 @@
 Audial-AI 0.5.0 improves local setup, notifications, inference scheduling and real
 browser integration. See validation-0.5.0.md before distribution: the exact
-unpublished October 14 patch archive is still missing, and Windows acceptance
-must pass for the source revision being distributed.
+unpublished October 14 patch archive is still missing. CPU and NVIDIA artifacts
+at `b9143e6` passed actual Windows lifecycle and file/streaming inference. The
+separate Edge discard check remains failed and prevents a tagged release.
 
 - Per-user CPU/NVIDIA Setup.exe builds, checksums, shortcuts, upgrade/reinstall
   and explicit uninstall data choices. Required runtimes are included.
@@ -32,3 +33,7 @@ Windows device latency or RTX 4060 performance.
 Installers are unsigned. Browser extension loading requires the browser's
 supported explicit developer installation until Store publication. Gated model
 acceptance, physical device permission and GPU validation remain distinct steps.
+Current cold Windows CPU checks took 4.2–7.4 s to the first caption and 36.9–40.7 s
+to its first expression estimate; these are startup-inclusive runner measurements,
+not the warm Linux model benchmark or RTX 4060 performance. Captions do not wait
+for the slower optional expression result.
