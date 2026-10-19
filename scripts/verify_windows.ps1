@@ -16,14 +16,17 @@ $previousRoot = $env:ACCESSIBILITY_AI_HOME
 $previousQt = $env:QT_QPA_PLATFORM
 Remove-Item Env:ACCESSIBILITY_AI_HOME -ErrorAction SilentlyContinue
 $report = [ordered]@{ platform = [Environment]::OSVersion.VersionString; scope = 'Actual per-user installer and native runtime on a disposable Windows CI account' }
+$desktopProcess = $null
 
 function Install-Audial([string]$Setup, [string]$Label) {
+    Write-Output "Installing: $Label"
     $log = Join-Path $Output "$Label-installer.log"
     $process = Start-Process $Setup -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER', '/TASKS=desktopicon', "/DIR=`"$target`"", "/LOG=`"$log`"") -PassThru -Wait
     if ($process.ExitCode -ne 0) { throw "$Label installation failed: $($process.ExitCode)" }
     if (-not (Test-Path "$target\AccessibilityAI.exe") -or -not (Test-Path "$target\AccessibilityAIWorker.exe")) { throw 'Installed executables are missing' }
 }
 function Invoke-Worker([string[]]$Arguments, [string]$Label, [int]$TimeoutSeconds = 300) {
+    Write-Output "Running installed worker: $Label"
     $process = Start-Process "$target\AccessibilityAIWorker.exe" -ArgumentList $Arguments -RedirectStandardOutput "$Output\$Label.txt" -RedirectStandardError "$Output\$Label-errors.txt" -PassThru
     if (-not $process.WaitForExit($TimeoutSeconds * 1000)) { Stop-Process -Id $process.Id -Force; throw "$Label timed out" }
     if ($process.ExitCode -ne 0) { Get-Content "$Output\$Label-errors.txt"; throw "$Label failed: $($process.ExitCode)" }
@@ -118,8 +121,13 @@ try {
     $report.installer_sha256 = (Get-FileHash $Installer -Algorithm SHA256).Hash.ToLowerInvariant()
     $report.authenticode = (Get-AuthenticodeSignature $Installer).Status.ToString()
     if ($report.authenticode -ne 'NotSigned') { throw 'Unexpected signing status; update the reported build policy' }
-    $report | ConvertTo-Json -Depth 5 | Set-Content "$Output\installer-acceptance.json" -Encoding utf8
+} catch {
+    $report.failure = $_.Exception.Message
+    throw
 } finally {
+    $report | ConvertTo-Json -Depth 5 | Set-Content "$Output\installer-acceptance.json" -Encoding utf8
+    if ($desktopProcess -and -not $desktopProcess.HasExited) { Stop-Process -Id $desktopProcess.Id -Force }
+    if (Test-Path "$state\model-setup.json") { Copy-Item "$state\model-setup.json" "$Output\model-setup.json" -Force }
     if (Test-Path "$state\startup-error.log") { Copy-Item "$state\startup-error.log" "$Output\startup-error.log" -Force }
     if ($previousRoot) { $env:ACCESSIBILITY_AI_HOME = $previousRoot } else { Remove-Item Env:ACCESSIBILITY_AI_HOME -ErrorAction SilentlyContinue }
     if ($previousQt) { $env:QT_QPA_PLATFORM = $previousQt } else { Remove-Item Env:QT_QPA_PLATFORM -ErrorAction SilentlyContinue }

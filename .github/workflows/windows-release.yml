@@ -71,13 +71,13 @@ jobs:
           $version = python -c 'from app import __version__; print(__version__)'
           # Same payload packaged as a newer revision exercises the installer
           # upgrade path. It does not validate a historical binary upgrade.
-          ./scripts/build_windows.ps1 -Runtime '${{ matrix.runtime }}' -Version "$version.1" -PayloadDir dist/AccessibilityAI
+          ./scripts/build_windows.ps1 -Runtime '${{ matrix.runtime }}' -Version "$version.1" -PayloadDir dist/AccessibilityAI 2>&1 | Tee-Object windows-upgrade-build.txt
           if ($LASTEXITCODE -ne 0) { throw 'Upgrade fixture build failed' }
       - name: Actual installed Windows acceptance
         shell: pwsh
         run: |
           $version = python -c 'from app import __version__; print(__version__)'
-          ./scripts/verify_windows.ps1 -Installer "dist/installers/Audial-AI-$version-Windows-x64-${{ matrix.runtime }}-Setup.exe" -UpgradeInstaller "dist/installers/Audial-AI-$version.1-Windows-x64-${{ matrix.runtime }}-Setup.exe"
+          ./scripts/verify_windows.ps1 -Installer "dist/installers/Audial-AI-$version-Windows-x64-${{ matrix.runtime }}-Setup.exe" -UpgradeInstaller "dist/installers/Audial-AI-$version.1-Windows-x64-${{ matrix.runtime }}-Setup.exe" 2>&1 | Tee-Object windows-acceptance.txt
       - name: Actual extension/native capture in Chrome for Testing
         if: matrix.runtime == 'CPU'
         shell: pwsh
@@ -85,7 +85,7 @@ jobs:
           python -m playwright install chromium
           if ($LASTEXITCODE -ne 0) { throw 'Chrome for Testing installation failed' }
           $browser = python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()'
-          python -m scripts.verify_browser --browser "$browser" --native-host dist/AccessibilityAI/AccessibilityAIWorker.exe --output windows-browser-chromium
+          python -m scripts.verify_browser --browser "$browser" --native-host dist/AccessibilityAI/AccessibilityAIWorker.exe --output windows-browser-chromium 2>&1 | Tee-Object windows-browser-chromium.txt
           if ($LASTEXITCODE -ne 0) { throw 'Chrome for Testing tab capture failed' }
       - name: Actual extension/native capture in Microsoft Edge
         if: matrix.runtime == 'CPU'
@@ -93,7 +93,7 @@ jobs:
         run: |
           $edge = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
           if (-not (Test-Path $edge)) { throw 'Microsoft Edge is missing from the Windows runner' }
-          python -m scripts.verify_browser --browser "$edge" --native-host dist/AccessibilityAI/AccessibilityAIWorker.exe --output windows-browser-edge
+          python -m scripts.verify_browser --browser "$edge" --native-host dist/AccessibilityAI/AccessibilityAIWorker.exe --output windows-browser-edge 2>&1 | Tee-Object windows-browser-edge.txt
           if ($LASTEXITCODE -ne 0) { throw 'Microsoft Edge tab capture failed' }
       - name: Stage only accepted installers
         shell: pwsh
@@ -113,7 +113,10 @@ jobs:
         if: failure()
         shell: pwsh
         run: |
-          foreach ($file in @('windows-torch-install.txt', 'windows-dependencies-install.txt', 'windows-tests.txt', 'windows-build.txt')) {
+          $files = @('windows-tests.txt', 'windows-source-startup.txt', 'windows-upgrade-build.txt', 'windows-acceptance.txt', 'windows-browser-chromium.txt', 'windows-browser-edge.txt')
+          $files += @(Get-ChildItem windows-acceptance -Filter '*.txt' -ErrorAction SilentlyContinue | ForEach-Object FullName)
+          $files += @(Get-ChildItem windows-acceptance -Filter '*.json' -ErrorAction SilentlyContinue | ForEach-Object FullName)
+          foreach ($file in $files) {
             if (Test-Path $file) {
               $excerpt = (Get-Content $file | Select-Object -Last 25) -join [Environment]::NewLine
               $excerpt | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
@@ -129,6 +132,10 @@ jobs:
             windows-torch-install.txt
             windows-dependencies-install.txt
             windows-build.txt
+            windows-upgrade-build.txt
+            windows-acceptance.txt
+            windows-browser-chromium.txt
+            windows-browser-edge.txt
             windows-tests.xml
             windows-tests.txt
             windows-source-startup.txt

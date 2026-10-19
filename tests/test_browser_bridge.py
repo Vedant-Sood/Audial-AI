@@ -39,6 +39,23 @@ def test_native_message_framing_preserves_utf8_and_rejects_partial_or_oversize()
             read_message(BytesIO(bad))
 
 
+def test_native_transport_disconnect_exits_without_holding_the_installed_runtime(monkeypatch):
+    from app.services import native_host
+    incoming, outgoing = BytesIO(), BytesIO()
+    write_message(incoming, {"id": 1, "type": "poll", "profile": "test"})
+    write_message(incoming, {"id": 2, "type": "poll", "profile": "test"})
+    incoming.seek(0)
+    def disconnected(message):
+        raise ConnectionRefusedError("Desktop is not running")
+    monkeypatch.setattr(native_host, "forward", disconnected)
+    native_host.main(incoming, outgoing)
+    outgoing.seek(0)
+    response = read_message(outgoing)
+    assert response["id"] == 1 and not response["ok"]
+    assert read_message(outgoing) is None
+    assert read_message(incoming)["id"] == 2
+
+
 @pytest.fixture
 def bridge_service(monkeypatch):
     service = BrowserService(settings=Settings(device="cpu"))

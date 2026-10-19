@@ -100,10 +100,10 @@ def build(output, cache):
         print("Verifying and installing " + wheel.name, flush=True)
         install_wheel(wheel, runtime)
     source = staging / "app-source"; source.mkdir()
-    excluded = {".git", ".venv", "__pycache__", ".pytest_cache", "build", "dist", "raw", "tensorboard", "artifacts"}
+    excluded = {".git", ".venv", ".venvs", "__pycache__", ".pytest_cache", ".ruff_cache", "build", "dist", "raw", "tensorboard", "artifacts", "ci-state"}
     for p in root.rglob("*"):
         rel = p.relative_to(root)
-        if p.is_file() and not p.is_symlink() and not any(part in excluded for part in rel.parts) and p.suffix not in {".pyc", ".zip"}:
+        if p.is_file() and not p.is_symlink() and not any(part in excluded for part in rel.parts) and p.suffix not in {".pyc", ".zip", ".log"} and not p.name.startswith(".env"):
             dest = source / rel; dest.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(p, dest)
     (staging / "Start AccessibilityAI.bat").write_text(
         '@echo off\r\nsetlocal\r\ncd /d "%~dp0"\r\n'
@@ -112,11 +112,11 @@ def build(output, cache):
         '@echo off\r\ncd /d "%~dp0"\r\n'
         '"%~dp0runtime\\python.exe" -E "%~dp0app-source\\launcher.py" %*\r\npause\r\n', encoding="ascii")
     (staging / "README-WINDOWS.txt").write_text(
-        "AccessibilityAI 0.3.1 - Windows 10/11 x64\n\n"
+        "Audial-AI - Windows 10/11 x64 (legacy portable developer package)\n\n"
         "Extract the entire ZIP to a writable folder and double-click Start AccessibilityAI.bat.\n"
         "Python and native Windows dependencies are included; setup.bat is unnecessary.\n"
         "ISL playback and the bundled experimental emotion model are local.\n"
-        "For captions, open Advanced tools > Models and install Whisper tiny once.\n"
+        "First launch opens Setup & models to prepare the complete supported catalogue.\n"
         "Downloads need Internet access. Speech processing then runs locally.\n"
         "Choose Settings to enable emotion estimates and assign colors.\n"
         "Use Diagnose startup.bat if the application does not launch.\n"
@@ -124,7 +124,8 @@ def build(output, cache):
         "The included model has not met 85-90% accuracy on Indian voices.\n"
         "This archive is assembled with Windows binaries; validation results accompany the release.\n",
         encoding="utf-8")
-    inventory = {"version": "0.3.1", "platform": "Windows x64", "python_url": PYTHON_URL,
+    from app import __version__
+    inventory = {"version": __version__, "platform": "Windows x64", "python_url": PYTHON_URL,
                  "python_sha512": PYTHON_SHA512, "windows_execution_verified": False,
                  "wheels": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in wheels.glob("*.whl")}}
     (staging / "runtime_inventory.json").write_text(json.dumps(inventory, indent=2) + "\n")

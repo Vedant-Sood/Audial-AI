@@ -27,6 +27,7 @@ def test_fresh_catalogue_setup_verifies_assets_and_relaunches_offline(tmp_path, 
     monkeypatch.setattr("urllib.request.urlopen", open_)
     monkeypatch.setattr("app.models.catalogue.catalogue", lambda: [{"id": "whisper-tiny"}])
     monkeypatch.setattr(CatalogueInstaller, "resolve_assets", lambda *args: assets)
+    monkeypatch.setattr("app.models.catalogue.get_token", lambda: pytest.fail("Public models must not depend on Windows Credential Manager or a private token"))
     manager = ModelManager(tmp_path / "models")
     installer = CatalogueInstaller(manager)
     assert installer.run()["whisper-tiny"]["state"] == "ready"

@@ -64,18 +64,21 @@ def forward(message):
         ) from None
 
 
-def main():
-    if sys.platform == "win32":
+def main(input_stream=None, output_stream=None):
+    if sys.platform == "win32" and input_stream is None and output_stream is None:
         import msvcrt
 
         msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
         msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+    input_stream = sys.stdin.buffer if input_stream is None else input_stream
+    output_stream = sys.stdout.buffer if output_stream is None else output_stream
     owner = None
     try:
         while True:
-            message = read_message(sys.stdin.buffer)
+            message = read_message(input_stream)
             if message is None:
                 break
+            disconnected = False
             try:
                 result = forward(message)
                 if message.get("type") == "start":
@@ -88,13 +91,16 @@ def main():
                     owner = None
                 response = {"id": message.get("id"), "ok": True, "result": result}
             except (OSError, ValueError, KeyError) as error:
+                disconnected = isinstance(error, OSError)
                 response = {
                     "id": message.get("id"),
                     "ok": False,
                     "error": "Start or reconnect the Audial-AI desktop companion. "
                     + str(error)[:400],
                 }
-            write_message(sys.stdout.buffer, response)
+            write_message(output_stream, response)
+            if disconnected:
+                break
     except (OSError, ValueError):
         pass
     finally:

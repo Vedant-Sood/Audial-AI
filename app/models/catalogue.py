@@ -178,7 +178,7 @@ class CatalogueInstaller:
             staging,
             self.cancel,
             model_progress,
-            token=get_token(),
+            token=get_token() if spec.gated else None,
         )
         plan_path = staging / "asset-plan.json"
         try:
@@ -317,7 +317,10 @@ class CatalogueInstaller:
         from huggingface_hub import HfApi, hf_hub_url
 
         info = HfApi().model_info(
-            spec.source, files_metadata=True, token=get_token(), timeout=30
+            spec.source,
+            files_metadata=True,
+            token=get_token() if spec.gated else False,
+            timeout=30,
         )
         assets = []
         # Runtime formats only: never download training datasets or duplicate framework weights.

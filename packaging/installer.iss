@@ -28,6 +28,7 @@ UninstallDisplayName=Audial-AI ({#Runtime})
 UninstallDisplayIcon={app}\AccessibilityAI.exe
 LicenseFile=..\LICENSE
 WizardStyle=modern
+SetupIconFile=..\assets\icon.ico
 Compression=lzma2/normal
 SolidCompression=yes
 DiskSpanning=no
@@ -46,9 +47,13 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 Source: "{#PayloadDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "native-host.json"; DestDir: "{app}\native-host"; Flags: ignoreversion
 
+[InstallDelete]
+; Replace bundled libraries on upgrades, including CPU/NVIDIA switches. User
+; models and settings live outside the installation directory.
+Type: filesandordirs; Name: "{app}\_internal"
+
 [Icons]
 Name: "{group}\Audial-AI"; Filename: "{app}\AccessibilityAI.exe"; WorkingDir: "{app}"
-Name: "{group}\Audial-AI user guide"; Filename: "{app}\docs\user_guide.md"
 Name: "{group}\Uninstall Audial-AI"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\Audial-AI"; Filename: "{app}\AccessibilityAI.exe"; Tasks: desktopicon
 
