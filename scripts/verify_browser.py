@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shlex
 import subprocess
 import sys
@@ -273,15 +274,20 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 # Use the real supported Developer mode control in this
                 # disposable browser profile. Managed restrictions still win.
                 setup = context.new_page()
-                setup.goto("chrome://extensions/")
-                developer_mode = setup.locator("#devMode")
-                developer_mode.wait_for(state="visible")
-                if not developer_mode.evaluate("element => element.checked"):
-                    if developer_mode.evaluate("element => element.disabled"):
+                setup.goto("edge://extensions/" if "msedge" in args.browser.lower() else "chrome://extensions/")
+                developer_mode = setup.get_by_label(re.compile("developer mode", re.I))
+                try:
+                    developer_mode.wait_for(state="visible", timeout=10000)
+                except Exception:
+                    report["extension_setup_page"] = setup.locator("body").inner_text()[:4000]
+                    raise
+                enabled = "element => Boolean(element.checked) || element.getAttribute('aria-checked') === 'true' || element.getAttribute('aria-pressed') === 'true'"
+                if not developer_mode.evaluate(enabled):
+                    if developer_mode.evaluate("element => element.disabled || element.getAttribute('aria-disabled') === 'true'"):
                         raise AssertionError("Developer mode is unavailable under browser policy")
                     developer_mode.click()
                 wait_until(
-                    lambda: developer_mode.evaluate("element => element.checked"),
+                    lambda: developer_mode.evaluate(enabled),
                     pump=setup.wait_for_timeout,
                 )
                 report["developer_mode"] = "PASS; enabled through the real browser extension setup UI"
@@ -592,10 +598,15 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     assert discarded and discarded["discarded"], (
                         "Browser declined the real discard request", discarded
                     )
+                    # Chromium replaces the tab's WebContents when discarding;
+                    # the supported API can return a new tab ID. Observe that
+                    # actual identity and require removal of the superseded ID.
+                    previous_id, suspended_id = suspended_id, discarded["id"]
+                    report["discard_identity"] = {"before": previous_id, "after": suspended_id}
                     wait(
                         lambda: any(
                             tab["id"] == suspended_id and tab["discarded"] for tab in tabs()
-                        )
+                        ) and (previous_id == suspended_id or not any(tab["id"] == previous_id for tab in tabs()))
                     )
                     stage = "restore"
                     worker.evaluate(

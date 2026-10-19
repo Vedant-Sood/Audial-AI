@@ -5,6 +5,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
 import platform
+import re
 import tempfile
 import threading
 
@@ -54,12 +55,17 @@ def main():
                 )
                 report["browser_version"] = context.browser.version
                 setup = context.new_page()
-                setup.goto("chrome://extensions/")
-                toggle = setup.locator("#devMode")
-                toggle.wait_for(state="visible")
-                if not toggle.evaluate("element=>element.checked"):
+                setup.goto("edge://extensions/" if "msedge" in args.browser.lower() else "chrome://extensions/")
+                toggle = setup.get_by_label(re.compile("developer mode", re.I))
+                try:
+                    toggle.wait_for(state="visible", timeout=10000)
+                except Exception:
+                    report["extension_setup_page"] = setup.locator("body").inner_text()[:4000]
+                    raise
+                enabled = "element => Boolean(element.checked) || element.getAttribute('aria-checked') === 'true' || element.getAttribute('aria-pressed') === 'true'"
+                if not toggle.evaluate(enabled):
                     toggle.click()
-                assert toggle.evaluate("element=>element.checked")
+                assert toggle.evaluate(enabled)
                 setup.close()
                 controller = context.new_page()
                 controller.goto("chrome-extension://" + extension_id(manifest) + "/controller.html")
@@ -69,13 +75,15 @@ def main():
                 controller.evaluate("id=>chrome.tabs.update(id,{active:true})", controller.evaluate("chrome.tabs.getCurrent().then(tab=>tab.id)"))
                 report["discard_result"] = controller.evaluate("id=>chrome.tabs.discard(id)", tab["id"])
                 assert report["discard_result"]["discarded"]
+                previous_id, discarded_id = tab["id"], report["discard_result"]["id"]
+                report["discard_identity"] = {"before": previous_id, "after": discarded_id}
                 controller.wait_for_timeout(1500)
                 assert context.browser.is_connected()
-                report["discard_observed"] = controller.evaluate("id=>chrome.tabs.get(id)", tab["id"])
+                report["discard_observed"] = controller.evaluate("id=>chrome.tabs.get(id)", discarded_id)
                 assert report["discard_observed"]["discarded"]
-                controller.evaluate("id=>chrome.tabs.update(id,{active:true})", tab["id"])
+                controller.evaluate("id=>chrome.tabs.update(id,{active:true})", discarded_id)
                 controller.wait_for_timeout(1500)
-                report["restore_observed"] = controller.evaluate("id=>chrome.tabs.get(id)", tab["id"])
+                report["restore_observed"] = controller.evaluate("id=>chrome.tabs.get(id)", discarded_id)
                 assert not report["restore_observed"]["discarded"]
                 report["minimal_discard_restore"] = "PASS"
                 context.close()
