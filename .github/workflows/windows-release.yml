@@ -27,13 +27,13 @@ jobs:
       PYANNOTE_METRICS_ENABLED: '0'
       DO_NOT_TRACK: '1'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
-          python-version: '3.12.14'
-      - uses: actions/setup-node@v4
+          python-version: '3.12.10'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: '20'
+          node-version: '24'
       - name: Install compatible native runtime
         shell: pwsh
         run: |
@@ -96,14 +96,14 @@ jobs:
           New-Item -ItemType Directory -Force dist/accepted | Out-Null
           Copy-Item "dist/installers/Audial-AI-$version-Windows-x64-${{ matrix.runtime }}-Setup.exe*" dist/accepted
           Copy-Item build/build-info.json dist/accepted
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: Audial-AI-Windows-x64-${{ matrix.runtime }}-Setup
           path: dist/accepted/*
           retention-days: 30
           compression-level: 0
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         if: always()
         with:
           name: Windows-validation-${{ matrix.runtime }}
@@ -124,8 +124,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           pattern: Audial-AI-Windows-x64-*-Setup
           path: release-assets
