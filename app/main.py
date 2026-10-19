@@ -23,6 +23,7 @@ def main():
     p.add_argument("--smoke-test", action="store_true", help="Validate native startup and bundled models without recording")
     p.add_argument("--verify-emotion", action="store_true", help="Run the installed WavLM model on the supplied speech recording without capturing audio")
     p.add_argument("--verify-inference", action="store_true", help="Run real captions, expression and prosody offline without recording")
+    p.add_argument("--verify-live-inference", action="store_true", help="Run real streaming captions/expression offline using software-fed supplied speech, without a microphone")
     args = p.parse_args()
     if args.forget_model_token:
         from app.utils.credentials import forget_token
@@ -52,9 +53,9 @@ def main():
         return
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
-    if args.verify_inference:
+    if args.verify_inference or args.verify_live_inference:
         from app.services.validation import verify_inference
-        verify_inference()
+        verify_inference(stream=args.verify_live_inference)
         return
     if args.verify_emotion:
         import json

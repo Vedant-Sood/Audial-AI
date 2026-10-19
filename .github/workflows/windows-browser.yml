@@ -51,6 +51,8 @@ jobs:
           python -m PyInstaller --onefile --console --noconfirm --clean --name AudialAINativeAcceptance --distpath build/browser-native --workpath build/browser-work --specpath build/browser-spec native_host.py 2>&1 | Tee-Object windows-browser-native-build.txt
           if ($LASTEXITCODE -ne 0) { throw 'Isolated native-host packaging failed' }
       - name: Actual tab lifecycle and native PCM capture
+        env:
+          DEBUG: pw:browser
         shell: pwsh
         run: |
           if ('${{ matrix.browser }}' -eq 'Chromium') {
@@ -62,6 +64,8 @@ jobs:
           }
           python -m scripts.verify_browser --browser "$browser" --native-host build/browser-native/AudialAINativeAcceptance.exe --output windows-browser-current 2>&1 | Tee-Object windows-browser-current.txt
           if ($LASTEXITCODE -ne 0) { throw 'Actual browser transport acceptance failed' }
+          $report = Get-Content windows-browser-current/extension-acceptance.json -Raw | ConvertFrom-Json | ConvertTo-Json -Depth 12 -Compress
+          Write-Output ('::notice title=Actual browser acceptance::' + $report.Replace('%', '%25').Replace([string][char]13, '%0D').Replace([string][char]10, '%0A'))
       - name: Publish failure excerpts
         if: failure()
         shell: pwsh

@@ -93,9 +93,12 @@ try {
         } elseif ($property.Value.state -ne 'ready') { throw "Public asset not ready: $($property.Name)" }
     }
     $report.complete_public_catalogue = 'PASS; gated Community-1 correctly requires user acceptance and token'
+    Copy-Item "$state\model-setup.json" "$Output\model-setup.json" -Force
     $env:HF_HUB_OFFLINE = '1'; $env:TRANSFORMERS_OFFLINE = '1'
     Invoke-Worker @('--verify-inference') 'installed-offline-inference' 300
     $report.offline_caption_expression_prosody = 'PASS'
+    Invoke-Worker @('--verify-live-inference') 'installed-streaming-inference' 300
+    $report.streaming_caption_expression_prosody = 'PASS (real-time software-fed supplied speech through the capture loop; no physical microphone or browser transport)'
     'keep this session' | Set-Content "$state\acceptance-sentinel.txt" -Encoding utf8
     $before = (Get-FileHash "$state\acceptance-sentinel.txt").Hash
     Install-Audial $UpgradeInstaller 'upgrade'

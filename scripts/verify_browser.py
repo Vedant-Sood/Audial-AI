@@ -261,10 +261,17 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                         "--disable-background-networking",
                     ],
                 )
+                report["lifecycle_events"] = []
+                stage = "initialization"
+                def record_lifecycle(event):
+                    report["lifecycle_events"].append({"event": event, "stage": stage})
+                context.on("close", lambda: record_lifecycle("context closed"))
+                context.browser.on("disconnected", lambda: record_lifecycle("browser disconnected"))
                 report["browser_version"] = (
                     context.browser.version if context.browser else args.browser
                 )
                 first = context.new_page()
+                first.on("close", lambda: record_lifecycle("first tab closed"))
                 first.goto(base + "/first")
                 first.locator("#play").click()
                 def wait(predicate, timeout=20):
@@ -469,11 +476,28 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 report["closed_tab_removal"] = "PASS"
                 old_backgrounds = set(context.service_workers)
                 old_controller = worker
+                stage = "extension reload"
                 try:
                     worker.evaluate("chrome.runtime.reload()")
                 except Exception as error:
                     if not any(term in str(error).lower() for term in ["closed", "destroyed", "context invalidated"]):
                         raise
+                worker = context.new_page()
+                # Reload temporarily unregisters extension URLs and shortcuts.
+                # Wait for the real document to become available before an OS
+                # action; a key sent during that interval is simply lost.
+                deadline = time.monotonic() + 15
+                while True:
+                    try:
+                        worker.goto(controller_url)
+                        worker.evaluate("chrome.runtime.id")
+                        break
+                    except Exception as error:
+                        if time.monotonic() > deadline or not any(term in str(error) for term in ["ERR_BLOCKED_BY_CLIENT", "ERR_ABORTED", "context was destroyed"]):
+                            raise
+                        first.wait_for_timeout(150)
+                if not old_controller.is_closed():
+                    old_controller.close()
                 # A reloaded lazy worker may wait for an event. Opening the
                 # actual toolbar is the supported user action that wakes it.
                 popup = invoke(first)
@@ -482,14 +506,6 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     if time.monotonic() > deadline:
                         raise AssertionError("Extension reload did not create a fresh background worker")
                     first.wait_for_timeout(100)
-                popup.close()
-                worker = context.new_page()
-                worker.goto(controller_url)
-                if not old_controller.is_closed():
-                    old_controller.close()
-                # Opening a controller tab dismisses a toolbar popup. Invoke
-                # the source action again before attempting actual capture.
-                popup = invoke(first)
                 wait(lambda: any(tab["id"] == tab_id(first) for tab in tabs()))
                 report["extension_background_restart"] = (
                     "PASS; real extension reloaded and metadata restored"
@@ -523,10 +539,14 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 report["desktop_service_reconnection"] = (
                     "PASS; fresh bridge token/port, tab list restored automatically"
                 )
+                stage = "suspended tab creation"
                 suspended = context.new_page()
+                suspended.on("close", lambda: record_lifecycle("suspended tab target closed"))
                 suspended.goto(base + "/suspended")
                 suspended_id = tab_id(suspended)
+                wait(lambda: any(tab["id"] == suspended_id for tab in tabs()))
                 try:
+                    stage = "discard"
                     # A tab remains active in its own window even when another
                     # window is focused. Discard requires a different active tab
                     # in this exact window.
@@ -551,6 +571,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                             tab["id"] == suspended_id and tab["discarded"] for tab in tabs()
                         )
                     )
+                    stage = "restore"
                     worker.evaluate(
                         "id => chrome.tabs.update(id,{active:true})", suspended_id
                     )
@@ -577,6 +598,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     except Exception as error:
                         report["suspended_cleanup_error"] = str(error)
                         failures.append("Suspended-tab cleanup: " + str(error))
+                stage = "normal cleanup"
                 context.close()
                 if failures:
                     raise AssertionError("; ".join(failures))

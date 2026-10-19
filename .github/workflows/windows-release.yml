@@ -97,6 +97,11 @@ jobs:
         run: |
           $version = python -c 'from app import __version__; print(__version__)'
           ./scripts/verify_windows.ps1 -Installer "dist/installers/Audial-AI-$version-Windows-x64-${{ matrix.runtime }}-Setup.exe" -UpgradeInstaller "dist/installers/Audial-AI-$version.1-Windows-x64-${{ matrix.runtime }}-Setup.exe" 2>&1 | Tee-Object windows-acceptance.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Installed Windows acceptance failed' }
+          foreach ($file in @('windows-acceptance/installer-acceptance.json', 'windows-acceptance/installed-offline-inference.txt', 'windows-acceptance/installed-streaming-inference.txt')) {
+            $report = Get-Content $file -Raw | ConvertFrom-Json | ConvertTo-Json -Depth 12 -Compress
+            Write-Output ('::notice title=Installed Windows acceptance::' + $report.Replace('%', '%25').Replace([string][char]13, '%0D').Replace([string][char]10, '%0A'))
+          }
       - name: Stage only accepted installers
         shell: pwsh
         run: |
@@ -118,7 +123,7 @@ jobs:
           $files = @('windows-acceptance/installer-acceptance.json', 'windows-acceptance/model-summary.txt', 'windows-acceptance/startup-error.log')
           $files += @('windows-browser-chromium/extension-acceptance.json', 'windows-browser-edge/extension-acceptance.json', 'windows-browser-chromium.txt', 'windows-browser-edge.txt')
           $files += @(Get-ChildItem windows-acceptance -Filter '*errors.txt' -ErrorAction SilentlyContinue | ForEach-Object FullName)
-          $files += @('windows-acceptance/installed-offline-inference.txt', 'windows-acceptance.txt', 'windows-tests.txt', 'windows-build.txt')
+          $files += @('windows-acceptance/installed-offline-inference.txt', 'windows-acceptance/installed-streaming-inference.txt', 'windows-acceptance.txt', 'windows-tests.txt', 'windows-build.txt')
           $files += @(Get-ChildItem windows-acceptance -Filter '*.json' -ErrorAction SilentlyContinue | ForEach-Object FullName)
           foreach ($file in $files) {
             if (Test-Path $file) {
