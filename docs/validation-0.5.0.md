@@ -8,16 +8,18 @@ Torch/Torchaudio 2.8.0 CPU, 5 available CPU cores, no GPU or physical capture
 hardware. These results do not establish behavior on Windows or an RTX 4060.
 
 - Linux Python regression: 106 passed, one Windows Credential Manager API test
-  skipped; Node regression: 19 passed. The preceding Windows CI revision ran
-  all 101 tests then present successfully on both runtime variants.
+  skipped; Node regression: 19 passed. Windows CI ran all 107 Python tests on
+  both runtime variants, including the real Credential Manager API check.
 - Real offscreen native startup, bundled ISL playback and silence abstention: passed.
 - Real Chromium page checks at 1280x900 and 390x844: passed; no JavaScript errors
   or horizontal overflow. Desktop screenshots reviewed at 1160x800 and 900x640;
   mouse/keyboard focus, smaller-window controls and persistent-error/history screenshots reviewed. Conversation stacks its panels at smaller widths.
 - Actual WavLM encoder download (1,261,964,375 bytes), authoritative SHA256,
   selected-head activation and real supplied-speech inference: passed offline.
-- Full public catalogue setup: incomplete. Hugging Face and Google model hosts
-  return enforced proxy HTTP 403. Gates remain Needs action; not silently ready.
+- Full public catalogue setup: passed using the installed Windows executables
+  for both runtime variants. This cloud's Hugging Face and Google model hosts
+  return enforced proxy HTTP 403, so the same full download is blocked locally.
+  Gates remain Needs action; not silently ready.
 - Actual extension tab/audio capture on this cloud Chromium: blocked by managed
   `ExtensionInstallBlocklist: ["*"]`; Chromium explicitly reports unpacked loading
   disabled by administrator policy. Extension/native protocol and lifecycle
@@ -42,11 +44,22 @@ hardware. These results do not establish behavior on Windows or an RTX 4060.
   2.354 s; expression: 5.249 s; total: 5.269 s, with workers released.
   [Exact result](validation-0.5.0/windows-offline-cpu.json). This is hosted Windows
   imported-file inference, not live capture or an RTX 4060 measurement.
-  Both browsers passed real two-window discovery, reload and navigation before
-  the discard check failed. CPU artifact publication remains gated on browser
-  acceptance. A short separate Windows workflow now provides browser transport
-  feedback with an independently packaged copy of the product native-host module;
-  the release workflow still checks the complete desktop worker.
+- [NVIDIA job 118067771671](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39254818531/job/118067771671)
+  also passed the entire installed lifecycle and offline inference, then uploaded
+  the [accepted NVIDIA installer artifact](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39254818531/artifacts/12190252072)
+  (1.92 GB artifact ZIP, 30-day retention). Its artifact ZIP SHA256 is
+  `830fd56c93eae62cef515b4e611f2a8957f38a3f0df0ea944c7e1ff790143da2`;
+  the individual installer SHA256 is inside the artifact. The hosted runner has
+  no NVIDIA GPU: this validates the CUDA-runtime distribution's CPU fallback,
+  not CUDA execution or target-laptop performance.
+- The short Windows browser workflow has now verified real two-window discovery,
+  reload/navigation identity, restricted pages, 440/1000-Hz source capture and
+  switching, Stop and closed-tab cleanup in Chromium 145 and Edge 155. Edge also
+  passed real extension reload, desktop disconnect/audio release and fresh-token
+  reconnection. Full suspended-tab acceptance and Chrome reload remain pending;
+  CPU artifact publication is still gated on them. The fast workflow packages
+  the product native host independently; the release workflow checks the complete
+  desktop worker. Generated tones establish transport/source identity, not ASR.
 - Signing: no certificate configured; installer acceptance requires/report NotSigned.
 
 The same-workload settled Qt caption benchmark uses five batches of 500 rows,
@@ -68,10 +81,17 @@ readiness to reach the actual denial; it starts no ASR or physical microphone.
 CI attempts are linked on the branch. Initial runner failures (unavailable
 Windows Python patch, then global pipx/filelock contamination) were diagnosed;
 Windows builds now use available Python 3.12.10 in an isolated venv. Actual
-installer/native capture acceptance is still pending. Acceptance now retains
+final full browser acceptance remains pending. Acceptance now retains
 partial progress, model setup state and worker errors, and publishes failure
 excerpts when authenticated Actions logs cannot be reached from this environment.
 No blocked check is counted as passed.
+
+The installed check also runs `--verify-live-inference`: the supplied recording
+is software-fed in real-time 20-ms PCM blocks through the actual capture loop,
+VAD, ASR, asynchronous expression/prosody and Stop/cleanup, with sockets blocked.
+This additional streaming check has been implemented; a Windows pass is not
+claimed until the next installer acceptance run completes. It is separate from
+physical microphone capture and the browser transport acceptance above.
 
 Moving the sign classifier import into its owning workers avoids importing
 PyTorch during desktop module import. Three fresh processes measured 1.841–1.996 s

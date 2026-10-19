@@ -16,8 +16,9 @@ End users do not install Python, Git, Node or build tools.
 Download only a successfully validated `Audial-AI-Windows-x64-*-Setup` artifact
 from [Windows Actions](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml)
 or a published [release](https://github.com/Vedant-Sood/Audial-AI/releases).
-**0.5.0 Windows build and installer acceptance are pending.** A source checkout
-or a successful Linux test is not a Windows installer. See the
+Both runtime variants have passed installed Windows lifecycle and offline
+inference checks. The [NVIDIA installer artifact](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39254818531/artifacts/12190252072)
+is available; CPU publication is still gated on full browser acceptance. See the
 [current validation report](docs/validation-0.5.0.md) before choosing a build.
 The older 0.4.1 ZIP release does not contain these changes.
 
@@ -103,11 +104,14 @@ npm test
 python -m app.main --smoke-test
 python -m app.main --setup-models
 python -m app.main --verify-inference
+python -m app.main --verify-live-inference
 ```
 
-The last command runs real local ASR, expression and prosody on the bundled
-licensed speech excerpt with all socket connections blocked. It requires model
-setup to be complete. Headless Linux UI checks use `QT_QPA_PLATFORM=offscreen`.
+The two inference checks use real local ASR, expression and prosody with socket
+connections blocked. The first imports the bundled licensed speech excerpt; the
+second sends it in real-time PCM packets through the streaming capture loop.
+Neither opens a physical microphone. They require model setup to be complete.
+Headless Linux UI checks use `QT_QPA_PLATFORM=offscreen`.
 
 Windows build machines also need Inno Setup 6 and the build dependencies.
 `scripts/build_windows.ps1 -Runtime CPU` builds native executables, Setup.exe,

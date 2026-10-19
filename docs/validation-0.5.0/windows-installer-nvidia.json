@@ -1,0 +1,117 @@
+{
+  "source_commit": "104c238c2f41f50c39e99ac9ac9ca3c588ebc526",
+  "source_job_url": "https://github.com/Vedant-Sood/Audial-AI/actions/runs/39254818531/job/118067771671",
+  "environment": "Hosted Windows Server 2022 x64, Python 3.12.10, NVIDIA CUDA 12.6 distribution. No NVIDIA GPU is available; inference exercised CPU fallback.",
+  "installed_lifecycle": "PASS: fresh per-user installation, shortcuts/HKCU native registration, first native launch/automatic setup, all public catalogue assets, explicit gated Needs action, offline ASR/expression/prosody, upgrade fixture, reinstall, offline relaunch, default data preservation and explicit purge.",
+  "installer_signing": "NotSigned",
+  "artifact": {
+    "name": "Audial-AI-Windows-x64-NVIDIA-Setup",
+    "url": "https://github.com/Vedant-Sood/Audial-AI/actions/runs/39254818531/artifacts/12190252072",
+    "display_size": "1.92 GB",
+    "retention_days": 30,
+    "zip_sha256": "830fd56c93eae62cef515b4e611f2a8957f38a3f0df0ea944c7e1ff790143da2",
+    "installer_sha256": "Included as the adjacent .sha256 file inside the artifact; not retrieved through the blocked cloud Actions API."
+  },
+  "limitations": [
+    "Browser acceptance was skipped in this NVIDIA job and remains gated separately in CPU release jobs.",
+    "No physical microphone/camera, CUDA execution, or RTX 4060 laptop validation.",
+    "Upgrade fixture uses the same runtime payload with an incremented installer version; no historical binary was available."
+  ],
+  "public_actions_step_results": [
+    {
+      "name": "Set up job",
+      "result": "success",
+      "completed_at": "2026-10-19T12:48:37Z"
+    },
+    {
+      "name": "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+      "result": "success",
+      "completed_at": "2026-10-19T12:48:44Z"
+    },
+    {
+      "name": "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1",
+      "result": "success",
+      "completed_at": "2026-10-19T12:48:44Z"
+    },
+    {
+      "name": "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+      "result": "success",
+      "completed_at": "2026-10-19T12:48:50Z"
+    },
+    {
+      "name": "Isolate build dependencies from runner tools",
+      "result": "success",
+      "completed_at": "2026-10-19T12:48:57Z"
+    },
+    {
+      "name": "Install compatible native runtime",
+      "result": "success",
+      "completed_at": "2026-10-19T12:53:10Z"
+    },
+    {
+      "name": "Regression and source startup",
+      "result": "success",
+      "completed_at": "2026-10-19T12:53:32Z"
+    },
+    {
+      "name": "Build versioned Setup.exe and checksums",
+      "result": "success",
+      "completed_at": "2026-10-19T13:18:57Z"
+    },
+    {
+      "name": "Actual extension/native capture in Chrome for Testing",
+      "result": "skipped",
+      "completed_at": "2026-10-19T13:18:57Z"
+    },
+    {
+      "name": "Actual extension/native capture in Microsoft Edge",
+      "result": "skipped",
+      "completed_at": "2026-10-19T13:18:57Z"
+    },
+    {
+      "name": "Actual installed Windows acceptance",
+      "result": "success",
+      "completed_at": "2026-10-19T13:32:14Z"
+    },
+    {
+      "name": "Stage only accepted installers",
+      "result": "success",
+      "completed_at": "2026-10-19T13:32:15Z"
+    },
+    {
+      "name": "Run actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4",
+      "result": "success",
+      "completed_at": "2026-10-19T13:32:31Z"
+    },
+    {
+      "name": "Report failure details",
+      "result": "skipped",
+      "completed_at": "2026-10-19T13:32:31Z"
+    },
+    {
+      "name": "Run actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4",
+      "result": "success",
+      "completed_at": "2026-10-19T13:32:32Z"
+    },
+    {
+      "name": "Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+      "result": "success",
+      "completed_at": "2026-10-19T13:32:33Z"
+    },
+    {
+      "name": "Post Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1",
+      "result": "success",
+      "completed_at": "2026-10-19T13:32:33Z"
+    },
+    {
+      "name": "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+      "result": "success",
+      "completed_at": "2026-10-19T13:32:35Z"
+    },
+    {
+      "name": "Complete job",
+      "result": "success",
+      "completed_at": "2026-10-19T13:32:35Z"
+    }
+  ]
+}

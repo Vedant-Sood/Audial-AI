@@ -494,6 +494,14 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                         break
                     except Exception as error:
                         if time.monotonic() > deadline or not any(term in str(error) for term in ["ERR_BLOCKED_BY_CLIENT", "ERR_ABORTED", "context was destroyed"]):
+                            try:
+                                inspector = context.new_page()
+                                inspector.goto("chrome://extensions/")
+                                report["browser_extension_diagnostics"] = inspector.evaluate(
+                                    "chrome.developerPrivate.getExtensionsInfo({includeDisabled:true,includeTerminated:true})"
+                                )
+                            except Exception as diagnostic_error:
+                                report["extension_diagnostic_error"] = str(diagnostic_error)
                             raise
                         first.wait_for_timeout(150)
                 if not old_controller.is_closed():
