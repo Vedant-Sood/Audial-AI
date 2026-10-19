@@ -1,6 +1,7 @@
 """Per-user Windows Credential Manager storage; never write tokens to settings."""
 
 import os
+import re
 import sys
 
 TARGET = "AudialAI/HuggingFace"
@@ -48,11 +49,7 @@ def _windows_api():
 
 def save_token(token):
     token = token.strip()
-    if (
-        not token.startswith("hf_")
-        or len(token) > 1024
-        or any(c.isspace() for c in token)
-    ):
+    if not re.fullmatch(r"hf_[A-Za-z0-9]{6,1000}", token):
         raise ValueError("Enter a valid Hugging Face read token, beginning with hf_.")
     ctypes, Credential, api = _windows_api()
     encoded = token.encode("utf-16-le")
@@ -71,6 +68,8 @@ def save_token(token):
 
 def get_token():
     token = os.environ.get("HF_TOKEN")
+    if token and not re.fullmatch(r"hf_[A-Za-z0-9]{6,1000}", token):
+        raise ValueError("The model access token has invalid characters. Update it in Setup or the worker environment.")
     if token or sys.platform != "win32":
         return token
     ctypes, Credential, api = _windows_api()

@@ -80,3 +80,28 @@ assembling a portable desktop. `packaging/AccessibilityAI.spec` builds native
 executables on Windows; `.github/workflows/windows-release.yml` gates native
 release publication on its Windows tests. Packaging never implies a new model
 accuracy result or a successful test on the user's hardware.
+
+
+## 0.5.0 setup, native browser bridge and scheduling
+
+The PySide6/Python-worker architecture is retained. First launch invokes
+`CatalogueInstaller` through a console worker. It resolves revision-pinned model
+assets, verifies authoritative hashes into resumable staging, and atomically
+promotes complete directories. CLI/developer installs use the same path and file
+lock. Receipts and user state stay outside the application directory. Only an
+active inference feature loads a model.
+
+MV3 `chrome.tabs` supplies real metadata; toolbar/activeTab plus tabCapture and an
+offscreen audio worklet supply explicitly granted PCM. The native console worker
+exchanges bounded length-framed JSON and forwards it to a private authenticated
+loopback bridge. Capture ownership is a per-session capability; ordinary companion
+pages see public metadata but cannot impersonate the native audio source. Native
+disconnect, closed/restricted/discarded tabs and expired heartbeats release the
+owner. Metadata is resent after desktop or extension restarts.
+
+`ExpressionWorker` owns the lazy emotion encoder on one thread. Latest-only live
+updates and eight optional caption jobs prevent model races and bound backlog;
+caption text/prosody publish independently. Natural file completion drains final
+caption estimates. Explicit stop cancels optional backlog and releases resources.
+Desktop/browser transcript views render a 500-row window; full session objects
+remain exportable. Rendering and real model benchmarks are separate reports.

@@ -23,8 +23,12 @@ class PoseExtractor:
         vision = mp.tasks.vision
         self.hands = vision.HandLandmarker.create_from_options(vision.HandLandmarkerOptions(
             base_options=base(model_asset_path=str(hand_path)), num_hands=2))
-        self.body = vision.PoseLandmarker.create_from_options(vision.PoseLandmarkerOptions(
-            base_options=base(model_asset_path=str(body_path)), num_poses=1))
+        try:
+            self.body = vision.PoseLandmarker.create_from_options(vision.PoseLandmarkerOptions(
+                base_options=base(model_asset_path=str(body_path)), num_poses=1))
+        except Exception:
+            self.hands.close()
+            raise
 
     def extract(self, rgb):
         image = self.mp.Image(image_format=self.mp.ImageFormat.SRGB, data=np.ascontiguousarray(rgb))

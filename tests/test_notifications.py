@@ -71,3 +71,28 @@ def test_keyboard_focus_is_visible_without_pointer_focus_artifacts():
     QTest.mouseClick(second, Qt.LeftButton)
     assert not second.property("keyboardFocus")
     parent.close()
+
+
+def test_error_overflow_stays_visible_until_acknowledged():
+    app = QApplication.instance() or QApplication([])
+    notifications = Notifications(history=NoticeHistory(persist=False))
+    for index in range(6):
+        notifications.publish(f"Unresolved failure {index}", "error")
+    assert len(notifications.cards) == 3 and len(notifications.unresolved) == 6
+    assert "3 earlier" in notifications.overflow.text()
+    for card in notifications.cards.copy():
+        notifications.remove_card(card)
+    app.processEvents()
+    assert notifications.isVisible() and len(notifications.unresolved) == 3
+    notifications.acknowledge()
+    assert not notifications.isVisible()
+    assert len(notifications.history.items) == 6
+    notifications.close()
+
+
+def test_notification_history_survives_a_relaunch():
+    first = NoticeHistory()
+    first.publish("A model needs repair", "error", action="models")
+    restored = NoticeHistory()
+    assert restored.snapshot()[0]["message"] == "A model needs repair"
+    assert restored.snapshot()[0]["action"] == "models"

@@ -1,0 +1,240 @@
+{
+  "scope": "Actual page DOM/layout/paint with generated captions; not ASR, tab capture or inference",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "baseline_commit": "65f6bc0609b4e7dfde31873ed5d18d8ea3e46368",
+  "batches": 5,
+  "captions_per_batch": 500,
+  "before": {
+    "browser_version": "154.0.8037.57",
+    "batch_seconds": [
+      0.2755,
+      0.45229999999981374,
+      0.6169000000003725,
+      0.8331000000005588,
+      1.0667000000001863
+    ],
+    "before": {
+      "js_heap_used_bytes": 1970412,
+      "documents": 1,
+      "nodes": 350,
+      "jsEventListeners": 52,
+      "visible_rows": 0
+    },
+    "after": {
+      "js_heap_used_bytes": 2172760,
+      "documents": 1,
+      "nodes": 15350,
+      "jsEventListeners": 52,
+      "visible_rows": 2500
+    },
+    "page_errors": []
+  },
+  "after": {
+    "browser_version": "154.0.8037.57",
+    "batch_seconds": [
+      0.044399999999441206,
+      0.06870000000018626,
+      0.05879999999981374,
+      0.05390000000037253,
+      0.057600000000558794
+    ],
+    "before": {
+      "js_heap_used_bytes": 1956252,
+      "documents": 1,
+      "nodes": 425,
+      "jsEventListeners": 53,
+      "visible_rows": 0
+    },
+    "after": {
+      "js_heap_used_bytes": 2065800,
+      "documents": 1,
+      "nodes": 3425,
+      "jsEventListeners": 53,
+      "visible_rows": 500
+    },
+    "page_errors": [],
+    "sustained": {
+      "duration_seconds": 180.3682471150005,
+      "captions_sent": 87000,
+      "samples": [
+        {
+          "elapsed_seconds": 0.06496491200050514,
+          "captions_sent": 3000,
+          "batch_seconds": 0.060700000000186265,
+          "js_heap_used_bytes": 2093820,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 10.686040836000757,
+          "captions_sent": 8000,
+          "batch_seconds": 0.0413999999994412,
+          "js_heap_used_bytes": 2116408,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 21.395655074000388,
+          "captions_sent": 13000,
+          "batch_seconds": 0.051899999999441206,
+          "js_heap_used_bytes": 2127760,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 32.0452603370004,
+          "captions_sent": 18000,
+          "batch_seconds": 0.06239999999944121,
+          "js_heap_used_bytes": 2132620,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 42.772009349000655,
+          "captions_sent": 23000,
+          "batch_seconds": 0.04839999999944121,
+          "js_heap_used_bytes": 2136172,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 53.53606108400072,
+          "captions_sent": 28000,
+          "batch_seconds": 0.05379999999981373,
+          "js_heap_used_bytes": 2138496,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 64.2478360490004,
+          "captions_sent": 33000,
+          "batch_seconds": 0.0585,
+          "js_heap_used_bytes": 2144008,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 74.96216522400027,
+          "captions_sent": 38000,
+          "batch_seconds": 0.059700000000186264,
+          "js_heap_used_bytes": 2147312,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 85.62245587899997,
+          "captions_sent": 43000,
+          "batch_seconds": 0.059,
+          "js_heap_used_bytes": 2147232,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 96.33353643400005,
+          "captions_sent": 48000,
+          "batch_seconds": 0.04529999999981373,
+          "js_heap_used_bytes": 2150544,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 106.96266165199995,
+          "captions_sent": 53000,
+          "batch_seconds": 0.05410000000055879,
+          "js_heap_used_bytes": 2150896,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 117.56840294800077,
+          "captions_sent": 58000,
+          "batch_seconds": 0.042,
+          "js_heap_used_bytes": 2152452,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 128.16954178200012,
+          "captions_sent": 63000,
+          "batch_seconds": 0.044,
+          "js_heap_used_bytes": 2150944,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 138.7707976470001,
+          "captions_sent": 68000,
+          "batch_seconds": 0.04710000000055879,
+          "js_heap_used_bytes": 2150960,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 149.5230022680007,
+          "captions_sent": 73000,
+          "batch_seconds": 0.0765,
+          "js_heap_used_bytes": 2156876,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 160.2077195310003,
+          "captions_sent": 78000,
+          "batch_seconds": 0.05179999999981374,
+          "js_heap_used_bytes": 2158852,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        },
+        {
+          "elapsed_seconds": 170.83636922000005,
+          "captions_sent": 83000,
+          "batch_seconds": 0.0575,
+          "js_heap_used_bytes": 2156892,
+          "documents": 1,
+          "nodes": 3425,
+          "jsEventListeners": 53,
+          "visible_rows": 500
+        }
+      ],
+      "final": {
+        "js_heap_used_bytes": 2156892,
+        "documents": 1,
+        "nodes": 3425,
+        "jsEventListeners": 53,
+        "visible_rows": 500
+      }
+    }
+  }
+}

@@ -42,7 +42,7 @@ Live labels require a consistent transition. A change or low-confidence predicti
 
 ## Primary references and selection
 
-- [Microsoft WavLM](https://github.com/microsoft/unilm/tree/master/wavlm): pretrained speech encoder, MIT project; existing locally trained six-class head, checksum-pinned Torchaudio encoder and actor-held-out reports. Chosen because its task/provenance match this application and it beat the acoustic head under the same protocol.
+- [Microsoft WavLM](https://github.com/microsoft/unilm/tree/master/wavlm): pretrained speech encoder, MIT project; existing locally trained six-class head, checksum-pinned Torchaudio encoder and actor-held-out reports. The frozen candidate was fixed before this transfer rescore, based on its existing CREMA-D development/report provenance. This rescore does not select or tune a checkpoint.
 - [emotion2vec](https://github.com/ddlBoJack/emotion2vec): credible self-supervised local alternative with nine-category downstream models. Repository MIT licensing alone does not establish every downstream weight/dataset license or exclude benchmark pretraining overlap. No six-class mapping or unsupported accuracy claim was manufactured.
 - [SpeechBrain IEMOCAP recipe](https://github.com/speechbrain/speechbrain/tree/v1.0.3/recipes/IEMOCAP): practical local four-class SER recipe, a different label task and licensed corpus. It is not a directly comparable six-class replacement without a new development protocol.
 - [RAVDESS primary publication](https://doi.org/10.1371/journal.pone.0196391): Livingstone and Russo (2018), CC-BY-NC-SA-4.0 audio. Mirror software licensing does not replace the audio terms. Evaluation datasets are never downloaded by normal setup.

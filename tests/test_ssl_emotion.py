@@ -247,7 +247,8 @@ def test_temporal_head_uses_matching_global_and_frame_preprocessing_after_serial
 
 def test_model_page_install_verifies_and_selects_the_evaluated_head(tmp_path, monkeypatch):
     from io import BytesIO
-    from app.models import manager
+    from app.models import manager, catalogue
+    from app.models.download import Asset
     from app.utils.paths import data_root
     from accessibilityai_upgrade.ssl_features import ENCODERS
     root = tmp_path / "source"
@@ -261,9 +262,10 @@ def test_model_page_install_verifies_and_selects_the_evaluated_head(tmp_path, mo
               "dataset": "CREMA-D", "target_met": False}
     (bundled / "emotion.joblib").write_bytes(head)
     (bundled / "evaluation.json").write_text(json.dumps(report), encoding="utf-8")
-    monkeypatch.setattr(manager, "project_root", lambda: root)
+    monkeypatch.setattr(catalogue, "project_root", lambda: root)
     monkeypatch.setitem(ENCODERS["WAVLM_LARGE"], "sha256", digest)
-    monkeypatch.setattr(manager.urllib.request, "urlopen", lambda *a, **kw: BytesIO(encoder))
+    monkeypatch.setattr(catalogue.CatalogueInstaller, "resolve_assets", lambda *args: [Asset("https://example.org/encoder", "encoder.pth", digest, size=len(encoder))])
+    monkeypatch.setattr(catalogue.urllib.request, "urlopen", lambda *a, **kw: BytesIO(encoder))
     model_manager = manager.ModelManager(tmp_path / "models")
     model_manager.install("emotion-wavlm", progress=lambda _: None)
     assert model_manager.installed("emotion-wavlm")

@@ -1,0 +1,105 @@
+{
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "qt_platform": "offscreen",
+  "capture_started": false,
+  "views": [
+    {
+      "image": "desktop-1160-0.png",
+      "page": "Start",
+      "size": [
+        1160,
+        800
+      ]
+    },
+    {
+      "image": "desktop-1160-1.png",
+      "page": "Captions",
+      "size": [
+        1160,
+        800
+      ]
+    },
+    {
+      "image": "desktop-1160-3.png",
+      "page": "Voice & emotion",
+      "size": [
+        1160,
+        800
+      ]
+    },
+    {
+      "image": "desktop-1160-4.png",
+      "page": "Conversation",
+      "size": [
+        1160,
+        800
+      ]
+    },
+    {
+      "image": "desktop-1160-5.png",
+      "page": "Setup & models",
+      "size": [
+        1160,
+        800
+      ]
+    },
+    {
+      "image": "desktop-1160-7.png",
+      "page": "Settings",
+      "size": [
+        1160,
+        800
+      ]
+    },
+    {
+      "image": "desktop-900-0.png",
+      "page": "Start",
+      "size": [
+        900,
+        640
+      ]
+    },
+    {
+      "image": "desktop-900-1.png",
+      "page": "Captions",
+      "size": [
+        900,
+        640
+      ]
+    },
+    {
+      "image": "desktop-900-3.png",
+      "page": "Voice & emotion",
+      "size": [
+        900,
+        640
+      ]
+    },
+    {
+      "image": "desktop-900-4.png",
+      "page": "Conversation",
+      "size": [
+        900,
+        640
+      ]
+    },
+    {
+      "image": "desktop-900-5.png",
+      "page": "Setup & models",
+      "size": [
+        900,
+        640
+      ]
+    },
+    {
+      "image": "desktop-900-7.png",
+      "page": "Settings",
+      "size": [
+        900,
+        640
+      ]
+    }
+  ],
+  "pointer_pressed_and_keyboard_focus": "PASS; screenshots require visual review",
+  "persistent_alerts_and_history": "PASS; four injected worker errors, no physical-device validation claim"
+}

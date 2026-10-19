@@ -15,7 +15,8 @@ hiddenimports += collect_submodules('training')
 # Developer browser/benchmark tooling must never bundle Playwright or Node.
 hiddenimports += [name for name in collect_submodules('scripts') if name not in {
     'scripts.verify_browser', 'scripts.benchmark_browser', 'scripts.benchmark_ui',
-    'scripts.evaluate_voice_models', 'scripts.package_extension'}]
+    'scripts.evaluate_voice_models', 'scripts.package_extension', 'scripts.verify_ui',
+    'scripts.verify_browser_ui'}]
 hiddenimports += collect_submodules('accessibilityai_upgrade')
 if find_spec('pyannote') is not None and find_spec('pyannote.audio') is not None:
     d, b, h = collect_all('pyannote.audio')

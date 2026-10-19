@@ -10,7 +10,7 @@ from PySide6.QtCore import Qt, QTimer, QProcess, QProcessEnvironment, QUrl, QSig
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QListWidget, QStackedWidget, QPushButton, QLineEdit, QComboBox, QCheckBox,
-    QFormLayout, QSpinBox, QDoubleSpinBox, QFileDialog, QMessageBox, QInputDialog,
+    QFormLayout, QSpinBox, QDoubleSpinBox, QFileDialog, QMessageBox, QInputDialog, QBoxLayout,
     QScrollArea, QPlainTextEdit, QTableWidget, QTableWidgetItem, QTabWidget, QFrame,
     QColorDialog, QApplication)
 from app.utils.paths import data_root, project_root, atomic_json
@@ -67,6 +67,7 @@ class MainWindow(QMainWindow):
         self.last_sign = ""
         self.caption_panels, self.tone_panels, self.live_buttons = [], [], []
         self.sign_canvases = []
+        self.responsive_layouts = []
         self.floating_display = None
         self.browser_service = None
         self.setWindowTitle("Audial-AI")
@@ -218,12 +219,14 @@ class MainWindow(QMainWindow):
         pause = button("Pause / resume", self.pause_audio)
         stop = button("Stop", self.stop_audio)
         file = button("Open audio / video", lambda: self.open_audio(mode))
-        row.addWidget(source)
-        for b in [start, pause, stop, file]:
-            row.addWidget(b)
+        row.addWidget(source, 2)
+        row.addWidget(start, 1)
+        row.addWidget(file, 1)
         layout.addLayout(row)
         self.live_buttons.append((start, pause, stop, file))
         extra = QHBoxLayout()
+        extra.addWidget(pause)
+        extra.addWidget(stop)
         extra.addWidget(button("Open browser companion", self.open_browser))
         extra.addWidget(button("Float captions and signs", self.open_floating))
         layout.addLayout(extra)
@@ -273,7 +276,8 @@ class MainWindow(QMainWindow):
         self.tone_panels.append(tone)
         tabs.addTab(captions, "Captions")
         tabs.addTab(tone, "Voice & emotion")
-        display_row = QHBoxLayout()
+        display_row = QBoxLayout(QBoxLayout.LeftToRight)
+        self.responsive_layouts.append(display_row)
         display_row.addWidget(tabs, 2)
         lights = SignLightCanvas()
         self.sign_canvases.append(lights)
@@ -282,6 +286,11 @@ class MainWindow(QMainWindow):
         layout.addWidget(button("Open ISL workspace", lambda: self.nav.setCurrentRow(2)))
         self.session_controls(layout)
         return p
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        for layout in getattr(self, "responsive_layouts", []):
+            layout.setDirection(QBoxLayout.LeftToRight if self.width() >= 1080 else QBoxLayout.TopToBottom)
 
     def sign_page(self):
         p, layout = self.page("Indian Sign Language is the default for every supported input. Type, paste, open a document or recording, or listen live. Loaded signs and readable text play in order.")
@@ -412,6 +421,9 @@ class MainWindow(QMainWindow):
             return
         if not self.manager.installed("whisper-tiny"):
             self.nav.setCurrentRow(5)
+        if (data_root() / "model-setup-paused.json").exists():
+            self.model_setup.status.setText("Downloads are paused. Resume setup when you are ready; verified files and partial downloads are retained.")
+            return
         self.model_setup.start()
 
     def training_page(self):
@@ -586,7 +598,14 @@ class MainWindow(QMainWindow):
     def notify_worker(self, message, severity):
         text = str(message)
         lower = text.lower()
-        action = "models" if any(word in lower for word in ("model", "checkpoint", "install", "download")) else "settings" if any(word in lower for word in ("microphone", "camera", "audio device", "cuda", "gpu")) else "diagnostics"
+        if any(word in lower for word in ("model", "checkpoint", "install", "download")):
+            action = "models"
+        elif any(word in lower for word in ("microphone", "camera", "audio device", "cuda", "gpu")):
+            action = "settings"
+        elif "browser" in lower or "extension" in lower:
+            action = "browser"
+        else:
+            action = "diagnostics"
         self.notifications.publish(text, severity, action=action)
 
     def discover_devices(self):
@@ -614,12 +633,17 @@ class MainWindow(QMainWindow):
                         self.mic_box.addItem(device["name"], device["index"])
                 self.mic_box.setCurrentIndex(max(0, self.mic_box.findData(selected)))
                 self.mic_box.setToolTip("Available audio inputs. Device access is checked when you start listening.")
+                if not devices:
+                    self.notify_worker("No microphone input was found. Connect an input device and review Windows microphone privacy settings, then reopen Settings to retry.", "warning")
             except (ValueError, KeyError, RuntimeError) as error:
                 self.notify_worker(str(error), "warning")
             self.device_process = None
             proc.deleteLater()
         proc.finished.connect(done)
-        proc.errorOccurred.connect(lambda _: self.notify_worker("Could not start audio device discovery: " + proc.errorString(), "warning"))
+        def failed(error):
+            if error == QProcess.FailedToStart:
+                done(1, QProcess.CrashExit)
+        proc.errorOccurred.connect(failed)
         executable = Path(sys.executable)
         if getattr(sys, "frozen", False):
             executable = executable.with_name("AccessibilityAIWorker.exe")
@@ -845,6 +869,9 @@ class MainWindow(QMainWindow):
     def install_selected(self):
         if self.busy():
             self.alert("Stop inference and training before changing model files.")
+            return
+        if self.model_setup.process is not None:
+            self.alert("Pause automatic setup before using the individual developer installer.")
             return
         model = self.selected_model()
         if model not in REGISTRY:

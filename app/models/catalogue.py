@@ -143,6 +143,7 @@ class CatalogueInstaller:
                 and digest_file(destination / name) == expected
                 for name, expected in hashes.items()
             ):
+                self.activate_default(model, destination)
                 return destination
         if spec.gated:
             if not accepted or not get_token():
@@ -159,13 +160,26 @@ class CatalogueInstaller:
         self.emit(model, "resolving")
         staging = self.manager.root / (model + ".installing")
         staging.mkdir(exist_ok=True)
+        assets = self.resolve_assets(spec)
+        completed_bytes = 0
+        total_bytes = sum(asset.size or 0 for asset in assets)
+
+        def model_progress(event):
+            self.emit(
+                model,
+                **{
+                    **event,
+                    "downloaded": completed_bytes + event.get("downloaded", 0),
+                    "total": total_bytes or None,
+                },
+            )
+
         downloader = Downloader(
             staging,
             self.cancel,
-            lambda event: self.emit(model, **event),
+            model_progress,
             token=get_token(),
         )
-        assets = self.resolve_assets(spec)
         plan_path = staging / "asset-plan.json"
         try:
             prior_plan = json.loads(plan_path.read_text(encoding="utf-8"))
@@ -200,6 +214,7 @@ class CatalogueInstaller:
                 except OSError:
                     shutil.copyfile(prior, target)
             downloader.fetch(asset)
+            completed_bytes += target.stat().st_size
         if model == "emotion-wavlm":
             bundled = project_root() / "models" / "emotion-wavlm"
             report = json.loads(
@@ -245,6 +260,10 @@ class CatalogueInstaller:
             raise
         if backup.exists():
             shutil.rmtree(backup)
+        self.activate_default(model, destination)
+        return destination
+
+    def activate_default(self, model, destination):
         if (
             model == "emotion-wavlm"
             and not (data_root() / "emotion_selection.json").exists()
@@ -252,7 +271,6 @@ class CatalogueInstaller:
             from scripts.activate_emotion import activate
 
             activate(destination)
-        return destination
 
     def resolve_assets(self, spec):
         if spec.id == "emotion-wavlm":
@@ -312,6 +330,7 @@ class CatalogueInstaller:
             ".ckpt",
             ".safetensors",
             ".pt",
+            ".npz",
         }
         for sibling in info.siblings:
             name = sibling.rfilename

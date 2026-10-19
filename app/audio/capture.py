@@ -35,9 +35,12 @@ class Microphone:
 
     def stop(self):
         if self.stream is not None:
-            self.stream.stop()
-            self.stream.close()
+            stream = self.stream
             self.stream = None
+            try:
+                stream.stop()
+            finally:
+                stream.close()
 
 
 class UtteranceBuffer:

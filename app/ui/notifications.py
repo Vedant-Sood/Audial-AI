@@ -121,6 +121,7 @@ class Notifications(QWidget):
         if card in self.cards:
             self.cards.remove(card)
             self.layout.removeWidget(card)
+            card.hide()
             card.deleteLater()
         self.update_overflow()
 

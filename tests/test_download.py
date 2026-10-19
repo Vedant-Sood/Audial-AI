@@ -90,3 +90,16 @@ def test_gated_token_is_sent_only_to_hub_and_is_not_forwarded_on_redirect(tmp_pa
     assert requests[0].unredirected_hdrs["Authorization"] == "Bearer hf_fixture_only"
     assert "Authorization" not in requests[0].headers
     assert "Authorization" not in requests[1].unredirected_hdrs
+
+
+def test_secure_hub_redirect_keeps_auth_only_on_the_https_hub():
+    from urllib.request import Request
+    from app.models.download import HubRedirect
+    request = Request("https://huggingface.co/repo/resolve/revision/config.yaml")
+    request.add_unredirected_header("Authorization", "Bearer hf_fixture_only")
+    redirect = HubRedirect()
+    for destination, expected in [("https://huggingface.co/api/resolve-cache/x", True),
+                                  ("https://cdn.example/model", False),
+                                  ("http://huggingface.co/plaintext", False)]:
+        forwarded = redirect.redirect_request(request, None, 302, "Found", {}, destination)
+        assert (forwarded.get_header("Authorization") is not None) is expected

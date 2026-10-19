@@ -70,7 +70,7 @@ def main():
                         help="Download the pretrained encoder if this verified model needs it.")
     args = parser.parse_args()
     if args.bundled:
-        (data_root() / "emotion_selection.json").unlink(missing_ok=True)
+        atomic_json(data_root() / "emotion_selection.json", {"bundled": True})
         print("Bundled baseline selected for the next session.")
     else:
         print("Selected", activate(args.model, args.download_encoder), "for the next session.")

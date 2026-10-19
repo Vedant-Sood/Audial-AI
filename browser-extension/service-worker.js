@@ -2,9 +2,10 @@ import { NativeBridgeClient } from "./bridge-client.js";
 import { reconcileTabs } from "./tabs.js";
 
 let profile, tabs = [], capture = null, busy = false, lastError = "", companionUrl = null;
-let refreshTimer = 0, polling = false, offscreenCreation = null;
+let refreshTimer = 0, polling = false, offscreenCreation = null, tabsSynced = false;
 const native = new NativeBridgeClient(chrome.runtime, {onDisconnect: reason => {
   lastError = reason;
+  tabsSynced = false;
   if (capture) stopCapture(false).catch(() => {});
 }});
 const profileReady = chrome.storage.local.get("audialProfile").then(async stored => {
@@ -13,7 +14,9 @@ const profileReady = chrome.storage.local.get("audialProfile").then(async stored
 });
 async function call(type, values = {}) {
   await profileReady;
-  const result = await native.call({type, profile, ...values});
+  let result;
+  try {result = await native.call({type, profile, ...values});}
+  catch (error) {tabsSynced = false; throw error;}
   lastError = "";
   if (result.companion_url) companionUrl = result.companion_url;
   return result;
@@ -21,6 +24,7 @@ async function call(type, values = {}) {
 async function refreshTabs() {
   tabs = reconcileTabs(await chrome.tabs.query({}));
   await call("tabs", {tabs, browser: navigator.userAgent.includes("Edg/") ? "Microsoft Edge" : "Chrome / Chromium"});
+  tabsSynced = true;
   return tabs;
 }
 function scheduleRefresh() {
@@ -122,6 +126,7 @@ async function poll() {
   polling = true;
   try {
     const result = await call("poll");
+    if (!tabsSynced || result.needs_tabs) await refreshTabs();
     for (const command of result.commands || []) {
       if (command.type === "focus-tab") await dispatch({type: "focus-tab", tabId: command.tab_id});
     }

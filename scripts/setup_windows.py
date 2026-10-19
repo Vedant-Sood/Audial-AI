@@ -30,21 +30,20 @@ def main():
     import torch
     if cuda and not torch.cuda.is_available():
         raise RuntimeError("PyTorch could not use the NVIDIA driver. Update it, or run setup.bat --cpu.")
-    from app.utils.config import Settings, PRESETS
+    from app.utils.config import Settings
     from app.models.manager import ModelManager
     settings = Settings.load()
     settings.preset = args.preset
     settings.device = "auto" if cuda else "cpu"
     settings.save()
-    manager = ModelManager()
     if not args.no_models:
-        for model in [PRESETS[args.preset]["asr"], "ecapa", "hand-pose", "body-pose"]:
-            if not manager.installed(model):
-                manager.install(model)
-    sign = root / "models" / "research" / "sign.pt"
-    if sign.exists():
-        manager.import_checkpoint(sign, "sign")
-    print("Setup complete. Run run.bat for the desktop or run_browser.bat for your browser.")
+        from app.models.catalogue import CatalogueInstaller
+        states = CatalogueInstaller(ModelManager(), progress=print).run()
+        if any(item["state"] == "failed" for item in states.values()):
+            print("Dependencies installed. Some models failed; first launch opens Setup & models for Retry.")
+        if any(item["state"] == "needs_action" for item in states.values()):
+            print("Models marked Needs action still require their listed terms, credentials or platform prerequisite.")
+    print("Ready to launch run.bat. First-run Setup & models verifies the complete catalogue.")
 
 
 if __name__ == "__main__":

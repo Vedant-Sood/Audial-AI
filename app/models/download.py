@@ -14,6 +14,24 @@ class DownloadCancelled(Exception):
     pass
 
 
+class HubRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, request, response, code, message, headers, new_url):
+        result = super().redirect_request(
+            request, response, code, message, headers, new_url
+        )
+        target = urlparse(new_url)
+        if (
+            result is not None
+            and urlparse(request.full_url).hostname == "huggingface.co"
+            and target.scheme == "https"
+            and target.hostname == "huggingface.co"
+        ):
+            token = request.get_header("Authorization")
+            if token:
+                result.add_unredirected_header("Authorization", token)
+        return result
+
+
 @dataclass(frozen=True)
 class Asset:
     url: str
@@ -109,7 +127,11 @@ class Downloader:
             # Send credentials only to the Hub, never to a redirected CDN or
             # another model host. Hub redirects carry their own signed access.
             request.add_unredirected_header("Authorization", "Bearer " + self.token)
-        opener = self.opener or urllib.request.urlopen
+        opener = self.opener or (
+            urllib.request.build_opener(HubRedirect()).open
+            if self.token
+            else urllib.request.urlopen
+        )
         try:
             response = opener(request, timeout=30)
         except urllib.error.HTTPError as error:

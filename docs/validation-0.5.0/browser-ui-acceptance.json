@@ -1,0 +1,11 @@
+{
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "scope": "Actual Chromium page flows, notifications, layout and denied capture.\n\nASR readiness is overridden only to reach the browser permission failure. This\ndoes not run ASR, fabricate a transcript or establish real microphone operation.\n",
+  "page_errors": [],
+  "browser_version": "154.0.8037.57",
+  "real_text_to_isl": "PASS",
+  "local_document_to_isl": "PASS",
+  "persistent_failures_survive_transient_warning": "PASS",
+  "browser_microphone_denied": "PASS; actual browser permission override, no audio device or ASR started",
+  "responsive_layout_and_keyboard": "PASS; desktop and mobile widths, visible keyboard focus"
+}

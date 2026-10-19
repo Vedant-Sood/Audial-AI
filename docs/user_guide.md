@@ -1,11 +1,10 @@
-# Using AccessibilityAI
+# Using Audial-AI
 
 ## Listen and read
 
 Open **Conversation**, select **Microphone** or **Computer / app audio**, and
 click **Start listening**. Pause/resume and Stop control that session. If a caption
-model is missing, the app explains which model to install in Advanced tools →
-Models. Speaker labels are optional; leave their backend off for simple captions.
+model is missing, open **Setup & models** for automatic setup progress and recovery. Speaker labels are optional; leave their backend off for simple captions.
 
 **Open audio / video** processes a local recording instead of opening the
 microphone. The Captions tab shows completed words. Voice & emotion shows voice
@@ -71,13 +70,39 @@ browser and Windows capture permissions.
 
 ## Files, models and troubleshooting
 
-The portable ZIP includes Python and native runtime files. Extract every folder;
-do not move only its BAT launcher. Caption models are installed on request and
-stored under `%LOCALAPPDATA%\AccessibilityAI`. Settings and sessions are local.
+The normal Setup.exe includes the runtime and starts full catalogue preparation
+on first launch. **Setup & models** shows pause/retry/resume and gated requirements.
+Models, settings, sessions and logs use `%LOCALAPPDATA%\AccessibilityAI`.
+Upgrades/reinstall preserve this data; uninstall keeps it unless you explicitly
+choose deletion. Required speech voices are managed by Windows.
 
-If launch fails, use **Diagnose startup.bat**. A startup failure also writes
+A startup failure writes
 `%LOCALAPPDATA%\AccessibilityAI\startup-error.log`. If GPU setup fails in a
-source installation, use `setup.bat --cpu`. The portable distribution uses CPU.
+source installation, use `setup.bat --cpu`. Native CPU and NVIDIA builds are separate; the NVIDIA build also falls back to CPU.
 Actual microphone, camera and system-audio availability must be checked on your
 Windows computer. Advanced tools → Diagnostics provides device checks; run them
 only when you want the app to open those devices.
+
+
+## Notifications and browser tabs
+
+Warnings appear without blocking your task. Failures remain visible above the
+workspace with recovery actions. **Notifications** opens the local history and
+occurrence counts; acknowledging an alert does not delete its history. Keyboard
+focus has one amber outline. Clicking a control does not leave a dotted frame.
+The latest 500 caption rows stay visible; exports contain the complete session.
+
+For browser meetings, load the installed `browser-extension` folder in Chrome or
+Edge, pin Audial-AI, and invoke its toolbar popup while the desired tab is active.
+**Capture this tab** requires that browser gesture. Its LIVE badge and source
+title show what is captured. The tab list spans windows; **Open selected tab**
+focuses a source so you can invoke its toolbar action. **Stop** releases capture.
+Closing tabs, restarting the extension or disconnecting the desktop clears stale
+ownership. A normal webpage cannot discover unrelated tabs on its own.
+
+Vocal-expression estimates are optional and may arrive after captions. A changing,
+noisy, clipped or low-confidence signal remains uncertain. Word content is never
+rewritten. Objective pitch/recorded level continue even if the optional model
+fails. The released WavLM head is prepared automatically without replacing an
+explicit existing selection; the original bundled head remains available through
+developer activation tools. See the current model evaluation for limitations.

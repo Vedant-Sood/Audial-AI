@@ -181,8 +181,17 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 first = context.new_page()
                 first.goto(base + "/first")
                 first.locator("#play").click()
-                second = context.new_page()
-                second.goto(base + "/second")
+                worker = (
+                    context.service_workers[0]
+                    if context.service_workers
+                    else context.wait_for_event("serviceworker")
+                )
+                with context.expect_page() as opened:
+                    worker.evaluate(
+                        "url => chrome.windows.create({url})", base + "/second"
+                    )
+                second = opened.value
+                second.wait_for_load_state()
                 second.locator("#play").click()
                 wait_until(
                     lambda: any(
@@ -190,7 +199,61 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                         for profile in service.bridge.snapshot()["profiles"]
                     )
                 )
-                report["real_tab_discovery"] = "PASS"
+                tabs = lambda: [
+                    tab
+                    for profile in service.bridge.snapshot()["profiles"]
+                    for tab in profile["tabs"]
+                ]
+                wait_until(lambda: len({tab["window_id"] for tab in tabs()}) >= 2)
+                report["real_tab_discovery"] = "PASS across two actual browser windows"
+                tab_id = lambda page: worker.evaluate(
+                    "url => chrome.tabs.query({}).then(items => items.find(tab => tab.url === url).id)",
+                    page.url,
+                )
+                second_id = tab_id(second)
+                second.reload()
+                second.locator("#play").click()
+                assert tab_id(second) == second_id
+                second.goto(base + "/navigated")
+                second.goto(base + "/second")
+                second.locator("#play").click()
+                assert tab_id(second) == second_id
+                report["reload_and_navigation_identity"] = (
+                    "PASS; actual tab ID retained"
+                )
+                suspended = context.new_page()
+                suspended.goto(base + "/suspended")
+                suspended_id = tab_id(suspended)
+                first.bring_to_front()
+                worker.evaluate("id => chrome.tabs.discard(id)", suspended_id)
+                wait_until(
+                    lambda: any(
+                        tab["id"] == suspended_id and tab["discarded"] for tab in tabs()
+                    )
+                )
+                worker.evaluate(
+                    "id => chrome.tabs.update(id,{active:true})", suspended_id
+                )
+                wait_until(
+                    lambda: any(
+                        tab["id"] == suspended_id and not tab["discarded"]
+                        for tab in tabs()
+                    )
+                )
+                suspended.close()
+                restricted = context.new_page()
+                restricted.goto("chrome://settings/")
+                restricted_id = tab_id(restricted)
+                wait_until(
+                    lambda: any(
+                        tab["id"] == restricted_id and not tab["supported"]
+                        for tab in tabs()
+                    )
+                )
+                restricted.close()
+                report["suspend_restore_and_restricted_pages"] = (
+                    "PASS using actual browser APIs"
+                )
                 viewer = context.new_page()
                 viewer.goto(service.url)
                 viewer.wait_for_function(
@@ -246,9 +309,9 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
 
                 observed = []
                 for source, expected in [(first, 440), (second, 1000)]:
-                    packets.clear()
                     popup = invoke(source)
                     popup.locator("#capture-current").click()
+                    packets.clear()
                     wait_until(lambda: packets, timeout=25)
                     pcm = packets[-1]
                     spectrum = np.abs(np.fft.rfft(pcm))
@@ -264,21 +327,66 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     popup.screenshot(
                         path=str(args.output / f"extension-capturing-{expected}.png")
                     )
-                    popup.locator("#stop-capture").click()
-                    wait_until(lambda: service.bridge.owner is None)
-                    assert not service.engine.running
+                    if expected == 1000:
+                        popup.locator("#stop-capture").click()
+                        wait_until(lambda: service.bridge.owner is None)
+                        assert not service.engine.running
                     popup.close()
                 report["source_capture_and_switching"] = observed
                 report["stop_and_release"] = "PASS"
                 second.close()
                 wait_until(
                     lambda: not any(
-                        "1000 Hz" in tab["title"]
+                        tab["id"] == second_id
                         for profile in service.bridge.snapshot()["profiles"]
                         for tab in profile["tabs"]
                     )
                 )
                 report["closed_tab_removal"] = "PASS"
+                with context.expect_event("serviceworker", timeout=20000) as restarted:
+                    try:
+                        worker.evaluate("chrome.runtime.reload()")
+                    except Exception as error:
+                        if not any(
+                            term in str(error).lower()
+                            for term in ["closed", "destroyed"]
+                        ):
+                            raise
+                worker = restarted.value
+                wait_until(lambda: any(tab["id"] == tab_id(first) for tab in tabs()))
+                report["extension_background_restart"] = (
+                    "PASS; real extension reloaded and metadata restored"
+                )
+                popup = invoke(first)
+                popup.locator("#capture-current").click()
+                packets.clear()
+                wait_until(lambda: packets, timeout=25)
+                popup.close()
+                service.stop()
+                deadline = time.monotonic() + 20
+                while worker.evaluate(
+                    "chrome.runtime.getContexts({contextTypes:['OFFSCREEN_DOCUMENT']}).then(items=>items.length)"
+                ):
+                    if time.monotonic() > deadline:
+                        raise AssertionError(
+                            "Desktop disconnect did not release tab audio"
+                        )
+                    first.wait_for_timeout(100)
+                report["desktop_disconnect_releases_audio"] = (
+                    "PASS; actual tab stream and offscreen document stopped"
+                )
+                service = BrowserService(settings=Settings(device="cpu"))
+                service.engine.manager.installed = lambda _: True
+                service.engine.start = start
+                service.engine.stop = stop
+                service.start()
+                wait_until(
+                    lambda: any(tab["id"] == tab_id(first) for tab in tabs()),
+                    timeout=25,
+                )
+                report["desktop_service_reconnection"] = (
+                    "PASS; fresh bridge token/port, tab list restored automatically"
+                )
                 context.close()
         finally:
             service.stop()

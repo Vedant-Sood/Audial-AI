@@ -8,6 +8,7 @@ from PySide6.QtCore import QProcess, QProcessEnvironment, QTimer, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QHBoxLayout,
+    QHeaderView,
     QInputDialog,
     QLabel,
     QLineEdit,
@@ -47,13 +48,30 @@ class ModelSetup(QWidget):
         self.status.setWordWrap(True)
         self.status.setAccessibleName("Model setup status")
         layout.addWidget(self.status)
+        controls = QHBoxLayout()
+        self.start_button = QPushButton("Start / retry / resume setup")
+        self.start_button.setObjectName("primary")
+        self.pause_button = QPushButton("Pause downloads")
+        self.pause_button.setEnabled(False)
+        self.start_button.clicked.connect(self.start)
+        self.pause_button.clicked.connect(self.pause)
+        controls.addWidget(self.start_button)
+        controls.addWidget(self.pause_button)
+        layout.addLayout(controls)
         self.table = QTableWidget(len(self.entries), 3)
         self.table.setHorizontalHeaderLabels(
             ["Model asset", "Readiness", "Download progress"]
         )
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.setAlternatingRowColors(True)
-        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.verticalHeader().hide()
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setSectionResizeMode(0, QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.Fixed)
+        header.setSectionResizeMode(2, QHeaderView.Fixed)
+        self.table.setColumnWidth(1, 150)
+        self.table.setColumnWidth(2, 148)
         self.table.setMinimumHeight(320)
         self.bars = {}
         for row, entry in enumerate(self.entries):
@@ -65,7 +83,6 @@ class ModelSetup(QWidget):
             progress.setValue(0)
             self.table.setCellWidget(row, 2, progress)
             self.bars[entry["id"]] = progress
-        self.table.resizeColumnsToContents()
         layout.addWidget(self.table)
         self.accepted = QCheckBox(
             "I accepted the Community-1 model terms on Hugging Face"
@@ -97,16 +114,6 @@ class ModelSetup(QWidget):
         )
         note.setWordWrap(True)
         layout.addWidget(note)
-        controls = QHBoxLayout()
-        self.start_button = QPushButton("Start / retry / resume setup")
-        self.start_button.setObjectName("primary")
-        self.pause_button = QPushButton("Pause downloads")
-        self.pause_button.setEnabled(False)
-        self.start_button.clicked.connect(self.start)
-        self.pause_button.clicked.connect(self.pause)
-        controls.addWidget(self.start_button)
-        controls.addWidget(self.pause_button)
-        layout.addLayout(controls)
         self.log = QPlainTextEdit()
         self.log.setReadOnly(True)
         self.log.setMaximumBlockCount(300)
@@ -146,6 +153,11 @@ class ModelSetup(QWidget):
     def start(self):
         if self.process is not None:
             return
+        from app.utils.paths import data_root
+        try:
+            (data_root() / "model-setup-paused.json").unlink(missing_ok=True)
+        except OSError:
+            self.failure.emit("Could not update the saved pause preference. Check available storage and folder access.")
         self.buffer.clear()
         self.pausing = False
         process = QProcess(self)
@@ -220,6 +232,10 @@ class ModelSetup(QWidget):
         self.table.item(self.rows[model], 1).setToolTip(event.get("message", ""))
         bar = self.bars[model]
         total = event.get("total")
+        if total:
+            bar.setToolTip(
+                f"{event.get('downloaded', 0):,} / {total:,} bytes · {event.get('file', '')}"
+            )
         if state == "ready":
             bar.setRange(0, 100)
             bar.setValue(100)
@@ -239,6 +255,11 @@ class ModelSetup(QWidget):
 
     def pause(self):
         if self.process is not None:
+            from app.utils.paths import atomic_json, data_root
+            try:
+                atomic_json(data_root() / "model-setup-paused.json", {"paused": True})
+            except OSError:
+                self.failure.emit("Downloads will stop, but the pause preference could not be saved. Check available storage and folder access.")
             self.pausing = True
             self.status.setText(
                 "Pausing. Verified files and resumable parts are retained."

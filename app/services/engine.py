@@ -158,8 +158,12 @@ class AudioEngine:
             self.emit("error", str(exc))
         finally:
             if self.capture:
-                self.capture.stop()
-                self.capture = None
+                try:
+                    self.capture.stop()
+                except Exception as error:
+                    self.emit("warning", "Audio device cleanup failed: " + str(error))
+                finally:
+                    self.capture = None
             # Drain final chunks in order before signaling completion.
             if self.asr_thread is not None and self.asr_thread.is_alive():
                 self.jobs.put(None)
@@ -344,10 +348,10 @@ class CameraEngine:
         self.thread.start()
 
     def _run(self):
-        import cv2
-        from app.video.pose import PoseExtractor
         cap, extractor = None, None
         try:
+            import cv2
+            from app.video.pose import PoseExtractor
             os.environ["HF_HUB_OFFLINE"] = "1"
             if not all(self.manager.installed(m) for m in ["hand-pose", "body-pose"]):
                 raise FileNotFoundError("Install hand and body pose assets on Models before using the webcam.")
@@ -399,9 +403,15 @@ class CameraEngine:
         finally:
             self.record.clear()
             if cap:
-                cap.release()
+                try:
+                    cap.release()
+                except Exception as error:
+                    self.emit("warning", "Camera cleanup failed: " + str(error))
             if extractor:
-                extractor.close()
+                try:
+                    extractor.close()
+                except Exception as error:
+                    self.emit("warning", "Pose worker cleanup failed: " + str(error))
             self.emit("camera_status", "Webcam stopped")
 
     def stop(self):

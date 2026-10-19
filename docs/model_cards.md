@@ -23,7 +23,7 @@ mean that every emotion class reaches 85–90% precision.
 
 Weights, calibration, confusion matrix, class metrics, actor results and software
 versions are in [models/emotion-wavlm/evaluation.json](../models/emotion-wavlm/evaluation.json).
-The original 1.3 GB encoder is downloaded explicitly and checked against SHA-256.
+First-run catalogue setup downloads the original 1.3 GB encoder and verifies SHA-256.
 Extraction and inference share BF16 precision and the recorded four-thread CPU
 setting. This is classifier transfer learning; the encoder was not fine-tuned.
 
@@ -51,3 +51,21 @@ Weights are unchanged from the uploaded baseline. No Indian voice training run
 was completed in this task, and 85–90% accuracy on Indian voices is unverified.
 The new training and activation commands are documented in indian_voice_training.md.
 Current software tests are separate from model accuracy evaluation.
+
+
+## 0.5.0 acquisition and repeat evaluation
+
+The supported catalogue caches all three Whisper presets, ECAPA, hand/body pose,
+WavLM, bundled ISL/acoustic heads, Silero VAD and Windows installed speech voices.
+Community-1 remains gated until its terms and token requirements are met; the
+full Windows runtime uses preloaded waveform dictionaries instead of an external
+file decoder. Community-1 segmentation, embedding and PLDA assets are required;
+a config file alone is not ready. Model receipts record exact upstream revisions,
+checksums, licenses and preprocessing; downloading never loads all models.
+
+The [0.5.0 repeat evaluation](voice_emotion-0.5.0.md) supplies the same-protocol
+RAVDESS comparison, per-class metrics, confusion matrices and actual CPU memory/
+latency. It is a previously exposed transfer test, not independent new evidence
+for an Indian conversation claim. The single-owner expression worker improves
+inference scheduling without changing raw class probabilities or promoting a
+new trained model. Previously unpublished research heads remain unpromoted.

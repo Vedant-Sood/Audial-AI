@@ -23,3 +23,49 @@
 **SmartScreen / signing:** builds are unsigned until a publisher signs them. This project does not bypass Windows security. Use the Python source launch workflow while a signed installer is unavailable.
 
 **Cloud MediaPipe GLES error:** a normal Linux machine needs libgles2/libegl1. During this cloud run the missing libgles2 package was extracted into a scoped dependency directory and provided through LD_LIBRARY_PATH. No such adjustment is required for the Windows wheel.
+
+## Audial-AI 0.5.0 setup and browser recovery
+
+Use **Setup & models**, which is always visible in navigation. Failed downloads
+stay incomplete; **Pause downloads** retains resumable parts and **Retry** checks
+and reuses valid files. A full corrupt file is rejected and fetched again. Free
+storage when the message reports insufficient disk space; no marker is promoted
+until integrity verification completes. Each model's installed receipt records
+source revision, license and hashes. Reading a receipt is not proof of successful
+inference; `--verify-inference` provides a separate real offline pipeline check.
+
+For Community-1, accept the upstream model terms and use **Save access token**.
+The native Windows distribution stores it in Credential Manager, not settings or
+logs. **Forget token** removes that credential without deleting model files.
+Public Whisper, ECAPA and pose downloads do not need that gated-model token.
+If a corporate proxy denies a public host, correct the allowed network policy;
+do not supply an unnecessary token or disable TLS verification.
+
+Routine warnings appear as nonmodal pop-ups. Failures stay above the workspace
+with **Open setup**, **Open settings**, **Reconnect browser**, or diagnostics.
+**Notifications** retains local history and duplicate counts. Earlier errors
+remain in the unresolved summary until dismissed/acknowledged. A worker startup
+or missing audio device now reaches this same interface. GPU failures explicitly
+fall back to CPU; choose FAST for lower CPU latency.
+
+For browser discovery, start the desktop, install/load the bundled Chrome/Edge
+extension, pin it and open its toolbar popup. The installer registers only the
+native host; ordinary webpages cannot enumerate other tabs. The popup's connection
+status distinguishes a missing bridge from a missing ASR model. Open a regular
+web tab and invoke its toolbar action before **Capture this tab**. Focusing a tab
+from the companion cannot grant capture rights. Browser settings and extension
+store pages are restricted. Suspended tabs must be restored first.
+
+The LIVE badge identifies the active tab. Invoke the toolbar in another tab to
+switch sources. **Stop** releases tracks and audio context. Closing a tab or
+losing the desktop connection ends ownership; extension reconnection refreshes
+real tab metadata. A restarted desktop may use a new loopback port; use **Open
+companion** in the connected extension or reopen it from the desktop. A managed
+browser blocking unpacked extensions requires its administrator's approved
+installation route. Manual **Share tab / app audio** is still a supported picker;
+it never substitutes the microphone silently.
+
+For normal installer users, Python-not-found, `setup.bat` and portable BAT advice
+above applies only to older/source distributions. Current native installers need
+neither Python nor Node installed separately. See the current validation report
+for Windows build status and actual limitations.

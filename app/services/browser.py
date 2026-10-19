@@ -346,15 +346,7 @@ class BrowserService:
             while not self.bridge_stopped.wait(1):
                 self.bridge.expire()
         threading.Thread(target=watch_bridge, daemon=True).start()
-        if self.owns_engine:
-            threading.Thread(target=self.drain,daemon=True).start()
         return self.url
-
-    def drain(self):
-        import queue
-        while self.server is not None:
-            try:self.engine.events.get(timeout=.2)
-            except queue.Empty:pass
 
     def stop(self):
         self.bridge_stopped.set()
@@ -362,6 +354,13 @@ class BrowserService:
             self.bridge.stop(self.bridge.owner["profile"], self.bridge.owner["session_id"])
         if self.owns_engine:self.engine.stop()
         if self.server:
+            discovery = data_root() / "browser-bridge.json"
+            try:
+                saved = json.loads(discovery.read_text(encoding="utf-8"))
+                if saved.get("token") == self.bridge_token:
+                    discovery.unlink()
+            except (OSError, ValueError):
+                pass
             self.server.shutdown()
             self.server.server_close()
             self.server = None

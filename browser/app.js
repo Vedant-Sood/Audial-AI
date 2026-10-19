@@ -203,7 +203,8 @@ async function poll(){
 let tabListSignature = "";
 async function refreshBrowserTabs() {
   try {
-    const result = await request("/api/tabs");
+    const [result, status] = await Promise.all([request("/api/tabs"), request("/api/status")]);
+    $("model-status").textContent = `${status.asr_model} ${status.asr_installed?"ready offline":"setup incomplete"} · speech ${status.language||"auto"} · ISL: ${status.vocabulary.entries} loaded signs`;
     extensionActive = Boolean(result.capture);
     const profiles = result.profiles.filter(profile => profile.connected);
     const signature = JSON.stringify(profiles);

@@ -138,6 +138,7 @@ class BrowserBridge:
                     "commands": commands,
                     "capture": dict(self.owner) if self.owner else None,
                     "engine_running": self.service.engine.running,
+                    "needs_tabs": not bool(info["tabs"]),
                 }
             if kind == "start":
                 tab_id = data.get("tab_id")

@@ -60,6 +60,19 @@ def test_bundled_runtime_requirements_are_in_the_same_catalogue():
     assert {"silero-vad", "system-tts", "emotion-baseline", "sign-local", "emotion-wavlm", "whisper-tiny", "whisper-small", "whisper-medium", "ecapa", "pyannote", "hand-pose", "body-pose"} <= ids
 
 
+def test_setup_preserves_an_explicit_bundled_emotion_selection(tmp_path, monkeypatch):
+    from app.inference.emotion import VoiceEmotion
+    from app.utils.paths import atomic_json, data_root
+    selection = {"bundled": True}
+    atomic_json(data_root() / "emotion_selection.json", selection)
+    called = []
+    monkeypatch.setattr("scripts.activate_emotion.activate", lambda *args: called.append(args))
+    CatalogueInstaller(ModelManager(tmp_path / "models")).activate_default("emotion-wavlm", tmp_path)
+    assert not called
+    assert VoiceEmotion().model.bundle["feature_version"] == "mfcc-mel-prosody-v1"
+    assert json.loads((data_root() / "emotion_selection.json").read_text()) == selection
+
+
 def test_background_worker_failures_reach_persistent_alerts_and_view_is_bounded():
     from PySide6.QtWidgets import QApplication
     from app.ui.main_window import MainWindow

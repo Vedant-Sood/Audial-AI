@@ -1,13 +1,58 @@
 # Local installation
 
-Use Python 3.11 or 3.12 x64 on Windows. Extract the project into a writable folder and run setup.bat. It creates .venv and installs matched Torch/torchaudio 2.8.0 plus app dependencies. An available nvidia-smi selects CUDA 12.6 wheels; otherwise it selects CPU wheels. PyTorch's CUDA availability is checked after installation. Use setup.bat --cpu if the driver cannot support that build.
+For normal Windows use, download a validated CPU or NVIDIA Setup.exe and its
+SHA256 from the [Windows Actions workflow](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml)
+or a published release. The installer includes Python, Qt, inference libraries,
+Start menu access and uninstall; a separate developer toolchain is unnecessary.
+See [current validation](validation-0.5.0.md) for actual platform acceptance.
 
-Setup downloads FAST's multilingual Whisper tiny, ECAPA and MediaPipe hand/body tasks and installs the newly trained bundled sign checkpoint. --no-models leaves pretrained downloads for later Models-page actions; --preset BALANCED selects Whisper small and --preset ACCURATE selects medium. Larger presets require more memory and local performance checks. CREMA-D emotion weights are already in the ZIP; tone recognition defaults to off and can be enabled in Settings.
+The default install is per user at `%LOCALAPPDATA%\Programs\AudialAI`, without
+administrator rights. Model/settings/session data remain in
+`%LOCALAPPDATA%\AccessibilityAI` for upgrade compatibility. An existing
+`ACCESSIBILITY_AI_HOME` override remains supported. Upgrades/reinstall preserve
+user data. Uninstall keeps it by default; explicit deletion applies to the
+standard per-user data folder and removes the saved model credential. Custom
+external data paths remain under their owner's control.
 
-Run run.bat for the desktop or run_browser.bat for the local browser companion on port 8765. An existing desktop can open its companion with a dynamic port, displayed in the address. Choose capture explicitly; startup records nothing. The desktop floating sign window can stay above other apps. Browser floating mode needs a Chromium browser with Document Picture-in-Picture.
+First launch starts the complete supported model catalogue in the background.
+Use **Setup & models** for progress, pause, retry/resume and gated prerequisites.
+About 3.6 GB downloads and 6 GB free for models/staging are estimates; installer
+runtime storage is additional, especially for NVIDIA. Cached assets are verified
+and reused offline. No training dataset is part of setup. Models load only for
+active features. Windows SAPI5 uses installed speech voices; missing voices show
+Needs action and direct you to Windows speech settings.
 
-For browser meetings select the meeting tab and enable Share tab audio. Browser app/system-audio sharing depends on OS support. The desktop's System audio action uses the default playback device through SoundCard loopback. That backend needs validation on the target laptop. For text in other apps, copy it and choose Use clipboard on the sign page. See README for the included Chrome/Edge text extension.
+The NVIDIA build contains matching Torch/Torchaudio 2.8.0 CUDA 12.6 runtime DLLs.
+A compatible NVIDIA driver is still required. Settings selects Automatic, CPU or
+NVIDIA GPU; unavailable acceleration produces a visible CPU fallback. The CPU
+build needs no CUDA. No current cloud check proves RTX 4060 Laptop GPU latency.
 
-Allow microphone/camera access for desktop applications in Windows privacy settings. Choose the device index in Settings after inspecting Diagnostics. Imported audio can exercise captions without a microphone. Inference uses local models after setup.
+The installer registers the native messaging host in HKCU for Chrome and Edge.
+It does not bypass browser permissions or install an extension silently. Load
+its `browser-extension` folder through **Load unpacked** in the browser's extension
+page, pin it, open the desired tab and invoke the toolbar action before capture.
+Enterprise policy may forbid developer extensions; the supported manual source
+picker remains available. A Store-signed extension is not published yet.
 
-The source ZIP is not a prebuilt executable. build_windows.bat installs optional build dependencies and invokes the PyInstaller specification, including browser files and trained weights. No Windows binary or installer was built/verified in this Linux environment. Use Diagnostics locally to test CUDA, device capture and inference before relying on measured performance.
+## Source development and builds
+
+Use Python 3.11/3.12 x64 and `setup.bat --cpu`, then `run.bat`. Source setup creates
+`.venv`, installs compatible dependencies and prepares the catalogue unless
+`--no-models` is explicitly chosen. First desktop launch also starts catalogue
+verification. Source developers wanting Community-1 install
+`requirements-overlap.txt`; full native builds include that runtime. Gated model
+terms and a local read token are separate user prerequisites.
+
+`run_browser.bat` starts the loopback companion on 8765. The desktop's companion
+uses a dynamic loopback port, obtained automatically by its native bridge. Source
+extension generation uses `python -m scripts.package_extension`; normal installer
+users receive that generated folder already.
+
+On a Windows build machine with Inno Setup 6, install `requirements-build.txt`,
+then run `build_windows.bat -Runtime CPU` or
+`scripts/build_windows.ps1 -Runtime NVIDIA` in the matching runtime environment.
+Actions creates an isolated venv and runs regression, native packaging, actual
+installer lifecycle and offline inference checks. Build metadata records source,
+Python, dependency resolution and compiler versions; adjacent SHA256 files
+identify installer bytes. This does not promise byte-identical timestamps across
+machines. No signing certificate is configured.

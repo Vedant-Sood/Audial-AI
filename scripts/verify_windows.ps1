@@ -120,6 +120,7 @@ try {
     if ($report.authenticode -ne 'NotSigned') { throw 'Unexpected signing status; update the reported build policy' }
     $report | ConvertTo-Json -Depth 5 | Set-Content "$Output\installer-acceptance.json" -Encoding utf8
 } finally {
+    if (Test-Path "$state\startup-error.log") { Copy-Item "$state\startup-error.log" "$Output\startup-error.log" -Force }
     if ($previousRoot) { $env:ACCESSIBILITY_AI_HOME = $previousRoot } else { Remove-Item Env:ACCESSIBILITY_AI_HOME -ErrorAction SilentlyContinue }
     if ($previousQt) { $env:QT_QPA_PLATFORM = $previousQt } else { Remove-Item Env:QT_QPA_PLATFORM -ErrorAction SilentlyContinue }
 }

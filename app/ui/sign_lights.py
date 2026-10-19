@@ -12,7 +12,7 @@ class SignLightCanvas(QWidget):
         self.points = None
         self.image = None
         self.message = "Indian Sign Language\nWaiting for the next input"
-        self.setMinimumSize(280, 210)
+        self.setMinimumSize(240, 210)
         self.setAccessibleName("Indian Sign Language: hand and body motion displayed as on/off lights")
 
     def paintEvent(self, event):
