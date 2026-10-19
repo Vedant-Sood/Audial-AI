@@ -122,6 +122,14 @@ def main():
         os.environ["ACCESSIBILITY_AI_HOME"] = str(directory / "state")
         os.environ["XDG_CONFIG_HOME"] = str(directory / "config")
         extension = build(directory / "extension")
+        # A normal extension document supplies Chrome's real tabs API without
+        # pinning a short-lived MV3 worker object. Capture still requires the
+        # separate OS toolbar invocation and real popup below.
+        controller_name = "acceptance-control.html"
+        (Path(extension["path"]) / controller_name).write_text(
+            "<!doctype html><title>Audial browser acceptance controller</title>"
+        )
+        controller_url = "chrome-extension://" + extension["id"] + "/" + controller_name
         profile_path = directory / "profile"
         if sys.platform == "win32":
             if args.native_host is None:
@@ -253,11 +261,13 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 first = context.new_page()
                 first.goto(base + "/first")
                 first.locator("#play").click()
-                worker = (
-                    context.service_workers[0]
-                    if context.service_workers
-                    else context.wait_for_event("serviceworker")
-                )
+                background_url = "chrome-extension://" + extension["id"] + "/service-worker.js"
+                initial_background = next((item for item in context.service_workers if item.url == background_url), None)
+                if initial_background is None:
+                    initial_background = context.wait_for_event("serviceworker", predicate=lambda item: item.url == background_url)
+                report["initial_background"] = initial_background.url
+                worker = context.new_page()
+                worker.goto(controller_url)
                 with context.expect_page() as opened:
                     worker.evaluate(
                         "url => chrome.windows.create({url})", base + "/second"
@@ -447,21 +457,29 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     )
                 )
                 report["closed_tab_removal"] = "PASS"
-                with context.expect_event("serviceworker", timeout=20000) as restarted:
-                    try:
-                        worker.evaluate("chrome.runtime.reload()")
-                    except Exception as error:
-                        if not any(
-                            term in str(error).lower()
-                            for term in ["closed", "destroyed"]
-                        ):
-                            raise
-                worker = restarted.value
+                old_backgrounds = set(context.service_workers)
+                old_controller = worker
+                try:
+                    worker.evaluate("chrome.runtime.reload()")
+                except Exception as error:
+                    if not any(term in str(error).lower() for term in ["closed", "destroyed", "context invalidated"]):
+                        raise
+                worker = context.new_page()
+                worker.goto(controller_url)
+                if not old_controller.is_closed():
+                    old_controller.close()
+                # A reloaded lazy worker may wait for an event. Opening the
+                # actual toolbar is the supported user action that wakes it.
+                popup = invoke(first)
+                deadline = time.monotonic() + 20
+                while not any(item not in old_backgrounds and item.url == background_url for item in context.service_workers):
+                    if time.monotonic() > deadline:
+                        raise AssertionError("Extension reload did not create a fresh background worker")
+                    first.wait_for_timeout(100)
                 wait_until(lambda: any(tab["id"] == tab_id(first) for tab in tabs()))
                 report["extension_background_restart"] = (
                     "PASS; real extension reloaded and metadata restored"
                 )
-                popup = invoke(first)
                 popup.click("#capture-current")
                 packets.clear()
                 wait_until(lambda: packets, timeout=25)
