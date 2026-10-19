@@ -27,13 +27,19 @@ from app.utils.config import Settings
 from scripts.package_extension import build
 
 
-def wait_until(predicate, timeout=20):
+def wait_until(predicate, timeout=20, pump=None):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         value = predicate()
         if value:
             return value
-        time.sleep(0.1)
+        if pump is None:
+            time.sleep(0.1)
+        else:
+            # Playwright's synchronous API dispatches browser events only
+            # while an API call runs. Keep newly attached MV3 targets moving
+            # while the native host independently updates desktop state.
+            pump(100)
     raise AssertionError("Browser acceptance condition timed out")
 
 
@@ -261,6 +267,8 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 first = context.new_page()
                 first.goto(base + "/first")
                 first.locator("#play").click()
+                def wait(predicate, timeout=20):
+                    return wait_until(predicate, timeout, first.wait_for_timeout)
                 background_url = "chrome-extension://" + extension["id"] + "/service-worker.js"
                 initial_background = next((item for item in context.service_workers if item.url == background_url), None)
                 if initial_background is None:
@@ -275,23 +283,25 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 second = opened.value
                 second.wait_for_load_state()
                 second.locator("#play").click()
-                wait_until(
+                wait(
                     lambda: any(
                         len(profile["tabs"]) >= 2
                         for profile in service.bridge.snapshot()["profiles"]
                     )
                 )
-                tabs = lambda: [
-                    tab
-                    for profile in service.bridge.snapshot()["profiles"]
-                    for tab in profile["tabs"]
-                ]
-                wait_until(lambda: len({tab["window_id"] for tab in tabs()}) >= 2)
+                def tabs():
+                    return [
+                        tab
+                        for profile in service.bridge.snapshot()["profiles"]
+                        for tab in profile["tabs"]
+                    ]
+                wait(lambda: len({tab["window_id"] for tab in tabs()}) >= 2)
                 report["real_tab_discovery"] = "PASS across two actual browser windows"
-                tab_id = lambda page: worker.evaluate(
-                    "url => chrome.tabs.query({}).then(items => items.find(tab => tab.url === url).id)",
-                    page.url,
-                )
+                def tab_id(page):
+                    return worker.evaluate(
+                        "url => chrome.tabs.query({}).then(items => items.find(tab => tab.url === url).id)",
+                        page.url,
+                    )
                 second_id = tab_id(second)
                 second.reload()
                 second.locator("#play").click()
@@ -306,7 +316,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 restricted = context.new_page()
                 restricted.goto("chrome://settings/")
                 restricted_id = tab_id(restricted)
-                wait_until(
+                wait(
                     lambda: any(
                         tab["id"] == restricted_id and not tab["supported"]
                         for tab in tabs()
@@ -416,7 +426,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     popup = invoke(source)
                     popup.click("#capture-current")
                     expected_tab = tab_id(source)
-                    wait_until(
+                    wait(
                         lambda: service.bridge.owner is not None
                         and service.bridge.owner["tab_id"] == expected_tab,
                         timeout=25,
@@ -424,7 +434,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     # A click starts an asynchronous source switch. Discard
                     # packets only after the desktop owns the requested tab.
                     packets.clear()
-                    wait_until(lambda: any(np.max(np.abs(packet)) > 0.01 for packet in tuple(packets)), timeout=25)
+                    wait(lambda: any(np.max(np.abs(packet)) > 0.01 for packet in tuple(packets)), timeout=25)
                     pcm = [packet for packet in tuple(packets) if np.max(np.abs(packet)) > 0.01][-1]
                     spectrum = np.abs(np.fft.rfft(pcm))
                     frequency = float(np.argmax(spectrum) * 16000 / len(pcm))
@@ -443,13 +453,13 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     )
                     if expected == 1000:
                         popup.click("#stop-capture")
-                        wait_until(lambda: service.bridge.owner is None)
+                        wait(lambda: service.bridge.owner is None)
                         assert not service.engine.running
                     popup.close()
                 report["source_capture_and_switching"] = observed
                 report["stop_and_release"] = "PASS"
                 second.close()
-                wait_until(
+                wait(
                     lambda: not any(
                         tab["id"] == second_id
                         for profile in service.bridge.snapshot()["profiles"]
@@ -464,10 +474,6 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 except Exception as error:
                     if not any(term in str(error).lower() for term in ["closed", "destroyed", "context invalidated"]):
                         raise
-                worker = context.new_page()
-                worker.goto(controller_url)
-                if not old_controller.is_closed():
-                    old_controller.close()
                 # A reloaded lazy worker may wait for an event. Opening the
                 # actual toolbar is the supported user action that wakes it.
                 popup = invoke(first)
@@ -476,13 +482,21 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     if time.monotonic() > deadline:
                         raise AssertionError("Extension reload did not create a fresh background worker")
                     first.wait_for_timeout(100)
-                wait_until(lambda: any(tab["id"] == tab_id(first) for tab in tabs()))
+                popup.close()
+                worker = context.new_page()
+                worker.goto(controller_url)
+                if not old_controller.is_closed():
+                    old_controller.close()
+                # Opening a controller tab dismisses a toolbar popup. Invoke
+                # the source action again before attempting actual capture.
+                popup = invoke(first)
+                wait(lambda: any(tab["id"] == tab_id(first) for tab in tabs()))
                 report["extension_background_restart"] = (
                     "PASS; real extension reloaded and metadata restored"
                 )
                 popup.click("#capture-current")
                 packets.clear()
-                wait_until(lambda: packets, timeout=25)
+                wait(lambda: packets, timeout=25)
                 popup.close()
                 service.stop()
                 deadline = time.monotonic() + 20
@@ -502,7 +516,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 service.engine.start = start
                 service.engine.stop = stop
                 service.start()
-                wait_until(
+                wait(
                     lambda: any(tab["id"] == tab_id(first) for tab in tabs()),
                     timeout=25,
                 )
@@ -532,7 +546,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     assert discarded and discarded["discarded"], (
                         "Browser declined the real discard request", discarded
                     )
-                    wait_until(
+                    wait(
                         lambda: any(
                             tab["id"] == suspended_id and tab["discarded"] for tab in tabs()
                         )
@@ -540,7 +554,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     worker.evaluate(
                         "id => chrome.tabs.update(id,{active:true})", suspended_id
                     )
-                    wait_until(
+                    wait(
                         lambda: any(
                             tab["id"] == suspended_id and not tab["discarded"]
                             for tab in tabs()
@@ -550,6 +564,13 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 except Exception as error:
                     failures.append("Tab suspension: " + str(error))
                     report["suspend_restore"] = {"status": "FAIL", "error": str(error)}
+                    report["bridge_at_suspension_failure"] = service.bridge.snapshot()
+                    try:
+                        report["actual_tab_at_suspension_failure"] = worker.evaluate(
+                            "id => chrome.tabs.get(id)", suspended_id
+                        )
+                    except Exception as diagnostic_error:
+                        report["suspension_diagnostic_error"] = str(diagnostic_error)
                 finally:
                     try:
                         worker.evaluate("id => chrome.tabs.remove(id).catch(()=>{})", suspended_id)
