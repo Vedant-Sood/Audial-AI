@@ -28,9 +28,11 @@ NVIDIA GPU; unavailable acceleration produces a visible CPU fallback. The CPU
 build needs no CUDA. No current cloud check proves RTX 4060 Laptop GPU latency.
 
 The installer registers the native messaging host in HKCU for Chrome and Edge.
-It does not bypass browser permissions or install an extension silently. Load
-its `browser-extension` folder through **Load unpacked** in the browser's extension
-page, pin it, open the desired tab and invoke the toolbar action before capture.
+It does not bypass browser permissions or install an extension silently. Enable
+**Developer mode** on the browser's extension page, use **Load unpacked** to select
+its `browser-extension` folder, pin it, open the desired tab and invoke the toolbar
+action before capture. Developer mode must stay enabled for unpacked extension
+reloads. Browser or administrator restrictions still apply.
 Enterprise policy may forbid developer extensions; the supported manual source
 picker remains available. A Store-signed extension is not published yet.
 

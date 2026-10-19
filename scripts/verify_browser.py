@@ -137,6 +137,15 @@ def main():
         )
         controller_url = "chrome-extension://" + extension["id"] + "/" + controller_name
         profile_path = directory / "profile"
+        # Load unpacked is a developer-mode installation. Match that supported
+        # user setup in this disposable profile; otherwise Chrome's initial
+        # command-line load works but runtime.reload disables it as an
+        # unsupported developer extension. Enterprise policy still takes
+        # precedence; no policy or extension restriction is changed here.
+        (profile_path / "Default").mkdir(parents=True)
+        (profile_path / "Default" / "Preferences").write_text(
+            json.dumps({"extensions": {"ui": {"developer_mode": True}}})
+        )
         if sys.platform == "win32":
             if args.native_host is None:
                 raise ValueError(
@@ -498,7 +507,9 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                                 inspector = context.new_page()
                                 inspector.goto("chrome://extensions/")
                                 report["browser_extension_diagnostics"] = inspector.evaluate(
-                                    "chrome.developerPrivate.getExtensionsInfo({includeDisabled:true,includeTerminated:true})"
+                                    """chrome.developerPrivate.getExtensionsInfo({includeDisabled:true,includeTerminated:true})
+                                    .then(items=>items.map(({id,state,disableReasons,installWarnings,runtimeErrors,manifestErrors})=>
+                                      ({id,state,disableReasons,installWarnings,runtimeErrors,manifestErrors})))"""
                                 )
                             except Exception as diagnostic_error:
                                 report["extension_diagnostic_error"] = str(diagnostic_error)

@@ -46,8 +46,9 @@ enumerate unrelated browser tabs. Audial-AI uses a Manifest V3 Chrome/Edge
 extension with native messaging, real tab IDs and browser-granted capture.
 
 The installer provides a `browser-extension` folder and registers the native
-bridge for your Windows account. Load that folder using **Load unpacked** in
-`chrome://extensions` or `edge://extensions`, then pin Audial-AI. No Store-signed
+bridge for your Windows account. Enable **Developer mode** on
+`chrome://extensions` or `edge://extensions`, use **Load unpacked** to choose that
+folder, then pin Audial-AI. No Store-signed
 extension is published yet. Managed browsers may prohibit developer extensions;
 manual **Share tab / app audio** remains available through the supported picker.
 
