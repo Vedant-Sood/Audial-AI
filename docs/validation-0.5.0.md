@@ -2,9 +2,17 @@
 
 Application/installer source: `b9143e6bf51f97f5f02c4d948cabf244408001d0`, branch
 `codex/audial-desktop-upgrade`. Later delivery commits update documentation only.
-Main remains the public `65f6bc0` baseline. The missing unpublished five-commit
+The official source is promoted to `main` and tagged `v0.5.0` on October 21.
+The missing unpublished five-commit
 archive is described in [source recovery](source_recovery-0.5.0.md); it has not
 been merged.
+
+Source promotion checks on October 21 passed: 106 Python tests, 19 Node tests,
+and native offscreen startup, ISL playback and silence abstention. One Windows
+Credential Manager test was skipped on Linux. These checks do not replace
+Windows acceptance; see the [tag workflow](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml)
+for the new build's results. The Windows records below describe the October 19
+run and retain its original source and outcomes.
 
 ## Actual Windows installers
 
@@ -82,8 +90,8 @@ tabs-only extension reproduces it without Audial product JS, audio, native host
 or inference, with normal graphics/Windows sandbox and after an official
 SHA256/Authenticode-verified Stable update. [Exact evidence](validation-0.5.0/windows-browser-edge.json)
 and `scripts/diagnose_browser_discard.py` preserve the reproduction. Physical
-Windows laptop behavior is unverified. The CPU job is therefore failed; the
-NVIDIA job passed. A tagged release remains blocked. Independently passed
+Windows laptop behavior is unverified. In that run the CPU job failed and the
+NVIDIA job passed, blocking installer publication. Independently passed
 installer artifacts record the separate browser outcomes explicitly.
 
 ## Development checks and measured limits

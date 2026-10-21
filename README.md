@@ -5,6 +5,9 @@ objective voice measurements and optional vocal-expression estimates. Processing
 uses your computer; no paid inference API is required. Microphone, camera and tab
 capture start only when you choose them.
 
+The official 0.5.0 source is on `main`, tagged `v0.5.0`. Windows installer
+publication runs from that tag and requires its acceptance checks to pass.
+
 ## Windows installation
 
 The normal distribution is a per-user **Setup.exe**, with separate **CPU** and
@@ -22,8 +25,10 @@ real software-fed streaming inference at source `b9143e6`:
 (446 MB) or [NVIDIA installer artifact](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39313088342/artifacts/12218529231)
 (1.92 GB). Artifact ZIPs include Setup.exe, its checksum, build metadata and
 `acceptance-status.json`. GitHub sign-in may be required; retention is 30 days.
-The separate Edge discard check remains failed and blocks tagged releases. See the
-[current validation report](docs/validation-0.5.0.md) before choosing a build.
+The October 19 Edge discard check failed and prevented installer publication.
+See the [validation report](docs/validation-0.5.0.md) for that run and
+[Windows Actions](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml)
+for the current tag's results before choosing a build.
 The older 0.4.1 ZIP release does not contain these changes.
 
 1. Check the adjacent `.sha256` with `Get-FileHash`, then run Setup.exe.

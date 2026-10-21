@@ -1,8 +1,10 @@
 Audial-AI 0.5.0 improves local setup, notifications, inference scheduling and real
 browser integration. See validation-0.5.0.md before distribution: the exact
-unpublished October 14 patch archive is still missing. CPU and NVIDIA artifacts
-at `b9143e6` passed actual Windows lifecycle and file/streaming inference. The
-separate Edge discard check remains failed and prevents a tagged release.
+unpublished October 14 patch archive is still missing. The official source is
+on `main`, tagged `v0.5.0`. CPU and NVIDIA artifacts at `b9143e6` passed actual
+Windows lifecycle and file/streaming inference. The October 19 Edge discard
+check failed; installer publication requires the current tag's Windows
+acceptance checks to pass.
 
 - Per-user CPU/NVIDIA Setup.exe builds, checksums, shortcuts, upgrade/reinstall
   and explicit uninstall data choices. Required runtimes are included.
