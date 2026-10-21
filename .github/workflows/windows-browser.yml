@@ -8,6 +8,8 @@ on:
       - 'app/services/browser*.py'
       - 'app/services/native_host.py'
       - 'scripts/verify_browser.py'
+      - 'scripts/browser_lifecycle.py'
+      - 'scripts/browser_discard.py'
       - 'scripts/diagnose_browser_discard.py'
       - 'scripts/prepare_edge_ci.ps1'
       - 'scripts/package_extension.py'

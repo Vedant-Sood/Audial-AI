@@ -2,9 +2,10 @@ Audial-AI 0.5.0 improves local setup, notifications, inference scheduling and re
 browser integration. See validation-0.5.0.md before distribution: the exact
 unpublished October 14 patch archive is still missing. The official source is
 on `main`, tagged `v0.5.0`. CPU and NVIDIA artifacts at `b9143e6` passed actual
-Windows lifecycle and file/streaming inference. The October 19 Edge discard
-check failed; installer publication requires the current tag's Windows
-acceptance checks to pass.
+Windows lifecycle and file/streaming inference. Edge and Chromium browser
+acceptance passed on October 21 with the corrected teardown/discard harness;
+installer publication requires the current tag's Windows acceptance checks
+to pass.
 
 - Per-user CPU/NVIDIA Setup.exe builds, checksums, shortcuts, upgrade/reinstall
   and explicit uninstall data choices. Required runtimes are included.
@@ -17,6 +18,9 @@ acceptance checks to pass.
   worker; captions and objective prosody continue independently of estimates.
 - Manifest V3 tab discovery across windows, explicit browser-granted capture,
   native messaging, LIVE indication, source switching and resource cleanup.
+- Browser acceptance guards closed targets and records teardown once. Edge
+  discard/restore runs after detaching the debugger, with actual API observations
+  and matching native bridge updates required before the check can pass.
 
 The same fixed 264-clip/six-actor RAVDESS transfer test scored 18.2% accuracy /
 5.1% macro-F1 for the acoustic head and 51.1% / 39.9% for the released WavLM head.

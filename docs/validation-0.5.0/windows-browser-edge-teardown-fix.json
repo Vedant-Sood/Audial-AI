@@ -1,0 +1,221 @@
+{
+  "platform": "Windows-2022Server-10.0.20348-SP0",
+  "scope": "Real extension/native-bridge PCM transport with generated tones; ASR model is replaced only for this transport test",
+  "lifecycle_events": [
+    {
+      "event": "first tab closed",
+      "stage": "detach automation before discard"
+    },
+    {
+      "event": "suspended tab target closed",
+      "stage": "detach automation before discard"
+    },
+    {
+      "event": "context closed",
+      "stage": "detach automation before discard"
+    },
+    {
+      "event": "browser disconnected",
+      "stage": "detach automation before discard"
+    }
+  ],
+  "browser_version": "155.0.4283.62",
+  "developer_mode": "PASS; enabled through the real browser extension setup UI",
+  "initial_background": "chrome-extension://dojclhfndceededaacaeblikncmihnkb/service-worker.js",
+  "real_tab_discovery": "PASS across two actual browser windows",
+  "reload_and_navigation_identity": "PASS; actual tab ID retained",
+  "pending_tab_lookup": {
+    "id": null,
+    "requested": "edge://settings/",
+    "observed": [
+      {
+        "id": 1799570740,
+        "url": "about:blank",
+        "pendingUrl": null
+      },
+      {
+        "id": 1799570748,
+        "url": "http://127.0.0.1:59155/first",
+        "pendingUrl": null
+      },
+      {
+        "id": 1799570752,
+        "url": "chrome-extension://dojclhfndceededaacaeblikncmihnkb/acceptance-control.html",
+        "pendingUrl": null
+      },
+      {
+        "id": 1799570756,
+        "url": "http://127.0.0.1:59155/second",
+        "pendingUrl": null
+      },
+      {
+        "id": 1799570757,
+        "url": "edge://settings/profiles",
+        "pendingUrl": null
+      }
+    ]
+  },
+  "restricted_pages": "PASS using actual browser APIs",
+  "toolbar_commands": [
+    {
+      "description": "",
+      "name": "_execute_action",
+      "shortcut": "Ctrl+Shift+Y"
+    }
+  ],
+  "source_capture_and_switching": [
+    {
+      "expected_hz": 440,
+      "received_hz": 440.0,
+      "samples": 32000,
+      "expected_tab_id": 1799570748,
+      "actual_tab_id": 1799570748
+    },
+    {
+      "expected_hz": 1000,
+      "received_hz": 1000.0,
+      "samples": 32000,
+      "expected_tab_id": 1799570756,
+      "actual_tab_id": 1799570756
+    }
+  ],
+  "window_focus": [
+    {
+      "requested": "Audial source 440 Hz",
+      "foreground": "Audial source 440 Hz and 2 more pages - Profile 1 - Microsoft\u200b Edge",
+      "matched": true
+    },
+    {
+      "requested": "Audial source 1000 Hz",
+      "foreground": "Audial source 1000 Hz and 1 more page - Profile 1 - Microsoft\u200b Edge",
+      "matched": true
+    },
+    {
+      "requested": "Audial source 440 Hz",
+      "foreground": "Audial source 440 Hz and 1 more page - Profile 1 - Microsoft\u200b Edge",
+      "matched": true
+    }
+  ],
+  "stop_and_release": "PASS",
+  "closed_tab_removal": "PASS",
+  "extension_background_restart": "PASS; real extension reloaded and metadata restored",
+  "desktop_disconnect_releases_audio": "PASS; actual tab stream and offscreen document stopped",
+  "desktop_service_reconnection": "PASS; fresh bridge token/port, tab list restored automatically",
+  "discard_automation": "CDP detached before real extension discard/restore; private loopback observations",
+  "discard_result": {
+    "active": false,
+    "audible": false,
+    "autoDiscardable": true,
+    "discarded": true,
+    "frozen": false,
+    "groupId": -1,
+    "height": 0,
+    "highlighted": false,
+    "id": 1799570773,
+    "incognito": false,
+    "index": 2,
+    "lastAccessed": 1792603500667.491,
+    "mutedInfo": {
+      "muted": false
+    },
+    "openerTabId": 1799570748,
+    "pinned": false,
+    "selected": false,
+    "splitViewId": -1,
+    "status": "unloaded",
+    "title": "Audial source 1000 Hz",
+    "url": "http://127.0.0.1:59155/suspended",
+    "width": 0,
+    "windowId": 1799570738
+  },
+  "discard_identity": {
+    "before": 1799570769,
+    "after": 1799570773
+  },
+  "discard_observed": {
+    "active": false,
+    "audible": false,
+    "autoDiscardable": true,
+    "discarded": true,
+    "frozen": false,
+    "groupId": -1,
+    "height": 0,
+    "highlighted": false,
+    "id": 1799570773,
+    "incognito": false,
+    "index": 2,
+    "lastAccessed": 1792603500667.491,
+    "mutedInfo": {
+      "muted": false
+    },
+    "openerTabId": 1799570748,
+    "pinned": false,
+    "selected": false,
+    "splitViewId": -1,
+    "status": "unloaded",
+    "title": "Audial source 1000 Hz",
+    "url": "http://127.0.0.1:59155/suspended",
+    "width": 0,
+    "windowId": 1799570738
+  },
+  "bridge_discard_observations": {
+    "discarded": {
+      "id": 1799570773,
+      "window_id": 1799570738,
+      "title": "Audial source 1000 Hz",
+      "supported": true,
+      "reason": "Open this suspended tab, then invoke Audial-AI from its toolbar.",
+      "audible": false,
+      "discarded": true
+    },
+    "restored": {
+      "id": 1799570773,
+      "window_id": 1799570738,
+      "title": "Audial source 1000 Hz",
+      "supported": true,
+      "reason": "Capture requires invoking Audial-AI in this tab's toolbar.",
+      "audible": false,
+      "discarded": false
+    }
+  },
+  "restore_observed": {
+    "active": true,
+    "audible": false,
+    "autoDiscardable": true,
+    "discarded": false,
+    "frozen": false,
+    "groupId": -1,
+    "height": 696,
+    "highlighted": true,
+    "id": 1799570773,
+    "incognito": false,
+    "index": 2,
+    "lastAccessed": 1792603502504.985,
+    "mutedInfo": {
+      "muted": false
+    },
+    "openerTabId": 1799570748,
+    "pendingUrl": "http://127.0.0.1:59155/suspended",
+    "pinned": false,
+    "selected": true,
+    "splitViewId": -1,
+    "status": "loading",
+    "title": "Audial source 1000 Hz",
+    "url": "http://127.0.0.1:59155/suspended",
+    "width": 1020,
+    "windowId": 1799570738
+  },
+  "suspend_restore": "PASS using actual browser APIs and native bridge with CDP detached",
+  "cleanup_skipped": [
+    {
+      "operation": "remove suspended tab",
+      "reason": "remove suspended tab: browser or controller page is closed"
+    },
+    {
+      "operation": "close browser context",
+      "reason": "close browser context: browser or controller page is closed"
+    }
+  ],
+  "source_commit": "92a4e29470de39590cc67ecb741f78529c6fd495",
+  "workflow_run_url": "https://github.com/Vedant-Sood/Audial-AI/actions/runs/39643199939"
+}

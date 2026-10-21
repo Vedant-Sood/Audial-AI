@@ -1,18 +1,44 @@
 # Audial-AI 0.5.0 validation
 
 Application/installer source: `b9143e6bf51f97f5f02c4d948cabf244408001d0`, branch
-`codex/audial-desktop-upgrade`. Later delivery commits update documentation only.
+`codex/audial-desktop-upgrade`. The October 21 fixes update browser acceptance
+tooling and documentation; application/runtime code is unchanged.
 The official source is promoted to `main` and tagged `v0.5.0` on October 21.
 The missing unpublished five-commit
 archive is described in [source recovery](source_recovery-0.5.0.md); it has not
 been merged.
 
-Source promotion checks on October 21 passed: 106 Python tests, 19 Node tests,
+Updated source checks on October 21 passed: 118 Python tests, 19 Node tests,
 and native offscreen startup, ISL playback and silence abstention. One Windows
 Credential Manager test was skipped on Linux. These checks do not replace
 Windows acceptance; see the [tag workflow](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml)
 for the new build's results. The Windows records below describe the October 19
 run and retain its original source and outcomes.
+
+## Corrected browser acceptance, October 21
+
+[Windows run 39643199939](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39643199939)
+passed both Edge Stable 155.0.4283.62 and Chromium 156.0.8078.4 at source
+`92a4e29470de39590cc67ecb741f78529c6fd495`. It builds the product's isolated
+native host and tests actual tab discovery, reload/navigation, restricted pages,
+OS-toolbar capture grants, 440/1000-Hz PCM identity, switching, Stop, closed-tab
+cleanup, extension reload, desktop disconnect/reconnect and suspend/restore.
+
+The Edge test launches a normal browser process and attaches over local CDP.
+Before discard it schedules real extension API calls, then detaches Playwright.
+Authenticated loopback callbacks report the actual discarded/restored tab IDs
+and states; the desktop's native bridge must independently observe both states
+and remove the superseded identity. The browser must remain alive, and final
+tab removal must succeed. Missing, incorrect or incomplete observations fail
+the test. Required browser calls fail clearly on teardown; cleanup skips closed
+targets without adding repeated Playwright errors. Twelve regression cases
+cover these requirements. No acceptance assertion is waived.
+
+Exact observations: [Edge](validation-0.5.0/windows-browser-edge-teardown-fix.json)
+and [Chromium](validation-0.5.0/windows-browser-chromium-teardown-fix.json).
+The original attached-debugger failure is retained below as historical evidence.
+The tag workflow separately gates publication on complete native installer,
+packaged-worker browser transport and installed inference acceptance.
 
 ## Actual Windows installers
 
@@ -83,7 +109,7 @@ source identity/PCM. They do not fabricate tab discovery or establish browser-AS
 accuracy. Actual inference is checked separately above. The short workflow also
 packages the product native-host module independently for faster feedback.
 
-**Edge suspended-tab acceptance remains failed.** Stable 155.0.4283.62 passed
+**Historical attached-debugger failure.** Stable 155.0.4283.62 passed
 capture/switching/reload/disconnect/reconnect but crashes with process exit
 `0xC0000005` on discard under Windows Server/Playwright. A separate minimal
 tabs-only extension reproduces it without Audial product JS, audio, native host

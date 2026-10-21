@@ -26,7 +26,8 @@ real software-fed streaming inference at source `b9143e6`:
 (1.92 GB). Artifact ZIPs include Setup.exe, its checksum, build metadata and
 `acceptance-status.json`. GitHub sign-in may be required; retention is 30 days.
 The October 19 Edge discard check failed and prevented installer publication.
-See the [validation report](docs/validation-0.5.0.md) for that run and
+The corrected browser suite passed Edge and Chromium on October 21. See the
+[validation report](docs/validation-0.5.0.md) for its recorded observations and
 [Windows Actions](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml)
 for the current tag's results before choosing a build.
 The older 0.4.1 ZIP release does not contain these changes.
@@ -68,11 +69,11 @@ tracks and audio resources. The popup lists tabs across windows; the companion
 can focus a chosen tab but cannot grant capture permission on your behalf.
 Restricted pages explain their limitation. Microphone capture is always explicit.
 
-Chrome for Testing 156 passed the full Windows transport suite. Edge Stable
-155.0.4283.62 passed capture, switching, reload and reconnection, but crashes in
-the hosted Windows Server/Playwright tab-discard test, including a minimal
-tabs-only extension without Audial's audio or native bridge. Its suspended-tab
-acceptance remains failed; behavior on a physical Windows laptop is unverified.
+Chrome for Testing 156 and Edge Stable 155.0.4283.62 passed the full Windows
+transport suite, including suspend/restore. The Edge check detaches Playwright
+before discarding the tab, then verifies actual browser API observations and
+matching native bridge state. This avoids the browser's crash when discarding
+a debugged tab. Behavior on a physical Windows laptop is unverified.
 
 ## Responsiveness and notifications
 

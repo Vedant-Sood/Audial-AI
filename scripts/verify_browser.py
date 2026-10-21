@@ -25,7 +25,12 @@ import numpy as np
 from app.audio.capture import ExternalAudio
 from app.services.browser import BrowserService
 from app.utils.config import Settings
+from scripts.browser_lifecycle import (
+    BrowserClosed, browser_call, browser_cleanup, browser_is_open,
+    launch_browser_context,
+)
 from scripts.package_extension import build
+from scripts.browser_discard import detached_discard_restore
 
 
 def wait_until(predicate, timeout=20, pump=None):
@@ -244,23 +249,13 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
         }
         failures = []
         try:
-            with sync_playwright() as playwright:
-                context = playwright.chromium.launch_persistent_context(
-                    str(profile_path),
-                    executable_path=args.browser,
-                    headless=False,
-                    chromium_sandbox=sys.platform == "win32",
-                    timeout=20000,
-                    ignore_default_args=["--disable-extensions"],
-                    viewport={"width": 1200, "height": 800},
-                    args=[
-                        "--disable-dev-shm-usage",
-                        "--disable-extensions-except=" + extension["path"],
-                        "--load-extension=" + extension["path"],
-                        "--autoplay-policy=no-user-gesture-required",
-                        "--disable-background-networking",
-                    ],
-                )
+            with (
+                sync_playwright() as playwright,
+                launch_browser_context(
+                    playwright, args.browser, profile_path, extension["path"],
+                    args.output / "browser-process.txt",
+                ) as context,
+            ):
                 report["lifecycle_events"] = []
                 stage = "initialization"
                 def record_lifecycle(event):
@@ -273,12 +268,14 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 # Use the real supported Developer mode control in this
                 # disposable browser profile. Managed restrictions still win.
                 setup = context.new_page()
+                setup.set_viewport_size({"width": 1200, "height": 800})
                 setup.goto("edge://extensions/" if "msedge" in args.browser.lower() else "chrome://extensions/")
                 developer_mode = setup.get_by_label(re.compile("developer mode", re.I)).filter(visible=True).first
                 try:
                     developer_mode.wait_for(state="visible", timeout=10000)
                 except Exception:
                     report["extension_setup_page"] = setup.locator("body").inner_text()[:4000]
+                    setup.screenshot(path=str(args.output / "extension-setup-failure.png"))
                     raise
                 enabled = "element => element.checked === true || element.checked === 'true' || element.getAttribute('aria-checked') === 'true' || element.getAttribute('aria-pressed') === 'true'"
                 if not developer_mode.evaluate(enabled):
@@ -296,7 +293,11 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 first.goto(base + "/first")
                 first.locator("#play").click()
                 def wait(predicate, timeout=20):
-                    return wait_until(predicate, timeout, first.wait_for_timeout)
+                    def pump(milliseconds):
+                        return browser_call(context, first, "acceptance wait", lambda: first.wait_for_timeout(milliseconds))
+                    def observe():
+                        return browser_call(context, first, "acceptance observation", predicate)
+                    return wait_until(observe, timeout, pump)
                 background_url = "chrome-extension://" + extension["id"] + "/service-worker.js"
                 initial_background = next((item for item in context.service_workers if item.url == background_url), None)
                 if initial_background is None:
@@ -326,9 +327,24 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 wait(lambda: len({tab["window_id"] for tab in tabs()}) >= 2)
                 report["real_tab_discovery"] = "PASS across two actual browser windows"
                 def tab_id(page):
-                    return worker.evaluate(
-                        "url => chrome.tabs.query({}).then(items => items.find(tab => tab.url === url).id)",
-                        page.url,
+                    def lookup():
+                        result = browser_call(context, worker, "resolve actual browser tab", lambda: worker.evaluate(
+                            r"""async url => {
+                              const normalize = value => /^(chrome|edge):/.test(value || '')
+                                ? value.replace(/^chrome:/, 'edge:').replace(/\/$/, '') : value;
+                              const items = await chrome.tabs.query({});
+                              const tab = items.find(tab => normalize(tab.url) === normalize(url)
+                                || normalize(tab.pendingUrl) === normalize(url));
+                              return {id:tab?.id, requested:url,
+                                observed:items.map(({id,url,pendingUrl})=>({id,url,pendingUrl}))};
+                            }""", page.url,
+                        ))
+                        if result.get("id") is None:
+                            report["pending_tab_lookup"] = result
+                        return result.get("id")
+                    return wait_until(
+                        lookup, timeout=10,
+                        pump=lambda milliseconds: browser_call(context, first, "tab discovery wait", lambda: first.wait_for_timeout(milliseconds)),
                     )
                 second_id = tab_id(second)
                 second.reload()
@@ -578,64 +594,38 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 wait(lambda: any(tab["id"] == suspended_id for tab in tabs()))
                 try:
                     stage = "discard"
-                    # A tab remains active in its own window even when another
-                    # window is focused. Discard requires a different active tab
-                    # in this exact window.
-                    discarded = worker.evaluate(
-                        """async id => {
-                          const tab = await chrome.tabs.get(id);
-                          const other = (await chrome.tabs.query({windowId:tab.windowId})).find(item=>item.id!==id)
-                            || await chrome.tabs.create({windowId:tab.windowId,url:'about:blank',active:false});
-                          await chrome.tabs.update(other.id,{active:true});
-                          return chrome.tabs.discard(id);
-                        }""",
-                        suspended_id,
-                    )
-                    report["discard_result"] = {
-                        key: discarded.get(key) for key in ["id", "active", "discarded", "windowId", "status"]
-                    } if discarded else None
-                    assert discarded and discarded["discarded"], (
-                        "Browser declined the real discard request", discarded
-                    )
-                    # Chromium replaces the tab's WebContents when discarding;
-                    # the supported API can return a new tab ID. Observe that
-                    # actual identity and require removal of the superseded ID.
-                    previous_id, suspended_id = suspended_id, discarded["id"]
-                    report["discard_identity"] = {"before": previous_id, "after": suspended_id}
-                    wait(
-                        lambda: any(
-                            tab["id"] == suspended_id and tab["discarded"] for tab in tabs()
-                        ) and (previous_id == suspended_id or not any(tab["id"] == previous_id for tab in tabs()))
-                    )
-                    stage = "restore"
-                    worker.evaluate(
-                        "id => chrome.tabs.update(id,{active:true})", suspended_id
-                    )
-                    wait(
-                        lambda: any(
-                            tab["id"] == suspended_id and not tab["discarded"]
-                            for tab in tabs()
-                        )
-                    )
-                    report["suspend_restore"] = "PASS using actual browser APIs"
+                    if hasattr(context, "audial_browser_process"):
+                        stage = "detach automation before discard"
+                        detached_discard_restore(context, worker, suspended_id, report, tabs)
+                        report["suspend_restore"] = "PASS using actual browser APIs and native bridge with CDP detached"
+                    else:
+                        verify_attached_discard(context, worker, suspended_id, report, wait, tabs)
+                        suspended_id = report["discard_identity"]["after"]
+                        report["suspend_restore"] = "PASS using actual browser APIs"
                 except Exception as error:
                     failures.append("Tab suspension: " + str(error))
                     report["suspend_restore"] = {"status": "FAIL", "error": str(error)}
+                    if isinstance(error, BrowserClosed):
+                        report["browser_teardown"] = {"status": "FAIL", "stage": stage}
                     report["bridge_at_suspension_failure"] = service.bridge.snapshot()
-                    try:
-                        report["actual_tab_at_suspension_failure"] = worker.evaluate(
-                            "id => chrome.tabs.get(id)", suspended_id
-                        )
-                    except Exception as diagnostic_error:
-                        report["suspension_diagnostic_error"] = str(diagnostic_error)
+                    if browser_is_open(context, worker):
+                        try:
+                            report["actual_tab_at_suspension_failure"] = browser_call(
+                                context, worker, "suspended tab lookup",
+                                lambda: worker.evaluate("id => chrome.tabs.get(id)", suspended_id),
+                            )
+                        except Exception as diagnostic_error:
+                            report["suspension_diagnostic_error"] = str(diagnostic_error)
                 finally:
-                    try:
-                        worker.evaluate("id => chrome.tabs.remove(id).catch(()=>{})", suspended_id)
-                    except Exception as error:
-                        report["suspended_cleanup_error"] = str(error)
-                        failures.append("Suspended-tab cleanup: " + str(error))
+                    if not browser_cleanup(
+                        context, worker, "remove suspended tab",
+                        lambda: worker.evaluate("id => chrome.tabs.remove(id)", report.get("discard_identity", {}).get("after", suspended_id)),
+                        report,
+                    ):
+                        failures.append("Suspended-tab cleanup failed; see cleanup_errors")
                 stage = "normal cleanup"
-                context.close()
+                if not browser_cleanup(context, None, "close browser context", context.close, report):
+                    failures.append("Browser cleanup failed; see cleanup_errors")
                 if failures:
                     raise AssertionError("; ".join(failures))
         except Exception as error:
@@ -660,6 +650,47 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 json.dumps(report, indent=2) + "\n"
             )
         print(json.dumps(report), flush=True)
+
+
+def verify_attached_discard(context, worker, suspended_id, report, wait, tabs):
+    # A tab remains active in its own window even when another
+    # window is focused. Discard requires a different active tab
+    # in this exact window.
+    discarded = browser_call(context, worker, "discard tab", lambda: worker.evaluate(
+        """async id => {
+          const tab = await chrome.tabs.get(id);
+          const other = (await chrome.tabs.query({windowId:tab.windowId})).find(item=>item.id!==id)
+            || await chrome.tabs.create({windowId:tab.windowId,url:'about:blank',active:false});
+          await chrome.tabs.update(other.id,{active:true});
+          return chrome.tabs.discard(id);
+        }""",
+        suspended_id,
+    ))
+    report["discard_result"] = {
+        key: discarded.get(key) for key in ["id", "active", "discarded", "windowId", "status"]
+    } if discarded else None
+    assert discarded and discarded["discarded"], (
+        "Browser declined the real discard request", discarded
+    )
+    # Chromium replaces the tab's WebContents when discarding;
+    # the supported API can return a new tab ID. Observe that
+    # actual identity and require removal of the superseded ID.
+    previous_id, suspended_id = suspended_id, discarded["id"]
+    report["discard_identity"] = {"before": previous_id, "after": suspended_id}
+    wait(
+        lambda: any(
+            tab["id"] == suspended_id and tab["discarded"] for tab in tabs()
+        ) and (previous_id == suspended_id or not any(tab["id"] == previous_id for tab in tabs()))
+    )
+    browser_call(context, worker, "restore discarded tab", lambda: worker.evaluate(
+        "id => chrome.tabs.update(id,{active:true})", suspended_id
+    ))
+    wait(
+        lambda: any(
+            tab["id"] == suspended_id and not tab["discarded"]
+            for tab in tabs()
+        )
+    )
 
 
 if __name__ == "__main__":
