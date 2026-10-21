@@ -25,6 +25,10 @@ import numpy as np
 from app.audio.capture import ExternalAudio
 from app.services.browser import BrowserService
 from app.utils.config import Settings
+from scripts.browser_lifecycle import (
+    BrowserClosed, browser_call, browser_cleanup, browser_is_open,
+    browser_launch_args,
+)
 from scripts.package_extension import build
 
 
@@ -253,13 +257,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     timeout=20000,
                     ignore_default_args=["--disable-extensions"],
                     viewport={"width": 1200, "height": 800},
-                    args=[
-                        "--disable-dev-shm-usage",
-                        "--disable-extensions-except=" + extension["path"],
-                        "--load-extension=" + extension["path"],
-                        "--autoplay-policy=no-user-gesture-required",
-                        "--disable-background-networking",
-                    ],
+                    args=browser_launch_args(extension["path"]),
                 )
                 report["lifecycle_events"] = []
                 stage = "initialization"
@@ -296,7 +294,11 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 first.goto(base + "/first")
                 first.locator("#play").click()
                 def wait(predicate, timeout=20):
-                    return wait_until(predicate, timeout, first.wait_for_timeout)
+                    def pump(milliseconds):
+                        return browser_call(context, first, "acceptance wait", lambda: first.wait_for_timeout(milliseconds))
+                    def observe():
+                        return browser_call(context, first, "acceptance observation", predicate)
+                    return wait_until(observe, timeout, pump)
                 background_url = "chrome-extension://" + extension["id"] + "/service-worker.js"
                 initial_background = next((item for item in context.service_workers if item.url == background_url), None)
                 if initial_background is None:
@@ -581,7 +583,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     # A tab remains active in its own window even when another
                     # window is focused. Discard requires a different active tab
                     # in this exact window.
-                    discarded = worker.evaluate(
+                    discarded = browser_call(context, worker, "discard tab", lambda: worker.evaluate(
                         """async id => {
                           const tab = await chrome.tabs.get(id);
                           const other = (await chrome.tabs.query({windowId:tab.windowId})).find(item=>item.id!==id)
@@ -590,7 +592,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                           return chrome.tabs.discard(id);
                         }""",
                         suspended_id,
-                    )
+                    ))
                     report["discard_result"] = {
                         key: discarded.get(key) for key in ["id", "active", "discarded", "windowId", "status"]
                     } if discarded else None
@@ -608,9 +610,9 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                         ) and (previous_id == suspended_id or not any(tab["id"] == previous_id for tab in tabs()))
                     )
                     stage = "restore"
-                    worker.evaluate(
+                    browser_call(context, worker, "restore discarded tab", lambda: worker.evaluate(
                         "id => chrome.tabs.update(id,{active:true})", suspended_id
-                    )
+                    ))
                     wait(
                         lambda: any(
                             tab["id"] == suspended_id and not tab["discarded"]
@@ -621,21 +623,27 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 except Exception as error:
                     failures.append("Tab suspension: " + str(error))
                     report["suspend_restore"] = {"status": "FAIL", "error": str(error)}
+                    if isinstance(error, BrowserClosed):
+                        report["browser_teardown"] = {"status": "FAIL", "stage": stage}
                     report["bridge_at_suspension_failure"] = service.bridge.snapshot()
-                    try:
-                        report["actual_tab_at_suspension_failure"] = worker.evaluate(
-                            "id => chrome.tabs.get(id)", suspended_id
-                        )
-                    except Exception as diagnostic_error:
-                        report["suspension_diagnostic_error"] = str(diagnostic_error)
+                    if browser_is_open(context, worker):
+                        try:
+                            report["actual_tab_at_suspension_failure"] = browser_call(
+                                context, worker, "suspended tab lookup",
+                                lambda: worker.evaluate("id => chrome.tabs.get(id)", suspended_id),
+                            )
+                        except Exception as diagnostic_error:
+                            report["suspension_diagnostic_error"] = str(diagnostic_error)
                 finally:
-                    try:
-                        worker.evaluate("id => chrome.tabs.remove(id).catch(()=>{})", suspended_id)
-                    except Exception as error:
-                        report["suspended_cleanup_error"] = str(error)
-                        failures.append("Suspended-tab cleanup: " + str(error))
+                    if not browser_cleanup(
+                        context, worker, "remove suspended tab",
+                        lambda: worker.evaluate("id => chrome.tabs.remove(id)", suspended_id),
+                        report,
+                    ):
+                        failures.append("Suspended-tab cleanup failed; see cleanup_errors")
                 stage = "normal cleanup"
-                context.close()
+                if not browser_cleanup(context, None, "close browser context", context.close, report):
+                    failures.append("Browser cleanup failed; see cleanup_errors")
                 if failures:
                     raise AssertionError("; ".join(failures))
         except Exception as error:
