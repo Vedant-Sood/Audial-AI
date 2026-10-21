@@ -268,6 +268,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 # Use the real supported Developer mode control in this
                 # disposable browser profile. Managed restrictions still win.
                 setup = context.new_page()
+                setup.set_viewport_size({"width": 1200, "height": 800})
                 setup.goto("edge://extensions/" if "msedge" in args.browser.lower() else "chrome://extensions/")
                 developer_mode = setup.get_by_label(re.compile("developer mode", re.I)).filter(visible=True).first
                 try:

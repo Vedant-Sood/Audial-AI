@@ -59,6 +59,7 @@ def main():
             ):
                 report["browser_version"] = context.browser.version
                 setup = context.new_page()
+                setup.set_viewport_size({"width": 1200, "height": 800})
                 setup.goto("edge://extensions/" if "msedge" in args.browser.lower() else "chrome://extensions/")
                 toggle = setup.get_by_label(re.compile("developer mode", re.I)).filter(visible=True).first
                 try:
