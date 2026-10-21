@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   browser:
-    runs-on: windows-2022
+    runs-on: windows-2025
     timeout-minutes: 15
     strategy:
       fail-fast: false
