@@ -327,9 +327,24 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 wait(lambda: len({tab["window_id"] for tab in tabs()}) >= 2)
                 report["real_tab_discovery"] = "PASS across two actual browser windows"
                 def tab_id(page):
-                    return worker.evaluate(
-                        "url => chrome.tabs.query({}).then(items => items.find(tab => tab.url === url).id)",
-                        page.url,
+                    def lookup():
+                        result = browser_call(context, worker, "resolve actual browser tab", lambda: worker.evaluate(
+                            """async url => {
+                              const normalize = value => /^(chrome|edge):/.test(value || '')
+                                ? value.replace(/^chrome:/, 'edge:').replace(/\/$/, '') : value;
+                              const items = await chrome.tabs.query({});
+                              const tab = items.find(tab => normalize(tab.url) === normalize(url)
+                                || normalize(tab.pendingUrl) === normalize(url));
+                              return {id:tab?.id, requested:url,
+                                observed:items.map(({id,url,pendingUrl})=>({id,url,pendingUrl}))};
+                            }""", page.url,
+                        ))
+                        if result.get("id") is None:
+                            report["pending_tab_lookup"] = result
+                        return result.get("id")
+                    return wait_until(
+                        lookup, timeout=10,
+                        pump=lambda milliseconds: browser_call(context, first, "tab discovery wait", lambda: first.wait_for_timeout(milliseconds)),
                     )
                 second_id = tab_id(second)
                 second.reload()
