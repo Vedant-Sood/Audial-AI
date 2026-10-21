@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   browser:
-    runs-on: windows-2025
+    runs-on: windows-2022
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -47,7 +47,7 @@ jobs:
           # The exact product native-host module, packaged independently for
           # fast transport feedback. The release workflow separately verifies
           # the complete installed desktop worker; this job runs no ASR.
-          python -m pip install numpy==2.3.5 scipy==1.17.0 playwright==1.64.0 pyinstaller==6.16.0
+          python -m pip install numpy==2.3.5 scipy==1.17.0 playwright==1.63.0 pyinstaller==6.16.0
           if ($LASTEXITCODE -ne 0) { throw 'Browser test dependencies failed' }
           python -m pip check
           if ($LASTEXITCODE -ne 0) { throw 'Browser dependency conflict' }

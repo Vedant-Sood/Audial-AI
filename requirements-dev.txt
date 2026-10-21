@@ -1,2 +1,2 @@
 # Browser acceptance tooling is excluded from the frozen application.
-playwright==1.64.0
+playwright==1.63.0
