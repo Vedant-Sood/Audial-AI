@@ -11,7 +11,7 @@ import tempfile
 import threading
 
 from scripts.package_extension import extension_id
-from scripts.browser_lifecycle import browser_call, browser_cleanup, browser_launch_args
+from scripts.browser_lifecycle import browser_call, browser_cleanup, launch_browser_context
 
 
 def main():
@@ -49,13 +49,13 @@ def main():
             manifest = {"manifest_version": 3, "name": "Discard API isolation", "version": "1.0", "key": key, "permissions": ["tabs"]}
             (extension / "manifest.json").write_text(json.dumps(manifest))
             (extension / "controller.html").write_text("<!doctype html><title>Discard isolation controller</title>")
-            with sync_playwright() as playwright:
-                context = playwright.chromium.launch_persistent_context(
-                    str(directory / "profile"), executable_path=args.browser,
-                    headless=False, ignore_default_args=["--disable-extensions"],
-                    chromium_sandbox=sys.platform == "win32",
-                    args=browser_launch_args(extension),
-                )
+            with (
+                sync_playwright() as playwright,
+                launch_browser_context(
+                    playwright, args.browser, directory / "profile", extension,
+                    args.output.with_suffix(".browser.txt"),
+                ) as context,
+            ):
                 report["browser_version"] = context.browser.version
                 setup = context.new_page()
                 setup.goto("edge://extensions/" if "msedge" in args.browser.lower() else "chrome://extensions/")

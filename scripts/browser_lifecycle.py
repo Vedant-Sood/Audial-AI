@@ -1,5 +1,11 @@
 """Keep browser acceptance failures distinct from best-effort cleanup."""
 
+from contextlib import contextmanager
+from pathlib import Path
+import subprocess
+import sys
+import time
+
 
 class BrowserClosed(RuntimeError):
     """A required acceptance operation lost its browser or controller page."""
@@ -57,3 +63,58 @@ def browser_launch_args(extension_path):
         "--disable-background-networking",
         "--disable-features=OptimizationGuideModelDownloading,OptimizationHints",
     ]
+
+
+@contextmanager
+def launch_browser_context(playwright, executable, profile, extension, log_path):
+    """Use a normal Edge process and its supported CDP connection on Windows."""
+    if sys.platform != "win32" or Path(executable).name.lower() != "msedge.exe":
+        context = playwright.chromium.launch_persistent_context(
+            str(profile), executable_path=executable, headless=False,
+            chromium_sandbox=sys.platform == "win32", timeout=20000,
+            ignore_default_args=["--disable-extensions"],
+            viewport={"width": 1200, "height": 800},
+            args=browser_launch_args(extension),
+        )
+        try:
+            yield context
+        finally:
+            if browser_is_open(context):
+                context.close()
+        return
+
+    profile = Path(profile)
+    profile.mkdir(parents=True, exist_ok=True)
+    browser = None
+    with Path(log_path).open("wb") as log:
+        process = subprocess.Popen(
+            [str(executable), "--user-data-dir=" + str(profile),
+             "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0",
+             "--no-first-run", "--no-default-browser-check", "--window-size=1200,800",
+             *browser_launch_args(extension), "about:blank"],
+            stdout=log, stderr=subprocess.STDOUT,
+        )
+        try:
+            endpoint_file = profile / "DevToolsActivePort"
+            deadline = time.monotonic() + 20
+            while True:
+                if process.poll() is not None:
+                    raise BrowserClosed(f"Edge exited during startup: {process.returncode}")
+                if endpoint_file.exists():
+                    endpoint = endpoint_file.read_text().splitlines()
+                    if len(endpoint) >= 2:
+                        break
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("Edge did not publish its local CDP endpoint")
+                time.sleep(0.1)
+            browser = playwright.chromium.connect_over_cdp(
+                "ws://127.0.0.1:" + endpoint[0] + endpoint[1],
+                no_defaults=True, timeout=20000,
+            )
+            yield browser.contexts[0]
+        finally:
+            if browser is not None and browser.is_connected():
+                browser.close()
+            if process.poll() is None:
+                process.terminate()
+            process.wait(timeout=10)

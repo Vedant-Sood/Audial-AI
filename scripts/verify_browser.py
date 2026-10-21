@@ -27,7 +27,7 @@ from app.services.browser import BrowserService
 from app.utils.config import Settings
 from scripts.browser_lifecycle import (
     BrowserClosed, browser_call, browser_cleanup, browser_is_open,
-    browser_launch_args,
+    launch_browser_context,
 )
 from scripts.package_extension import build
 
@@ -248,17 +248,13 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
         }
         failures = []
         try:
-            with sync_playwright() as playwright:
-                context = playwright.chromium.launch_persistent_context(
-                    str(profile_path),
-                    executable_path=args.browser,
-                    headless=False,
-                    chromium_sandbox=sys.platform == "win32",
-                    timeout=20000,
-                    ignore_default_args=["--disable-extensions"],
-                    viewport={"width": 1200, "height": 800},
-                    args=browser_launch_args(extension["path"]),
-                )
+            with (
+                sync_playwright() as playwright,
+                launch_browser_context(
+                    playwright, args.browser, profile_path, extension["path"],
+                    args.output / "browser-process.txt",
+                ) as context,
+            ):
                 report["lifecycle_events"] = []
                 stage = "initialization"
                 def record_lifecycle(event):
