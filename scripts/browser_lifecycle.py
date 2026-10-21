@@ -61,7 +61,7 @@ def browser_launch_args(extension_path):
         "--load-extension=" + str(extension_path),
         "--autoplay-policy=no-user-gesture-required",
         "--disable-background-networking",
-        "--disable-features=OptimizationGuideModelDownloading,OptimizationHints",
+        "--disable-features=OptimizationGuideModelDownloading,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion",
     ]
 
 
@@ -91,6 +91,7 @@ def launch_browser_context(playwright, executable, profile, extension, log_path)
             [str(executable), "--user-data-dir=" + str(profile),
              "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0",
              "--no-first-run", "--no-default-browser-check", "--window-size=1200,800",
+             "--edge-skip-compat-layer-relaunch", "--disable-edgeupdater",
              *browser_launch_args(extension), "about:blank"],
             stdout=log, stderr=subprocess.STDOUT,
         )
@@ -109,9 +110,11 @@ def launch_browser_context(playwright, executable, profile, extension, log_path)
                 time.sleep(0.1)
             browser = playwright.chromium.connect_over_cdp(
                 "ws://127.0.0.1:" + endpoint[0] + endpoint[1],
-                no_defaults=True, timeout=20000,
+                timeout=20000,
             )
-            yield browser.contexts[0]
+            context = browser.contexts[0]
+            context.audial_browser_process = process
+            yield context
         finally:
             if browser is not None and browser.is_connected():
                 browser.close()

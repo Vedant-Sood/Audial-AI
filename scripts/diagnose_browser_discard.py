@@ -12,6 +12,7 @@ import threading
 
 from scripts.package_extension import extension_id
 from scripts.browser_lifecycle import browser_call, browser_cleanup, launch_browser_context
+from scripts.browser_discard import detached_discard_restore
 
 
 def main():
@@ -64,6 +65,7 @@ def main():
                     toggle.wait_for(state="visible", timeout=10000)
                 except Exception:
                     report["extension_setup_page"] = setup.locator("body").inner_text()[:4000]
+                    setup.screenshot(path=str(args.output.with_suffix(".setup.png")))
                     raise
                 enabled = "element => element.checked === true || element.checked === 'true' || element.getAttribute('aria-checked') === 'true' || element.getAttribute('aria-pressed') === 'true'"
                 if not toggle.evaluate(enabled):
@@ -76,6 +78,10 @@ def main():
                 page.goto("http://127.0.0.1:" + str(server.server_port))
                 tab = controller.evaluate("chrome.tabs.query({}).then(items=>items.find(tab=>tab.title==='Discard isolation fixture'))")
                 controller.evaluate("id=>chrome.tabs.update(id,{active:true})", controller.evaluate("chrome.tabs.getCurrent().then(tab=>tab.id)"))
+                if hasattr(context, "audial_browser_process"):
+                    detached_discard_restore(context, controller, tab["id"], report)
+                    report["minimal_discard_restore"] = "PASS"
+                    return
                 def call(label, operation):
                     return browser_call(context, controller, label, operation)
 
