@@ -2,5 +2,7 @@
   "name": "accessibilityai-browser-companion",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node --test tests/browser.test.js tests/extension.test.js tests/sanket.test.js" }
+  "scripts": {
+    "test": "node --test tests/browser.test.js tests/extension.test.js tests/sanket.test.js tests/kandha.test.js"
+  }
 }

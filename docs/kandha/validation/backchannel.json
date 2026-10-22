@@ -1,0 +1,163 @@
+{
+ "generated_by": "scripts/kandha_backchannel_study.mjs",
+ "engine": {
+  "earlyFrames": 40,
+  "finalFrames": 90,
+  "minShortFrames": 25,
+  "turnGapSec": 0.25,
+  "frameSec": 0.016
+ },
+ "min_turn_s": 0.6,
+ "cases": {
+  "abab": {
+   "description": "Two LibriSpeech readers, A B A B (the verify_sanket conversation)",
+   "decisions": [
+    {
+     "t": 0.656,
+     "decidedAt": 1.28,
+     "id": 1,
+     "isNew": true,
+     "turnSoFar": 0.624
+    },
+    {
+     "t": 9.648,
+     "decidedAt": 10.272,
+     "id": 2,
+     "isNew": true,
+     "turnSoFar": 0.624
+    },
+    {
+     "t": 18.24,
+     "decidedAt": 19.664,
+     "id": 1,
+     "isNew": false,
+     "turnSoFar": 1.424
+    },
+    {
+     "t": 24.032,
+     "decidedAt": 25.456,
+     "id": 2,
+     "isNew": false,
+     "turnSoFar": 1.424
+    }
+   ]
+  },
+  "backchannel_0.25s": {
+   "description": "Reader A with two 0.25 s interjections by reader B",
+   "burst_starts_s": [
+    3.9,
+    11.05
+   ],
+   "decisions": [
+    {
+     "t": 0.656,
+     "decidedAt": 1.28,
+     "id": 1,
+     "isNew": true,
+     "turnSoFar": 0.624
+    }
+   ],
+   "taps_with_hold": 1,
+   "decisions_total": 1
+  },
+  "backchannel_0.45s": {
+   "description": "Reader A with two 0.45 s interjections by reader B",
+   "burst_starts_s": [
+    3.9,
+    11.25
+   ],
+   "decisions": [
+    {
+     "t": 0.656,
+     "decidedAt": 1.28,
+     "id": 1,
+     "isNew": true,
+     "turnSoFar": 0.624
+    },
+    {
+     "t": 10.976,
+     "decidedAt": 11.712,
+     "id": 2,
+     "isNew": true,
+     "turnSoFar": 0.48
+    },
+    {
+     "t": 11.76,
+     "decidedAt": 13.184,
+     "id": 1,
+     "isNew": false,
+     "turnSoFar": 1.424
+    }
+   ],
+   "taps_with_hold": 2,
+   "decisions_total": 3
+  },
+  "backchannel_0.6s": {
+   "description": "Reader A with two 0.6 s interjections by reader B",
+   "burst_starts_s": [
+    3.9,
+    11.4
+   ],
+   "decisions": [
+    {
+     "t": 0.656,
+     "decidedAt": 1.28,
+     "id": 1,
+     "isNew": true,
+     "turnSoFar": 0.624
+    },
+    {
+     "t": 11.136,
+     "decidedAt": 12.016,
+     "id": 2,
+     "isNew": true,
+     "turnSoFar": 0.624
+    }
+   ],
+   "taps_with_hold": 2,
+   "decisions_total": 2
+  },
+  "backchannel_0.9s": {
+   "description": "Reader A with two 0.9 s interjections by reader B",
+   "burst_starts_s": [
+    3.9,
+    11.7
+   ],
+   "decisions": [
+    {
+     "t": 0.656,
+     "decidedAt": 1.28,
+     "id": 1,
+     "isNew": true,
+     "turnSoFar": 0.624
+    },
+    {
+     "t": 11.44,
+     "decidedAt": 12.064,
+     "id": 2,
+     "isNew": true,
+     "turnSoFar": 0.624
+    },
+    {
+     "t": 12.656,
+     "decidedAt": 14.08,
+     "id": 1,
+     "isNew": false,
+     "turnSoFar": 1.424
+    }
+   ],
+   "taps_with_hold": 3,
+   "decisions_total": 3
+  }
+ },
+ "summary": {
+  "real_turn_decisions_min_turn_so_far_s": 0.624,
+  "decisions_under_hold": [
+   {
+    "turnSoFar": 0.48,
+    "id": 2
+   }
+  ],
+  "note": "turnSoFar is the turn length known when the engine decides; kandha-intents.js taps only when it reaches min_turn_s (or once speech continues to it)."
+ }
+}
