@@ -16,7 +16,10 @@ are felt at the collarbone. Your eyes stay on faces.
   to download the Whisper caption model; after that Kandha works offline.
 - **From source** (macOS, Linux, Windows): `python -m app.main --kandha`. Kandha is also a
   page in the Audial-AI window (**Kandha** in the navigation) and in a Chrome or Edge tab at
-  `http://127.0.0.1:<port>/kandha/` while Audial-AI is running.
+  `http://127.0.0.1:<port>/kandha/` while Audial-AI is running. In a browser tab, when the
+  Whisper model is not installed, captions come from the browser's own speech recognition (the
+  status line says *browser captions*), which may use the browser maker's servers; the Kandha
+  window always captions on this computer.
 
 Press **Start** (or `S`). Kandha asks for the microphone once. Let the people in the room know
 that live captions are on.
