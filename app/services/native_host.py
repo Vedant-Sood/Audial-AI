@@ -58,7 +58,10 @@ def forward(message):
             result["companion_url"] = info["url"]
             return result
     except urllib.error.HTTPError as error:
-        result = json.load(error)
+        try:
+            result = json.load(error)
+        except (ValueError, OSError):
+            raise ValueError("Local companion rejected the request") from None
         raise ValueError(
             result.get("error", "Local companion rejected the request")
         ) from None
