@@ -111,7 +111,12 @@ voice events to `/api/voice-events` (as the companion does) and saves through
 
 ### 2.3 Privacy
 
-Audio is captured in the page and uploaded only to `127.0.0.1`. Nothing is recorded; the
+Audio is captured in the page and uploaded only to `127.0.0.1`. The one exception is a Chrome
+or Edge tab where Whisper is not available: the page then falls back to the browser's built-in
+speech recognition (`browser/sanket/recognizer.js`), whose audio handling belongs to the browser
+and may use its maker's servers; the live status line says *browser captions* and the Privacy
+section of Settings says so. The Kandha window (QtWebEngine) has no such API, so captions there
+are always local. Nothing is recorded; the
 engine keeps short running averages of voice features in memory. No telemetry. Transcripts
 are saved only after the consent checkbox. The Bluetooth link carries five-byte tap commands,
 pad presses, battery and configuration, never audio or text. The companion keeps
