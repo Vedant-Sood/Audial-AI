@@ -358,7 +358,7 @@ it, so there is never a double tap.
 | Scheduler | priorities, stale drop, rate limits, pre-emption, modes, mirror, unmapped | `tests/test_kandha_scheduler.py` |
 | Seat map | window, double-tap reassign, rooms persistence, practicum default, angle → zone | `tests/test_kandha_seatmap.py` |
 | Bridge | mock bleak: scan filter, pair, remembered device, reconnect backoff, ignored INPUT from strangers, STATUS, low battery | `tests/test_kandha_bridge.py` |
-| Virtual stole parity | the same bytes produce the same zone timeline as the firmware simulation | `tests/test_kandha_virtual.py` |
+| Virtual stole parity | the same bytes produce the same zone timeline on the virtual stole and the mock stole (both the Python `PatternPlayer`; the C++ engine is compiled in CI, not executed) | `tests/test_kandha_virtual.py` |
 | Intents | back-channel hold on LibriSpeech turns, resume after silence, no double taps | `tests/kandha.test.js` |
 | Service and HTTP | `/api/kandha/*` ownership, SSE, consent gate, settings | `tests/test_kandha_service.py` |
 | End to end | real Chromium, fake microphone A B A B, Whisper stubbed, mock stole: zones in order, latency, no cue storms, queue saved | `scripts/verify_kandha.py` |
