@@ -19,6 +19,7 @@ def main():
     p.add_argument("--validate-local", action="store_true")
     p.add_argument("--kandha", action="store_true", help="Open Kandha: captions, who is speaking, and the Kandha Stole")
     p.add_argument("--kandha-check", action="store_true", help="Load the Kandha page in the embedded web view, report readiness as JSON and exit")
+    p.add_argument("--kandha-timeout", type=float, default=150, help="Seconds --kandha-check waits for the page (a cold QtWebEngine start on a slow machine can take over a minute)")
     p.add_argument("--browser", action="store_true")
     p.add_argument("--open-browser", action="store_true")
     p.add_argument("--port", type=int, default=8765)
@@ -78,7 +79,7 @@ def main():
         return
     if args.kandha or args.kandha_check:
         from app.ui.kandha_window import launch
-        sys.exit(launch(check=args.kandha_check, port=args.port if args.port != 8765 else 0))
+        sys.exit(launch(check=args.kandha_check, port=args.port if args.port != 8765 else 0, timeout_s=args.kandha_timeout))
     if args.browser:
         from app.services.browser import main as browser_main
         browser_main(args.port, args.open_browser)

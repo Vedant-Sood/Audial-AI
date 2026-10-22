@@ -30,11 +30,12 @@ def test_kandha_check_loads_the_page_in_the_embedded_web_view(tmp_path):
     env = dict(os.environ, QT_QPA_PLATFORM="offscreen", QTWEBENGINE_CHROMIUM_FLAGS="--no-sandbox --disable-gpu",
                ACCESSIBILITY_AI_HOME=str(tmp_path / "home"))
     result = subprocess.run([sys.executable, "-m", "app.main", "--kandha-check"], cwd=project_root(), env=env,
-                            capture_output=True, text=True, timeout=180)
+                            capture_output=True, text=True, timeout=400)
     lines = [line for line in result.stdout.splitlines() if line.startswith("{")]
     assert result.returncode == 0 and lines, result.stdout + result.stderr
     report = json.loads(lines[-1])
-    assert report["ok"] is True and report["page"]["ready"] is True and report["page"]["qt"] is True
+    assert report["ok"] is True, {"report": report, "stderr_tail": result.stderr[-2000:]}
+    assert report["page"]["ready"] is True and report["page"]["qt"] is True
     assert report["page"]["toneModel"] is True and report["page"]["stream"] == "open"
     assert report["permission_api"] in ("QWebEnginePermission", "featurePermissionRequested")
     assert report["title"] == "Kandha"

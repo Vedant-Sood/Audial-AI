@@ -7,6 +7,7 @@ page can open the microphone without a browser prompt. Everything else is the HT
 import json
 import os
 import sys
+import time
 
 from PySide6.QtCore import QTimer, QUrl, Qt
 from PySide6.QtGui import QIcon
@@ -95,7 +96,7 @@ class KandhaWindow(QMainWindow):
         self.page.runJavaScript(script, 0, callback)
 
 
-def launch(check=False, port=0, timeout_s=40):
+def launch(check=False, port=0, timeout_s=150):
     """`python -m app.main --kandha`: start the loopback companion and open the Kandha window.
 
     With check=True (`--kandha-check`), load the page, wait until it reports ready, print a
@@ -115,9 +116,11 @@ def launch(check=False, port=0, timeout_s=40):
         settings = Settings()
     service = BrowserService(settings=settings, port=port)
     url = service.start()
+    page_url = url + "/kandha/"
     window = KandhaWindow(url)
     window.show()
     result = {"ok": False}
+    last = {"value": None, "started": time.monotonic()}
 
     def finish(code):
         try:
@@ -131,12 +134,14 @@ def launch(check=False, port=0, timeout_s=40):
             window.run_js("JSON.stringify(window.Kandha ? window.Kandha.ready() : null)", on_probe)
 
         def on_probe(value):
+            last["value"] = value
             try:
                 data = json.loads(value) if value else None
             except (TypeError, ValueError):
                 data = None
             if data and data.get("ready"):
-                result.update(ok=True, page=data, permission_api=window.permission_api, companion=url, title=window.windowTitle())
+                result.update(ok=True, page=data, permission_api=window.permission_api, companion=url, title=window.windowTitle(),
+                              seconds_to_ready=round(time.monotonic() - last["started"], 1))
                 print(json.dumps(result), flush=True)
                 QTimer.singleShot(50, lambda: finish(0))
             else:
@@ -144,9 +149,12 @@ def launch(check=False, port=0, timeout_s=40):
 
         def give_up():
             if not result["ok"]:
-                print(json.dumps({"ok": False, "error": "The Kandha page did not report ready in time."}), flush=True)
+                print(json.dumps({"ok": False, "error": f"The Kandha page did not report ready within {timeout_s} s.",
+                                  "last_probe": last["value"], "url": page_url, "page_title": window.windowTitle(),
+                                  "web_title": window.view.title()}), flush=True)
                 finish(1)
 
         QTimer.singleShot(800, probe)
-        QTimer.singleShot(timeout_s * 1000, give_up)
+        QTimer.singleShot(int(timeout_s * 1000), give_up)
+        result["seconds_to_ready"] = None
     return app.exec()
