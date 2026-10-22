@@ -29,9 +29,11 @@ jobs:
           python-version: '3.12'
       - name: The pattern header must match the shared JSON table
         run: python scripts/generate_kandha_patterns.py --check
-      - name: Install arduino-cli
+      - name: Install arduino-cli 1.2.2 (pinned release, checksum verified; the install script needs the GitHub API, which shared runners rate-limit)
         run: |
-          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
+          curl -fsSL -o arduino-cli.tar.gz https://github.com/arduino/arduino-cli/releases/download/v1.2.2/arduino-cli_1.2.2_Linux_64bit.tar.gz
+          echo "a5ad085d1b02fd4010df18b1bbf20453276efe6c6e2ac323baa0cac4e96a85b4  arduino-cli.tar.gz" | sha256sum -c -
+          sudo tar -xzf arduino-cli.tar.gz -C /usr/local/bin arduino-cli
           arduino-cli version
       - name: Install the Arduino-ESP32 core 3.x
         run: |
