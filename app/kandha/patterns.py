@@ -2,7 +2,9 @@
 
 `PatternTable` loads browser/sanket/kandha-patterns.json. `PatternPlayer` mirrors the firmware's
 pattern engine (firmware/kandha/pattern_engine.h): the same steps, the same replacement rule,
-the same intensity arithmetic. The virtual stole and the parity tests use it.
+the same intensity arithmetic. It does not model the firmware's 60/255 motor floor or its 15 ms
+spin-up kick. The virtual stole, the mock stole and the parity tests use it; the C++ engine itself
+is compiled in CI, not executed by the tests.
 """
 from dataclasses import dataclass
 import json
@@ -132,7 +134,7 @@ class PatternPlayer:
 
     `start(command, now_ms)` replaces whatever is playing. `levels(now_ms)` gives the duty per
     zone at that moment. `timeline()` lists what was played as (zone letter, start, end, level),
-    which the parity tests compare between the virtual stole and the firmware simulation.
+    which the parity tests compare between the virtual stole and the mock stole (both use this player).
     """
 
     def __init__(self, table_=None, config=None):

@@ -90,7 +90,8 @@ Hyperlegible font. It is served at `/kandha/` under the same CSP as `/sanket/` w
 shared engine from `/sanket/`, and talks to `app/kandha/` through `/api/kandha/*` and a
 server-sent event stream.
 
-`app/kandha/` holds the pattern table loader and firmware-parity player (`patterns.py`), the
+`app/kandha/` holds the pattern table loader and the Python pattern player (`patterns.py`; the
+firmware's formula and timing, without its motor floor and spin-up kick), the
 protocol bytes (`protocol.py`), the pure `HapticScheduler` and `QueueTracker` (`scheduler.py`),
 the `SeatMap` with saved rooms and the `SeatSource` interface (`seatmap.py`), the
 `VirtualStole` (`virtual.py`), the Bluetooth `StoleBridge` with its mock and simulated devices

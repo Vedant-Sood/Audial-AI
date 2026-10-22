@@ -54,7 +54,8 @@ class BleakBackend:
 
 # ---------------------------------------------------------------------------- mock backend
 class MockStole:
-    """A pretend Kandha Stole: GATT characteristics backed by the firmware-parity PatternPlayer."""
+    """A pretend Kandha Stole: GATT characteristics backed by the Python PatternPlayer (the firmware's formula
+    and timing; the firmware's 60/255 motor floor and 15 ms spin-up kick are not modelled)."""
 
     def __init__(self, address="AA:BB:CC:DD:EE:01", name=None, battery=87, charging=False, firmware=(1, 0), table=None,
                  clock=time.monotonic, advertises_service=True):
