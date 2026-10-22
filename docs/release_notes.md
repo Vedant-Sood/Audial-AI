@@ -1,3 +1,19 @@
+## Unreleased: Sanket voice view
+
+- Browser capture (companion page and extension tab capture) runs Sanket's voice engine on
+  the captured audio:
+  - a colour and an arrow per voice;
+  - tone cues on screen, by vibration, or on a Sanket Band;
+  - an opt-in tone estimate relative to each person's usual voice;
+  - an *I want to speak* queue light.
+- Events are validated, stored with the session and included in exports. *Unattributed*
+  captions are named by voice.
+- The full Sanket app is served at `/sanket/` under CSP. It can caption with local Whisper in
+  English or Hindi, which is a session-only language choice.
+- The new browser tone model (`models/sanket/`) has a SHA-256 check and full provenance. On
+  CREMA-D's held-out actors, named estimates were right 98% of the time but cover 4% of
+  sentences. It is not validated on Indian or natural conversation.
+
 Audial-AI 0.5.0 improves local setup, notifications, inference scheduling and real
 browser integration. See validation-0.5.0.md before distribution: the exact
 unpublished October 14 patch archive is still missing. The official source is

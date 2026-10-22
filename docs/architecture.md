@@ -66,6 +66,21 @@ order. It accepts only ISL plans. Native `QVideoSink` frames render in every sig
 canvas; dictionary audio is silent. Unreadable media falls back to original text
 and leaves subsequent signs usable.
 
+## Sanket voice view
+
+`browser/sanket/` holds Sanket's voice engine (`engine.js`), tone features and estimator
+(`tone.js`), and its full app, served under `/sanket/`. These are classic UMD scripts, so Node
+tests and `training/sanket/` run the same files. `browser/voice-session.js` runs the engine
+on the `pcm-worklet.js` tap (opt-in through `processorOptions.tap`, on the same sample clock as
+upload packets). It runs in the companion page and in the extension offscreen document, and
+batches compact voice, cue and tone events. `app/services/voice_view.py` validates them;
+`BrowserService.add_voice_events` accepts them only from the owning capture session (page
+`session_id` or bridge owner). It stores them on `Session.voice_events` and republishes them as
+`voice` events. `browser/voice-view.js` draws colours, cues, tone and the queue strip from that
+stream, and decorates `TranscriptView` rows by audio-time overlap. Exports name unattributed
+captions by voice. The tone model is served only when its SHA-256 matches
+`models/sanket/provenance.json`. See [sanket.md](sanket.md).
+
 ## Training and packaging
 
 `scripts/train_indian_emotion.py` validates real labeled data and divides it by
