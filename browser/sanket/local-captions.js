@@ -13,6 +13,8 @@
 
   const PACKET_SECONDS = 2;           // the companion accepts packets under 3 s
   const POLL_MS = 300;
+  const MAX_PENDING_PACKETS = 3;      // bounds uploads in flight/queued
+  const REQUEST_TIMEOUT_MS = 15000;
 
   function encodeWav(samples, rate) {
     const buf = new ArrayBuffer(44 + samples.length * 2), v = new DataView(buf);
@@ -34,6 +36,8 @@
       this.base = (opts && opts.base) || '';
       this.fetch = (opts && opts.fetch) || root.fetch.bind(root);
       this.active = false;
+      this.starting = false;
+      this.stopping = null;
       this.local = true;               // shown as "on device" in the status line
       this.lang = 'en';
       this.session = null;
@@ -43,6 +47,7 @@
       this.sentSamples = 0;
       this.rate = 16000;
       this.sending = Promise.resolve();
+      this.queuedPackets = 0;
       this.generation = 0;
     }
 
@@ -58,8 +63,11 @@
     }
 
     async _json(path, data) {
-      const r = await this.fetch(this.base + path, data === undefined ? {} : {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
+      const r = await this.fetch(this.base + path, {
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        ...(data === undefined ? {} : {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
+        }),
       });
       const out = await r.json().catch(() => ({}));
       if (!r.ok) throw Object.assign(new Error(out.error || 'The local AccessibilityAI request failed.'), { status: r.status });
@@ -67,11 +75,14 @@
     }
 
     async start(opts) {
+      if (this.active || this.starting || this.stopping) return false;
+      this.starting = true;
       opts = opts || {};
       this.lang = opts.lang === 'hi' ? 'hi' : 'en';
       const gen = ++this.generation;
       try {
         const status = await this._json('/api/status');
+        if (gen !== this.generation) return false;
         if (!status.asr_installed) {
           this.h.onError && this.h.onError('local-missing', `Local captions need ${status.asr_model || 'a Whisper model'} installed in AccessibilityAI (Models page). Voice colours and tone cues keep working; or choose Browser speech service in Settings.`);
           return false;
@@ -85,13 +96,16 @@
         this.session = r.session_id;
         this.cursor = r.cursor || 0;
         this.pending = []; this.pendingLen = 0; this.sentSamples = 0;
+        this.drainUntil = 0;
         this.active = true;
         this.h.onStatus && this.h.onStatus('listening', { local: true });
         this._poll(gen);
         return true;
       } catch (e) {
-        this.h.onError && this.h.onError('local-error', `Local captions couldn’t start: ${e.message}`);
+        if (gen === this.generation) this.h.onError && this.h.onError('local-error', `Local captions couldn’t start: ${e.message}`);
         return false;
+      } finally {
+        if (gen === this.generation) this.starting = false;
       }
     }
 
@@ -106,12 +120,18 @@
 
     _send() {
       if (!this.pendingLen || !this.session) return this.sending;
+      const start = this.sentSamples / this.rate;
+      this.sentSamples += this.pendingLen;
+      if (this.queuedPackets >= MAX_PENDING_PACKETS) {
+        this.pending = []; this.pendingLen = 0;
+        this.h.onError && this.h.onError('local-warning', 'An audio packet was skipped because the local connection is slow. Caption timestamps preserve the gap.');
+        return this.sending;
+      }
       const all = new Float32Array(this.pendingLen);
       let o = 0; for (const p of this.pending) { all.set(p, o); o += p.length; }
       this.pending = []; this.pendingLen = 0;
-      const start = this.sentSamples / this.rate;
-      this.sentSamples += all.length;
       const session = this.session, rate = this.rate;
+      this.queuedPackets++;
       // packets go in order: the companion rejects timestamps that go backwards
       this.sending = this.sending.then(async () => {
         if (session !== this.session) return;
@@ -119,6 +139,7 @@
           const r = await this.fetch(this.base + '/api/audio', {
             method: 'POST', body: encodeWav(all, rate),
             headers: { 'Content-Type': 'audio/wav', 'X-Audio-Start-Seconds': String(start), 'X-Session-ID': session },
+            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
           });
           if (!r.ok) {
             const out = await r.json().catch(() => ({}));
@@ -127,7 +148,7 @@
         } catch (e) {
           if (session === this.session) this.h.onError && this.h.onError('local-error', `Local captions: ${e.message}`);
         }
-      });
+      }).finally(() => { this.queuedPackets--; });
       return this.sending;
     }
 
@@ -157,14 +178,32 @@
       }
     }
 
-    async stop() {
-      if (!this.active) return;
+    stop() {
+      if (this.stopping) return this.stopping;
+      if (!this.active) {
+        // Invalidate status/start responses that arrive after the user stops.
+        if (this.starting) {
+          ++this.generation;
+          this.starting = false;
+        }
+        return Promise.resolve();
+      }
       this.active = false;
       const session = this.session;
-      await this._send().catch(() => {});
-      this.drainUntil = Date.now() + 15000;   // Whisper may still be finishing the last seconds
-      if (session) await this._json('/api/stop', { session_id: session }).catch(() => {});
-      this.session = null;
+      this.stopping = (async () => {
+        try {
+          // Capture is already stopped, so the bounded partial packet can wait
+          // for upload capacity instead of losing the final spoken words.
+          await this.sending.catch(() => {});
+          await this._send().catch(() => {});
+          this.drainUntil = Date.now() + 15000;   // Whisper may still be finishing the last seconds
+          if (session) await this._json('/api/stop', { session_id: session }).catch(() => {});
+        } finally {
+          this.session = null;
+          this.stopping = null;
+        }
+      })();
+      return this.stopping;
     }
 
     setLanguage(lang) { this.lang = lang === 'hi' ? 'hi' : 'en'; }   // takes effect at the next Start

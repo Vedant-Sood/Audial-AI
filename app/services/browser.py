@@ -92,8 +92,6 @@ class BrowserService:
         self.bridge = BrowserBridge(self)
         self.bridge_token = secrets.token_urlsafe(32)
         self.bridge_stopped = threading.Event()
-        self._bridge_thread = None
-        self.saved_language = None
 
     def on_event(self, kind, data):
         if kind not in {"caption","partial","status","warning","error","prosody","performance","isl_settings","isl_vocabulary","emotion","caption_voice","voice","voice_settings"}:
@@ -254,7 +252,7 @@ class BrowserService:
                         selected = PRESETS[service.settings.preset]["asr"]
                         self.respond(200,{"running":service.engine.running,"source":service.engine.source,
                             "asr_model":selected,"asr_installed":service.engine.manager.installed(selected),
-                            "language":service.settings.language,"sign_language":ISL_LANGUAGE,
+                            "language":service.engine.language if service.engine.running else service.settings.language,"sign_language":ISL_LANGUAGE,
                             "auto_sign":service.settings.auto_sign,"vocabulary":service.vocabulary.summary(),
                             "emotion_enabled":service.settings.prosody_classifier,"voice_view":service.voice_settings(),
                             "cursor":service.id})
@@ -370,21 +368,21 @@ class BrowserService:
                             if service.engine.running:
                                 self.respond(409,{"error":"Stop the current audio session before starting browser capture."});return
                             cursor = service.id
-                            # A page may choose this session's speech language (Sanket's English/हिन्दी);
-                            # the saved desktop preference is restored when the session stops.
-                            if language is not None and language != service.settings.language:
-                                service.saved_language = service.settings.language
-                                service.settings.language = language
-                            service.engine.start(mode,source="browser")
+                            service.engine.start(mode,source="browser",language=language)
                             service.session = Session(title="Browser meeting")
                             service.session_id = uuid.uuid4().hex
                             self.respond(200,{"started":True,"cursor":cursor,"session_id":service.session_id})
                     elif self.path == "/api/audio":
                         if self.headers.get("Content-Type","").split(";")[0]!="audio/wav":raise ValueError("Send audio/wav.")
                         import soundfile as sf
-                        audio,rate = sf.read(BytesIO(body),dtype="float32")
-                        if not 8000 <= rate <= 192000 or len(audio)>rate*3 or len(audio)==0:
-                            raise ValueError("Use nonempty audio packets under three seconds, at 8–192 kHz.")
+                        # Check metadata before allocating decoded samples. A small
+                        # compressed file can otherwise expand far beyond the limit.
+                        with sf.SoundFile(BytesIO(body)) as packet:
+                            rate = packet.samplerate
+                            if (packet.format not in {"WAV", "WAVEX"} or packet.channels not in {1, 2}
+                                    or not 8000 <= rate <= 192000 or not 0 < packet.frames <= rate * 3):
+                                raise ValueError("Use nonempty mono or stereo WAV packets up to three seconds, at 8–192 kHz.")
+                            audio = packet.read(dtype="float32")
                         start = float(self.headers["X-Audio-Start-Seconds"])
                         with service.control_lock:
                             if (not service.engine.running or service.engine.source!="browser" or service.engine.capture is None
@@ -400,8 +398,6 @@ class BrowserService:
                                 self.respond(409,{"error":"This session is controlled by another window."});return
                             if self.path=="/api/stop":
                                 service.engine.stop()
-                                if service.saved_language is not None:
-                                    service.settings.language, service.saved_language = service.saved_language, None
                             else:service.engine.pause(bool(options.get("paused")))
                         self.respond(200,{"ok":True})
                     else:self.respond(404,{"error":"Not found."})

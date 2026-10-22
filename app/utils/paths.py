@@ -1,5 +1,6 @@
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -23,11 +24,17 @@ def atomic_json(path, value):
     import json
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(value, indent=2, ensure_ascii=False), encoding="utf-8")
-    fd = os.open(str(tmp), os.O_RDONLY)
+    # Desktop workers and the browser companion can save the same document.
+    # Each writer needs its own staging file in the destination filesystem.
+    tmp = None
     try:
-        os.fsync(fd)
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
+                                         prefix=f".{path.name}.", suffix=".tmp", delete=False) as stream:
+            tmp = Path(stream.name)
+            json.dump(value, stream, indent=2, ensure_ascii=False)
+            stream.flush()
+            os.fsync(stream.fileno())
+        tmp.replace(path)
     finally:
-        os.close(fd)
-    tmp.replace(path)
+        if tmp is not None:
+            tmp.unlink(missing_ok=True)

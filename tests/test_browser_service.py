@@ -87,3 +87,17 @@ def test_browser_palette_persists_and_rejects_unsafe_color_values(companion):
     assert Settings.load().emotion_colors["happy"] == "#010203"
     colors["sad"] = "url(https://example.invalid)"
     assert request(companion, "/api/palette", {"colors": colors})[0] == 400
+
+
+@pytest.mark.parametrize("format,frames,channels", [("FLAC", 64000, 1), ("WAV", 64000, 1), ("WAV", 320, 3)])
+def test_audio_upload_limits_are_checked_before_decoding(companion, monkeypatch, format, frames, channels):
+    body = BytesIO()
+    sf.write(body, np.zeros((frames, channels), np.float32), 16000, format=format)
+
+    def forbidden_read(*args, **kwargs):
+        pytest.fail("An unsupported or oversized upload must be rejected before decoding")
+
+    monkeypatch.setattr(sf.SoundFile, "read", forbidden_read)
+    status, result = request(companion, "/api/audio", body.getvalue(),
+                             {"Content-Type": "audio/wav", "X-Audio-Start-Seconds": "0"})
+    assert status == 400 and "WAV" in result["error"]

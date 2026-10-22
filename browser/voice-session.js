@@ -10,6 +10,7 @@
 // Audio times count from the first sample of the capture, the same clock as caption times.
 
 export const CUE_KINDS = ["drop", "rise", "hesitation", "silence"];
+const MAX_BATCH = 200; // matches the companion's validated event limit
 
 const round = (value, digits = 2) => Math.round(value * 10 ** digits) / 10 ** digits;
 
@@ -42,7 +43,7 @@ export class VoiceSession {
     this.lib = lib; this.send = send; this.settings = {...settings}; this.model = model;
     this.flushMs = flushMs; this.maxQueue = maxQueue; this.onError = onError;
     this.setTimer = setTimer; this.clearTimer = clearTimer;
-    this.engine = null; this.queue = []; this.timer = 0; this.sending = Promise.resolve(); this.ready = false;
+    this.engine = null; this.queue = []; this.timer = 0; this.sending = Promise.resolve(); this.ready = false; this.flushing = false;
   }
   get enabled() { return Boolean(this.settings.colors || this.settings.cues || this.settings.tone); }
   get t() { return this.engine ? this.engine.t : 0; }
@@ -78,9 +79,19 @@ export class VoiceSession {
   open() { this.ready = true; if (this.queue.length) this.flush(); }
   flush() {
     if (this.timer) {this.clearTimer(this.timer); this.timer = 0;}
-    if (!this.queue.length || !this.ready) return this.sending;
-    const batch = this.queue.splice(0);
-    this.sending = this.sending.then(() => this.send(batch)).catch(error => this.onError(error));
+    if (!this.queue.length || !this.ready || this.flushing) return this.sending;
+    this.flushing = true;
+    // Keep unsent events in the bounded queue, rather than retaining a new
+    // promise closure for every cue while the connection is slow.
+    this.sending = Promise.resolve().then(async () => {
+      try {
+        while (this.ready && this.queue.length) {
+          const batch = this.queue.splice(0, MAX_BATCH);
+          try { await this.send(batch); }
+          catch (error) { this.onError(error); }
+        }
+      } finally { this.flushing = false; }
+    });
     return this.sending;
   }
   // Estimate whatever was still being said, then deliver everything.
