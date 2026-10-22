@@ -19,10 +19,12 @@ class HubRedirect(urllib.request.HTTPRedirectHandler):
         result = super().redirect_request(
             request, response, code, message, headers, new_url
         )
+        origin = urlparse(request.full_url)
         target = urlparse(new_url)
         if (
             result is not None
-            and urlparse(request.full_url).hostname == "huggingface.co"
+            and origin.scheme == "https"
+            and origin.hostname == "huggingface.co"
             and target.scheme == "https"
             and target.hostname == "huggingface.co"
         ):
