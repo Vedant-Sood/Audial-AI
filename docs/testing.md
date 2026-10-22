@@ -5,6 +5,13 @@ The current release report is [0.5.0 validation](validation-0.5.0.md). Browser e
 need local socket access; headless Linux uses `QT_QPA_PLATFORM=offscreen`.
 These checks do not record microphones or cameras.
 
+The [Linux source workflow](../.github/workflows/linux-source.yml) runs these
+checks and the Chromium Sanket integration test on pushes to `main` and
+`codex/**`, and on pull requests to `main`. It installs the pinned CPU runtime
+from `requirements-cloud.lock`; the root Node tests need no npm dependencies.
+See the [22 October source reliability review](reliability-review-2026-10-22.md)
+for the capture, queue and persistence regressions added in that pass.
+
 After complete model setup, run `python -m app.main --verify-inference` for
 imported-file ASR/expression/prosody and `--verify-live-inference` for the same
 models through the streaming capture loop. Both block socket connections. The

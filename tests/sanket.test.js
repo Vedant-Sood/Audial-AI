@@ -138,6 +138,45 @@ test("only confident estimates carry a category over the wire", () => {
   assert.equal(compactEvent({type: "level"}), null);
 });
 
+test("voice events stay bounded behind a slow request and use accepted batch sizes", async () => {
+  const sent = [];
+  let release;
+  const blocked = new Promise(resolve => { release = resolve; });
+  const session = new VoiceSession({lib: E, settings: {cues: true}, maxQueue: 500,
+    send: async batch => { sent.push(batch); if (sent.length === 1) await blocked; }});
+  session.open();
+  session.push({kind: "cue", t: 0, cue: "rise", voice: 1});
+  await Promise.resolve();
+  for (let i = 1; i <= 1000; i++) session.push({kind: "cue", t: i, cue: "rise", voice: 1});
+  assert.equal(sent.length, 1, "only one request may be in flight");
+  assert.equal(session.queue.length, 500, "pending events stay in the bounded queue");
+  release();
+  await session.stop();
+  assert.ok(sent.every(batch => batch.length <= 200), "the companion accepts at most 200 events per request");
+  assert.deepEqual(sent.flat().map(event => event.t), [0, ...Array.from({length: 500}, (_, i) => i + 501)]);
+});
+
+test("voice events buffered before session creation are split without losing their order", async () => {
+  const sent = [];
+  const session = new VoiceSession({lib: E, send: async batch => sent.push(batch)});
+  for (let i = 0; i < 450; i++) session.push({kind: "voice", t: i, id: 1});
+  session.open();
+  await session.stop();
+  assert.deepEqual(sent.map(batch => batch.length), [200, 200, 50]);
+  assert.deepEqual(sent.flat().map(event => event.t), Array.from({length: 450}, (_, i) => i));
+});
+
+test("a failed voice event request does not prevent later batches", async () => {
+  const sent = [], errors = [];
+  const session = new VoiceSession({lib: E, onError: error => errors.push(error.message),
+    send: async batch => { sent.push(batch); if (sent.length === 1) throw new Error("disconnected"); }});
+  for (let i = 0; i < 201; i++) session.push({kind: "voice", t: i, id: 1});
+  session.open();
+  await session.stop();
+  assert.deepEqual(errors, ["disconnected"]);
+  assert.deepEqual(sent.map(batch => batch.length), [200, 1]);
+});
+
 test("the audio worklet's optional tap shares the upload clock", () => {
   let Collector; const sent = [];
   const environment = {sampleRate: 16000, Float32Array, AudioWorkletProcessor: class { constructor() { this.port = {postMessage: m => sent.push(m)}; } }, registerProcessor: (_, value) => { Collector = value; }};
@@ -195,4 +234,106 @@ test("local captions send ordered, timestamped packets and deliver timed caption
   assert.ok(calls.filter(c => c.url === "/api/audio").every(c => c.options.headers["X-Session-ID"] === "s1"));
   await new Promise(resolve => setTimeout(resolve, 50));
   assert.deepEqual(captions, [["Hello there", 0.5, 1.4]]);
+});
+
+const localReply = body => ({ok: true, status: 200, json: async () => body});
+const nextTurn = () => new Promise(resolve => setImmediate(resolve));
+
+test("stopping local captions while status is pending cancels startup", async () => {
+  let release;
+  const calls = [];
+  const local = new LocalCaptions({}, {fetch: url => {
+    calls.push(url);
+    return new Promise(resolve => { release = resolve; });
+  }});
+  const starting = local.start();
+  await local.stop();
+  release(localReply({asr_installed: true, running: false}));
+  await nextTurn();
+  assert.deepEqual(calls, ["/api/status"], "a cancelled start must never open a capture session");
+  assert.equal(await starting, false);
+  assert.equal(local.active, false);
+});
+
+test("stopping local captions during session creation releases only that late session", async () => {
+  let release;
+  const calls = [];
+  const local = new LocalCaptions({}, {fetch: async (url, options) => {
+    calls.push([url, options]);
+    if (url === "/api/status") return localReply({asr_installed: true, running: false});
+    if (url === "/api/start") return new Promise(resolve => { release = resolve; });
+    return localReply({ok: true});
+  }});
+  const starting = local.start();
+  await nextTurn();
+  await local.stop();
+  release(localReply({session_id: "cancelled-session"}));
+  assert.equal(await starting, false);
+  await nextTurn();
+  assert.deepEqual(JSON.parse(calls.find(([url]) => url === "/api/stop")[1].body), {session_id: "cancelled-session"});
+  assert.equal(local.active, false);
+  assert.equal(local.session, null);
+});
+
+test("repeated local-caption stops keep the final-caption polling generation", async () => {
+  const local = new LocalCaptions({}, {fetch: async url => localReply(url === "/api/status"
+    ? {asr_installed: true, running: false} : {session_id: "draining", cursor: 0})});
+  local._poll = async () => {};
+  await local.start();
+  const generation = local.generation;
+  const stopping = local.stop();
+  assert.equal(local.stop(), stopping, "concurrent stops share the same cleanup");
+  await stopping;
+  await local.stop();
+  assert.equal(local.generation, generation, "final captions can still arrive after stop");
+});
+
+test("stopping local captions drains a full upload queue before sending the final partial packet", async () => {
+  const starts = [];
+  let release;
+  const blocked = new Promise(resolve => { release = resolve; });
+  const local = new LocalCaptions({onError: (_, message) => assert.fail(message)}, {fetch: async (url, options) => {
+    if (url === "/api/status") return localReply({asr_installed: true, running: false});
+    if (url === "/api/start") return localReply({session_id: "final-packet", cursor: 0});
+    if (url === "/api/audio") {
+      starts.push(Number(options.headers["X-Audio-Start-Seconds"]));
+      if (starts.length === 1) await blocked;
+    }
+    return localReply({ok: true});
+  }});
+  local._poll = async () => {};
+  await local.start();
+  for (let i = 0; i < 7; i++) local.feed(new Float32Array(16000), 16000);
+  const stopping = local.stop();
+  assert.equal(await local.start(), false, "restart waits for the previous session cleanup");
+  release();
+  await stopping;
+  assert.deepEqual(starts, [0, 2, 4, 6]);
+});
+
+test("local captions reject duplicate starts and bound slow audio uploads without compressing time", async () => {
+  const calls = [], errors = [];
+  let release;
+  const blocked = new Promise(resolve => { release = resolve; });
+  const local = new LocalCaptions({onError: (code, message) => errors.push([code, message])}, {fetch: async (url, options) => {
+    calls.push([url, options]);
+    if (url === "/api/status") return localReply({asr_installed: true, running: false});
+    if (url === "/api/start") return localReply({session_id: "bounded", cursor: 0});
+    if (url === "/api/audio" && calls.filter(([path]) => path === url).length === 1) await blocked;
+    return localReply({ok: true});
+  }});
+  local._poll = async () => {};
+  assert.equal(await local.start(), true);
+  assert.equal(await local.start(), false);
+  for (let i = 0; i < 8; i++) local.feed(new Float32Array(32000), 16000);
+  await nextTurn();
+  assert.equal(calls.filter(([url]) => url === "/api/audio").length, 1);
+  assert.equal(errors.length, 5, "excess packets report their gaps instead of accumulating audio");
+  release();
+  await local.sending;
+  local.feed(new Float32Array(32000), 16000);
+  await local.stop();
+  assert.deepEqual(calls.filter(([url]) => url === "/api/audio").map(([, options]) => Number(options.headers["X-Audio-Start-Seconds"])), [0, 2, 4, 16]);
+  assert.ok(calls.every(([, options]) => options?.signal), "requests have bounded timeouts");
+  assert.equal(local.session, null);
 });

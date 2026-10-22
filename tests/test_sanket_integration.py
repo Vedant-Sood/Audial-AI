@@ -169,12 +169,23 @@ def test_voice_preferences_persist_and_reach_status(companion):
     assert request(companion, "/api/status")[1]["voice_view"]["tone"] is True
 
 
-def test_a_page_may_choose_hindi_for_its_session_and_the_preference_is_restored(companion):
+def test_a_page_may_choose_hindi_without_changing_the_desktop_preference(companion):
     assert request(companion, "/api/start", {"mode": "tone", "language": "fr"})[0] == 400
     before = companion.settings.language
     status, started, _ = request(companion, "/api/start", {"mode": "tone", "language": "hi"})
-    assert status == 200 and companion.settings.language == "hi"
+    assert status == 200 and companion.engine.language == "hi"
+    assert companion.settings.language == before
+    assert request(companion, "/api/status")[1]["language"] == "hi"
+    # Saving an unrelated setting during capture must not persist the override.
+    request(companion, "/api/voice-view/settings", {"colors": True, "cues": False, "tone": False})
+    assert Settings.load().language == before
     request(companion, "/api/stop", {"session_id": started["session_id"]})
+    assert companion.settings.language == before
+
+
+def test_failed_session_start_does_not_change_language_preferences(companion):
+    before = companion.settings.language
+    assert request(companion, "/api/start", {"mode": "invalid", "language": "hi"})[0] == 400
     assert companion.settings.language == before
 
 

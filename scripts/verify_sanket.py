@@ -47,10 +47,11 @@ def stub_engine(service):
     engine.manager.installed = lambda _: True
     state = {"languages": []}
 
-    def start(mode, source="browser", file_path=None):
+    def start(mode, source="browser", file_path=None, language=None):
         engine.source, engine.capture, engine.running = source, ExternalAudio(), True
+        engine.language = service.settings.language if language is None else language
         engine.stop_requested.clear()
-        state["languages"].append(service.settings.language)
+        state["languages"].append(engine.language)
         capture = engine.capture
 
         def drain():

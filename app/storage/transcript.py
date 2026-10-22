@@ -125,10 +125,9 @@ class Session:
                 for c in self.captions:
                     row = asdict(c)
                     row["speaker_name"] = self.speakers[c.speaker]["name"]
-                    # Spreadsheet exports cannot execute transcript text as formulae.
                     for k, v in row.items():
-                        if isinstance(v, str) and v.startswith(("=", "+", "-", "@", "\t", "\r")):
-                            row[k] = "'" + v
+                        if isinstance(v, str) and len(v) > 0 and v[0] in ("=", "+", "-", "@", "\t", "\r", "|", "\\"):
+                            row[k] = "\t" + v
                     writer.writerow(row)
         elif kind in {"srt", "vtt"}:
             rows = ["WEBVTT\n"] if kind == "vtt" else []

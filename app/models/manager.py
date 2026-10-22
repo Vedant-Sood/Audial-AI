@@ -143,12 +143,15 @@ class ModelManager:
         import torch
         from app.inference.sign import validate_checkpoint
 
-        checkpoint = torch.load(path, map_location="cpu", weights_only=True)
+        source = Path(path).resolve()
+        if not source.is_file():
+            raise FileNotFoundError("Checkpoint file does not exist.")
+        checkpoint = torch.load(source, map_location="cpu", weights_only=True)
         validate_checkpoint(checkpoint, task)
         dest = self.path("sign-local" if task == "sign" else "prosody-local")
         dest.mkdir(exist_ok=True)
-        if Path(path).resolve() != (dest / "best.pt").resolve():
-            shutil.copyfile(path, dest / "best.pt")
+        if source != (dest / "best.pt").resolve():
+            shutil.copyfile(source, dest / "best.pt")
         return dest
 
     def remove(self, model_id):

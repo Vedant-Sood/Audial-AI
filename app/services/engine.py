@@ -26,6 +26,7 @@ def choose_device(requested, warning=None):
 class AudioEngine:
     def __init__(self, settings, manager=None, queue_events=True):
         self.settings = settings
+        self.language = settings.language
         self.manager = manager or ModelManager()
         self.events = queue.Queue(maxsize=300)
         self.queue_events = queue_events
@@ -56,27 +57,36 @@ class AudioEngine:
             try:
                 observer(kind, data)
             except Exception:
-                pass
+                if kind == "error":
+                    pass
+                try:
+                    self.observers.remove(observer)
+                except ValueError:
+                    pass
         if not self.queue_events:
             return
         try:
             self.events.put_nowait((kind, data))
         except queue.Full:
             if kind in {"caption", "error"}:
-                # Preserve completed words; discard only transient UI updates.
                 with self.events.mutex:
-                    for index, event in enumerate(self.events.queue):
-                        if event[0] not in {"caption", "error"}:
+                    for index in range(len(self.events.queue)):
+                        if self.events.queue[index][0] not in {"caption", "error"}:
                             del self.events.queue[index]
                             self.events.not_full.notify()
                             break
+                    else:
+                        return
                 self.events.put((kind, data))
 
-    def start(self, mode="combined", file_path=None, source="microphone"):
+    def start(self, mode="combined", file_path=None, source="microphone", language=None):
         if self.running or any(t.is_alive() for t in self.threads):
             raise RuntimeError("The previous worker is still finishing. Wait for Idle.")
         if source not in {"microphone", "system", "browser"} or mode not in {"combined", "captions", "tone"}:
             raise ValueError("Unknown audio source or mode.")
+        # A browser session may choose its own language without changing the
+        # desktop preference, including while the model loads asynchronously.
+        self.language = self.settings.language if language is None else language
         self.source = source
         self.capture = ExternalAudio() if source == "browser" and not file_path else None
         self._mode, self.running = mode, True
@@ -106,12 +116,12 @@ class AudioEngine:
                     raise FileNotFoundError(f"Install {model_id} on the Models page, or select a preset with an installed ASR model.")
                 compute = preset["compute_type"] if device == "cuda" else "int8"
                 try:
-                    self.asr = WhisperASR(self.manager.path(model_id), device, compute, preset["beam_size"], self.settings.language)
+                    self.asr = WhisperASR(self.manager.path(model_id), device, compute, preset["beam_size"], self.language)
                 except (RuntimeError, OSError) as exc:
                     if device != "cuda":
                         raise
                     self.emit("warning", f"GPU ASR could not start ({exc}). Using CPU INT8 for this session.")
-                    self.asr = WhisperASR(self.manager.path(model_id), "cpu", "int8", preset["beam_size"], self.settings.language)
+                    self.asr = WhisperASR(self.manager.path(model_id), "cpu", "int8", preset["beam_size"], self.language)
                 if self.settings.diarization != "off":
                     if not self.manager.installed("ecapa"):
                         raise FileNotFoundError("Install ECAPA for speaker IDs, or set Speaker backend to off in Settings.")
