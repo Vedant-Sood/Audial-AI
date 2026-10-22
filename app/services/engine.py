@@ -57,20 +57,26 @@ class AudioEngine:
             try:
                 observer(kind, data)
             except Exception:
-                pass
+                if kind == "error":
+                    pass
+                try:
+                    self.observers.remove(observer)
+                except ValueError:
+                    pass
         if not self.queue_events:
             return
         try:
             self.events.put_nowait((kind, data))
         except queue.Full:
             if kind in {"caption", "error"}:
-                # Preserve completed words; discard only transient UI updates.
                 with self.events.mutex:
-                    for index, event in enumerate(self.events.queue):
-                        if event[0] not in {"caption", "error"}:
+                    for index in range(len(self.events.queue)):
+                        if self.events.queue[index][0] not in {"caption", "error"}:
                             del self.events.queue[index]
                             self.events.not_full.notify()
                             break
+                    else:
+                        return
                 self.events.put((kind, data))
 
     def start(self, mode="combined", file_path=None, source="microphone", language=None):

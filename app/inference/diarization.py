@@ -76,7 +76,10 @@ class ECAPADiarizer:
             features = self.feature_norm(self.feature(signal), lengths)
             embedding = self.embedding(features, lengths)
             embedding = self.embedding_norm(embedding, lengths).reshape(-1).cpu().numpy()
-        return embedding / max(float(np.linalg.norm(embedding)), 1e-8)
+        norm = float(np.linalg.norm(embedding))
+        if norm < 1e-8:
+            raise ValueError("Speaker embedding has near-zero norm; audio may be silence.")
+        return embedding / norm
 
     def identify(self, embedding):
         similarities = [float(np.dot(embedding, centroid)) for centroid in self.centroids]
@@ -122,10 +125,12 @@ class OverlapDiarizer:
         intervals = [(segment.start, segment.end) for segment, _, _ in annotation.itertracks(yield_label=True)]
         turns = []
         for index, (start, end) in enumerate(intervals):
-            mixed = any(max(start, a) < min(end, b) for other, (a, b) in enumerate(intervals) if other != index)
-            if mixed or end - start < 0.5:
+            mixed = any(max(start, a) < min(end, b) for j, (a, b) in enumerate(intervals) if j != index)
+            sample_start = max(0, int(start * 16000))
+            sample_end = min(len(audio), int(end * 16000))
+            if mixed or end - start < 0.5 or sample_end - sample_start < 8000:
                 speaker, score = "Overlap / unattributed" if mixed else "Unattributed", None
             else:
-                speaker, score = self.ecapa.identify(self.ecapa.embed(audio[int(start * 16000):int(end * 16000)]))
+                speaker, score = self.ecapa.identify(self.ecapa.embed(audio[sample_start:sample_end]))
             turns.append(SpeakerTurn(offset + start, offset + end, speaker, score, mixed))
         return turns

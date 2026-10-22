@@ -63,17 +63,24 @@ def prosody(audio, rate=SAMPLE_RATE):
     starts = np.flatnonzero(changes == -1)
     ends = np.flatnonzero(changes == 1)
     durations = [(b - a) * 0.02 for a, b in zip(starts, ends) if b > a and (b - a) * 0.02 >= 0.2]
+    rms_val = float(np.sqrt(np.mean(x * x))) if len(x) else 0
+    rms_dbfs = float(20 * np.log10(max(rms_val, 1e-6)))
+    clipped = float(np.mean(np.abs(x) > 0.99)) if len(x) else 0.0
     return {"f0_hz": float(np.median(values)) if values else None,
             "pitch_std_hz": float(np.std(values)) if values else None,
             "pitch_confidence": float(np.mean([c for p, c in pitches if p is not None])) if values else 0.0,
             "f0_curve": [p for p, c in pitches],
-            "dbfs": float(20 * np.log10(max(float(np.sqrt(np.mean(x * x))) if len(x) else 0, 1e-6))),
+            "dbfs": rms_dbfs,
+            "rms_dbfs": rms_dbfs,
             "energy": float(np.mean(x * x)) if len(x) else 0,
             "spectral_centroid_hz": float(np.mean(centroid)),
             "voiced_fraction": float(np.mean(voiced)),
+            "active_fraction": float(np.mean(voiced)),
+            "clipped_fraction": clipped,
             "pause_count": len(durations), "pause_seconds": float(sum(durations)),
             "speaking_rate_wpm": None, "rate_source": "Requires ASR word timestamps",
-            "waveform": x[::max(1, len(x) // 200)].tolist()[:200]}
+            "waveform": x[::max(1, len(x) // 200)].tolist()[:200],
+            "_pitch_features": values}
 
 
 def mfcc_features(audio, rate=SAMPLE_RATE):

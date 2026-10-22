@@ -62,7 +62,7 @@ class NoticeHistory:
             self.recent = {
                 k: v for k, v in self.recent.items() if now - v[0] < self.cooldown
             }
-            if len(self.recent) >= self.items.maxlen:
+            while len(self.recent) >= self.items.maxlen:
                 self.recent.pop(next(iter(self.recent)))
             self.recent[key] = (now, notice)
             if self.persist:

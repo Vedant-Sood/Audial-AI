@@ -416,11 +416,14 @@ class BrowserService:
         def watch_bridge():
             while not self.bridge_stopped.wait(1):
                 self.bridge.expire()
-        threading.Thread(target=watch_bridge, daemon=True).start()
+        self._bridge_thread = threading.Thread(target=watch_bridge, daemon=True, name="bridge-watch")
+        self._bridge_thread.start()
         return self.url
 
     def stop(self):
         self.bridge_stopped.set()
+        if self._bridge_thread is not None and self._bridge_thread.is_alive():
+            self._bridge_thread.join(timeout=3)
         if self.bridge.owner:
             self.bridge.stop(self.bridge.owner["profile"], self.bridge.owner["session_id"])
         if self.owns_engine:self.engine.stop()
