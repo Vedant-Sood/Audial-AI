@@ -8,8 +8,8 @@ export function encodeWav(samples, sampleRate) {
 }
 
 export class BrowserAudioCapture {
-  constructor({onChunk,onStop=()=>{},onError=()=>{},workletUrl=new URL("./pcm-worklet.js",import.meta.url).href}) {
-    this.onChunk=onChunk; this.onStop=onStop; this.onError=onError; this.workletUrl=workletUrl; this.generation=0;this.deliveries=new Set();
+  constructor({onChunk,onSamples=null,microphone=()=>({}),onStop=()=>{},onError=()=>{},workletUrl=new URL("./pcm-worklet.js",import.meta.url).href}) {
+    this.onChunk=onChunk; this.onSamples=onSamples; this.microphone=microphone; this.onStop=onStop; this.onError=onError; this.workletUrl=workletUrl; this.generation=0;this.deliveries=new Set();
   }
   async start(source="shared") {
     if(source!=="shared"&&source!=="microphone") throw new Error("Choose shared or microphone audio.");
@@ -18,7 +18,7 @@ export class BrowserAudioCapture {
     this.pending=true;this.ending=false; const generation=++this.generation;
     try {
       const stream=source==="microphone"?
-        await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:false},video:false}):
+        await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:false,...this.microphone()},video:false}):
         await navigator.mediaDevices.getDisplayMedia({video:true,audio:true,systemAudio:"include",surfaceSwitching:"include"});
       if(generation!==this.generation) {stream.getTracks().forEach(t=>t.stop());return;}
       this.stream=stream;
@@ -27,12 +27,13 @@ export class BrowserAudioCapture {
       this.context=new AudioContext(); await this.context.audioWorklet.addModule(this.workletUrl);
       if(generation!==this.generation) return;
       this.input=this.context.createMediaStreamSource(new MediaStream(this.stream.getAudioTracks()));
-      this.node=new AudioWorkletNode(this.context,"accessibilityai-pcm");
+      this.node=new AudioWorkletNode(this.context,"accessibilityai-pcm",{processorOptions:{tap:Boolean(this.onSamples)}});
       this.mute=this.context.createGain(); this.mute.gain.value=0;
       this.input.connect(this.node).connect(this.mute).connect(this.context.destination);
       this.node.port.onmessage=event=>{
         if(generation!==this.generation)return;
         if(event.data.type==="flushed"){this.flushComplete?.();return;}
+        if(event.data.type==="tap"){try{this.onSamples?.(event.data.samples,event.data.sampleRate);}catch(error){this.onError(error);}return;}
         const delivery=Promise.resolve(this.onChunk({...event.data,wav:encodeWav(event.data.samples,event.data.sampleRate)})).catch(this.onError);
         this.deliveries.add(delivery);delivery.finally(()=>this.deliveries.delete(delivery));
       };

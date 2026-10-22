@@ -1,7 +1,7 @@
 // A bounded display window; full captions remain in the server's exportable session.
 export class TranscriptView {
-  constructor(list, {limit = 500} = {}) {
-    this.list = list; this.limit = limit; this.pending = []; this.frame = 0;
+  constructor(list, {limit = 500, decorate = null} = {}) {
+    this.list = list; this.limit = limit; this.pending = []; this.frame = 0; this.decorate = decorate;
     this.host = list.ownerDocument.defaultView;
   }
   clear() {
@@ -22,7 +22,10 @@ export class TranscriptView {
       const item = doc.createElement("li"), header = doc.createElement("span"), text = doc.createElement("p");
       header.className = "hint";
       header.textContent = `${caption.speaker} · ${caption.start.toFixed(2)}–${caption.end.toFixed(2)}s${caption.overlap ? " · overlapping voices" : ""}`;
-      text.textContent = caption.text; item.append(header, text); fragment.append(item);
+      text.textContent = caption.text; item.append(header, text);
+      // e.g. the Sanket voice view adds the voice colour and a tone note
+      try { this.decorate?.(item, caption); } catch { /* decoration never hides a caption */ }
+      fragment.append(item);
     }
     list.append(fragment);
     while (list.childElementCount > this.limit) list.firstElementChild.remove();

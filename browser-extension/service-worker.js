@@ -107,6 +107,9 @@ async function dispatch(message) {
       if (!capture || message.session_id !== capture.session_id) throw new Error("Capture has stopped.");
       return call("audio", {session_id: capture.session_id, pcm: message.pcm,
         sample_rate: message.sample_rate, start_seconds: message.start_seconds});
+    case "voice":
+      if (!capture || message.session_id !== capture.session_id) throw new Error("Capture has stopped.");
+      return call("voice", {session_id: capture.session_id, events: message.events});
     case "capture-ended": return stopCapture(false);
     case "capture-error":
       lastError = message.error;

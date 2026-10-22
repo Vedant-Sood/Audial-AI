@@ -27,6 +27,25 @@ from app.utils.config import PRESETS, Settings
 from app.utils.paths import project_root, data_root, atomic_json
 from app.services.browser_bridge import BrowserBridge
 from app.utils.palette import DEFAULT_EMOTION_COLORS, validate_palette
+from app.services.voice_view import clean_events
+
+# Sanket (browser/sanket/): static app files the companion may serve, and its tone model.
+SANKET_FILES = {"index.html", "styles.css", "app.js", "tone.js", "engine.js", "captions.js", "recognizer.js",
+                "translator.js", "band.js", "local-captions.js", "demo.js", "worklet.js"}
+SANKET_LANGUAGES = {"en", "hi"}
+CSP = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
+# Sanket's page colours voices with inline style attributes (--c custom properties); scripts stay 'self'.
+CSP_SANKET = CSP.replace("style-src 'self'", "style-src 'self' 'unsafe-inline'")
+
+
+def sanket_model():
+    """The tone model bytes, only if they match the SHA-256 recorded in its provenance."""
+    folder = project_root() / "models" / "sanket"
+    data = (folder / "tone_model.json").read_bytes()
+    expected = json.loads((folder / "provenance.json").read_text(encoding="utf-8"))["sha256"]
+    if hashlib.sha256(data).hexdigest() != expected:
+        raise OSError("The Sanket tone model does not match its recorded SHA-256.")
+    return data
 
 
 def json_default(value):
@@ -73,9 +92,10 @@ class BrowserService:
         self.bridge = BrowserBridge(self)
         self.bridge_token = secrets.token_urlsafe(32)
         self.bridge_stopped = threading.Event()
+        self.saved_language = None
 
     def on_event(self, kind, data):
-        if kind not in {"caption","partial","status","warning","error","prosody","performance","isl_settings","isl_vocabulary","emotion","caption_voice"}:
+        if kind not in {"caption","partial","status","warning","error","prosody","performance","isl_settings","isl_vocabulary","emotion","caption_voice","voice","voice_settings"}:
             return
         with self.lock:
             if kind == "caption":
@@ -87,6 +107,21 @@ class BrowserService:
                         break
             self.id += 1
             self.events.append({"id": self.id,"kind": kind,"data": data})
+
+    def voice_settings(self):
+        return {"colors": self.settings.voice_colors, "cues": self.settings.voice_cues,
+                "tone": self.settings.voice_tone, "model": (project_root() / "models" / "sanket" / "tone_model.json").is_file()}
+
+    def add_voice_events(self, session_id, events):
+        """Store a batch from the capture that owns `session_id`, then republish it to pages."""
+        clean = clean_events(events)
+        with self.lock:
+            if session_id is None or session_id != self.session_id:
+                raise PermissionError("These voice events belong to a stopped or different capture session.")
+            stored = self.session.add_voice_events(clean)
+        if clean:
+            self.on_event("voice", {"events": clean})
+        return {"stored": stored}
 
     def sign_plan(self, text):
         """Return every ordered step; each distinct pose is encoded only once.
@@ -148,7 +183,7 @@ class BrowserService:
                 self.send_header("Content-Length",str(len(data)))
                 self.send_header("Cache-Control","no-store")
                 self.send_header("X-Content-Type-Options","nosniff")
-                self.send_header("Content-Security-Policy","default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'")
+                self.send_header("Content-Security-Policy", CSP_SANKET if self.path.startswith("/sanket/") else CSP)
                 if filename:
                     self.send_header("Content-Disposition",f'attachment; filename="{filename}"')
                 self.end_headers()
@@ -220,7 +255,8 @@ class BrowserService:
                             "asr_model":selected,"asr_installed":service.engine.manager.installed(selected),
                             "language":service.settings.language,"sign_language":ISL_LANGUAGE,
                             "auto_sign":service.settings.auto_sign,"vocabulary":service.vocabulary.summary(),
-                            "emotion_enabled":service.settings.prosody_classifier,"cursor":service.id})
+                            "emotion_enabled":service.settings.prosody_classifier,"voice_view":service.voice_settings(),
+                            "cursor":service.id})
                     elif parsed.path == "/api/palette":
                         self.respond(200, {"colors": service.settings.emotion_colors,
                                            "defaults": DEFAULT_EMOTION_COLORS})
@@ -243,8 +279,18 @@ class BrowserService:
                             target = Path(directory)/("transcript."+kind)
                             service.session.export(target,kind)
                             self.respond(200,target.read_bytes(),"text/vtt; charset=utf-8" if kind=="vtt" else "application/octet-stream","transcript."+kind)
+                    elif parsed.path == "/sanket":
+                        self.send_response(308); self.send_header("Location", "/sanket/"); self.send_header("Content-Length", "0"); self.end_headers()
+                    elif parsed.path == "/sanket/tone-model.json":
+                        self.respond(200, sanket_model())
+                    elif parsed.path.startswith("/sanket/"):
+                        filename = parsed.path.removeprefix("/sanket/") or "index.html"
+                        if filename not in SANKET_FILES:
+                            self.respond(404,{"error":"Not found."});return
+                        type_ = "text/html" if filename.endswith(".html") else "text/css" if filename.endswith(".css") else "text/javascript"
+                        self.respond(200,(browser/"sanket"/filename).read_bytes(),type_+"; charset=utf-8")
                     else:
-                        allowed = {"index.html","app.js","styles.css","light-box.js","capture.js","pcm-worklet.js","emotion.js","isl-playback.js","transcript.js","notifications.js"}
+                        allowed = {"index.html","app.js","styles.css","light-box.js","capture.js","pcm-worklet.js","emotion.js","isl-playback.js","transcript.js","notifications.js","voice-session.js","voice-view.js"}
                         filename = parsed.path.lstrip("/") or "index.html"
                         if filename not in allowed:
                             self.respond(404,{"error":"Not found."});return
@@ -266,6 +312,23 @@ class BrowserService:
                             self.respond(403, {"error": "Use the installed Audial-AI browser bridge."})
                             return
                         self.respond(200, service.bridge.handle(json.loads(body or b"{}")))
+                    elif parsed.path == "/api/voice-events":
+                        options = json.loads(body or b"{}")
+                        if not isinstance(options, dict):
+                            raise ValueError("Send a JSON object with session_id and events.")
+                        try:
+                            self.respond(200, service.add_voice_events(options.get("session_id"), options.get("events")))
+                        except PermissionError as error:
+                            self.respond(409, {"error": str(error)})
+                    elif parsed.path == "/api/voice-view/settings":
+                        options = json.loads(body or b"{}")
+                        if not isinstance(options, dict) or not all(isinstance(options.get(k), bool) for k in ("colors", "cues", "tone")):
+                            raise ValueError("Send colors, cues and tone as true or false.")
+                        with service.control_lock:
+                            service.settings.voice_colors, service.settings.voice_cues, service.settings.voice_tone = options["colors"], options["cues"], options["tone"]
+                            service.settings.save()
+                        service.on_event("voice_settings", service.voice_settings())
+                        self.respond(200, service.voice_settings())
                     elif parsed.path == "/api/browser-command":
                         options = json.loads(body or b"{}")
                         self.respond(200, service.bridge.queue_command(options["profile"], int(options["tab_id"])))
@@ -299,10 +362,18 @@ class BrowserService:
                         options = json.loads(body or b"{}")
                         if not isinstance(options,dict):raise ValueError("Send a JSON object.")
                         mode = options.get("mode","combined")
+                        language = options.get("language")
+                        if language is not None and language not in SANKET_LANGUAGES:
+                            raise ValueError("Caption language must be en or hi.")
                         with service.control_lock, service.lock:
                             if service.engine.running:
                                 self.respond(409,{"error":"Stop the current audio session before starting browser capture."});return
                             cursor = service.id
+                            # A page may choose this session's speech language (Sanket's English/हिन्दी);
+                            # the saved desktop preference is restored when the session stops.
+                            if language is not None and language != service.settings.language:
+                                service.saved_language = service.settings.language
+                                service.settings.language = language
                             service.engine.start(mode,source="browser")
                             service.session = Session(title="Browser meeting")
                             service.session_id = uuid.uuid4().hex
@@ -326,7 +397,10 @@ class BrowserService:
                         with service.control_lock:
                             if service.engine.source!="browser" or options.get("session_id")!=service.session_id or service.session_id is None:
                                 self.respond(409,{"error":"This session is controlled by another window."});return
-                            if self.path=="/api/stop":service.engine.stop()
+                            if self.path=="/api/stop":
+                                service.engine.stop()
+                                if service.saved_language is not None:
+                                    service.settings.language, service.saved_language = service.saved_language, None
                             else:service.engine.pause(bool(options.get("paused")))
                         self.respond(200,{"ok":True})
                     else:self.respond(404,{"error":"Not found."})

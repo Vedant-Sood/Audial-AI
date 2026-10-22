@@ -1,8 +1,9 @@
 // The generated extension includes the shared worklet and WAV helpers from browser/.
 import { encodeWav } from "./capture.js";
+import { VoiceSession } from "./voice-session.js";
 
 let stream = null, context = null, input = null, node = null, mute = null;
-let generation = 0, session = null, ending = false, flushComplete = null;
+let generation = 0, session = null, ending = false, flushComplete = null, voice = null;
 const deliveries = new Set();
 async function background(type, data = {}) {
   const response = await chrome.runtime.sendMessage({target: "background", type, ...data});
@@ -24,15 +25,25 @@ async function start(message) {
     }}});
     context = new AudioContext();
     await context.audioWorklet.addModule("pcm-worklet.js");
+    // Sanket voice view on the same tab audio, with the desktop's preferences for this session
+    const preferences = session.voice_view || {};
+    if ((preferences.colors || preferences.cues || preferences.tone) && globalThis.SanketEngine) {
+      let model = null;
+      if (preferences.tone && preferences.model) model = await fetch("sanket-tone-model.json").then(r => (r.ok ? r.json() : null)).catch(() => null);
+      voice = new VoiceSession({settings: preferences, model, flushMs: 1000,
+        send: events => background("voice", {session_id: session.session_id, events})});
+      voice.open();
+    }
     input = context.createMediaStreamSource(stream);
     // tabCapture mutes the original tab; route its audio back to the listener.
     input.connect(context.destination);
-    node = new AudioWorkletNode(context, "accessibilityai-pcm");
+    node = new AudioWorkletNode(context, "accessibilityai-pcm", {processorOptions: {tap: Boolean(voice)}});
     mute = context.createGain(); mute.gain.value = 0;
     input.connect(node).connect(mute).connect(context.destination);
     node.port.onmessage = event => {
       if (current !== generation) return;
       if (event.data.type === "flushed") {flushComplete?.(); return;}
+      if (event.data.type === "tap") {voice?.feed(event.data.samples, event.data.sampleRate); return;}
       if (deliveries.size >= 2) {
         background("capture-error", {error: "The desktop cannot keep up with tab audio. Capture stopped to prevent an unbounded audio queue."}).catch(() => {});
         return;
@@ -63,7 +74,9 @@ async function stop(flush = true) {
       node.port.postMessage({type: "flush"});
     });
     await Promise.allSettled([...deliveries]);
+    await voice?.stop().catch(() => {});
   }
+  voice = null;
   ++generation;
   if (node) {node.port.onmessage = null; node.disconnect();}
   input?.disconnect(); mute?.disconnect();

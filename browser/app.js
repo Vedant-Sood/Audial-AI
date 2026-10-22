@@ -4,17 +4,74 @@ import { displayEmotion } from "./emotion.js";
 import { ISLPlayback } from "./isl-playback.js";
 import { TranscriptView } from "./transcript.js";
 import { BrowserNotices } from "./notifications.js";
+import { VoiceSession } from "./voice-session.js";
+import { VoiceView } from "./voice-view.js";
 
 const elements=new Map([...document.querySelectorAll("[id]")].map(element=>[element.id,element]));
 const $=id=>elements.get(id);
 const notices = new BrowserNotices($("error"), $("notification-history"));
 const showError = (text, severity = "error") => notices.publish(text, severity);
-const transcript = new TranscriptView($("transcript"));
+const transcript = new TranscriptView($("transcript"), {decorate: (item, caption) => voiceView.decorate(item, caption)});
 const lights=new LightBox($("lights"),{reducedMotion:matchMedia("(prefers-reduced-motion: reduce)").matches,onLabel:label=>{$("sign-status").textContent=label;}});
 $("reduced-motion").checked=lights.reducedMotion;
 let active=false,starting=false,stopping=false,paused=false,sending=false,cursor=0,generation=0,sessionId=null;
 let extensionActive = false;
 let emotionColors = null, lastEmotion = null, defaultColors = null;
+
+// ---- Sanket voice view: colours and arrows per voice, tone cues, queue light ----
+const band = globalThis.SanketBand ? new globalThis.SanketBand({onButton: () => toggleQueue(),
+  onStatus: (on, name) => {$("voice-band").textContent = on ? "Disconnect band" : "Connect Sanket Band"; $("voice-status").textContent = on ? `Connected to ${name || "Sanket Band"}.` : "Band disconnected.";}}) : null;
+const voiceView = new VoiceView($, {band, palette: () => emotionColors,
+  vibrate: pattern => {if ($("voice-vibrate").checked) navigator.vibrate?.(pattern);}});
+let voiceSettings = {colors: true, cues: false, tone: false, model: false}, voiceSession = null, toneModel = null;
+try { $("voice-vibrate").checked = localStorage.getItem("audial.voiceVibrate") === "1"; } catch { /* storage unavailable */ }
+if (band) band.phoneVibrate = $("voice-vibrate").checked;
+$("voice-band").disabled = !globalThis.SanketBand?.bluetoothSupported?.();
+async function loadToneModel() {
+  if (toneModel || !voiceSettings.tone || !voiceSettings.model) return toneModel;
+  const response = await fetch("./sanket/tone-model.json", {signal: AbortSignal.timeout(8000)});
+  if (!response.ok) throw new Error("The Sanket tone model could not be loaded; tone estimates stay off.");
+  toneModel = await response.json(); voiceSession?.setModel(toneModel); return toneModel;
+}
+function applyVoiceSettings(settings) {
+  voiceSettings = {...voiceSettings, ...settings};
+  voiceView.configure(voiceSettings);
+  voiceSession?.configure(voiceSettings);
+  if (voiceSettings.tone) loadToneModel().catch(error => showError(error.message, "warning"));
+}
+async function saveVoiceSettings() {
+  const wanted = {colors: $("voice-colors").checked, cues: $("voice-cues").checked, tone: $("voice-tone").checked};
+  try { applyVoiceSettings(await request("/api/voice-view/settings", wanted)); }
+  catch (error) { showError(error.message); voiceView.configure(voiceSettings); }
+}
+for (const key of ["colors", "cues", "tone"]) $("voice-" + key).addEventListener("change", saveVoiceSettings);
+$("voice-vibrate").addEventListener("change", event => {
+  if (band) band.phoneVibrate = event.target.checked;
+  try { localStorage.setItem("audial.voiceVibrate", event.target.checked ? "1" : "0"); } catch { /* storage unavailable */ }
+});
+$("voice-band").addEventListener("click", async () => {
+  try { if (band.connected) band.disconnect(); else await band.connect(); }
+  catch (error) { if (error?.name !== "NotFoundError") showError(error.message); }
+});
+function newVoiceSession() {
+  const enabled = voiceSettings.colors || voiceSettings.cues || voiceSettings.tone;
+  if (!enabled || !globalThis.SanketEngine) return null;
+  return new VoiceSession({settings: voiceSettings, model: toneModel,
+    send: events => request("/api/voice-events", {session_id: sessionId, events}),
+    onError: error => showError("Voice view: " + error.message, "warning")});
+}
+function toggleQueue(force) {
+  const on = force === undefined ? !voiceView.queue.on : Boolean(force);
+  if (!voiceView.setQueue(on)) return;
+  // the queue moment is kept with the transcript when this page owns the capture
+  if (voiceSession && active) voiceSession.push({kind: "queue", t: Math.round(voiceSession.t * 100) / 100, on});
+}
+$("queue-button").addEventListener("click", () => toggleQueue());
+addEventListener("keydown", event => {
+  if (event.key.toLowerCase() !== "q" || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (event.target.closest?.("input, textarea, select, [contenteditable]")) return;
+  event.preventDefault(); toggleQueue();
+});
 
 function applyEmotionColors() {
   if (emotionColors && lastEmotion) displayEmotion($("tone"), lastEmotion, emotionColors);
@@ -101,7 +158,10 @@ function setButtons(){
   $("share").disabled=active||starting||stopping||extensionActive;$("microphone").disabled=active||starting||stopping||extensionActive;$("stop").disabled=stopping||!(active||starting);$("pause-audio").disabled=!active||stopping;
   $("pause-audio").textContent=paused?"Resume audio":"Pause audio";
 }
-const capture=new BrowserAudioCapture({onChunk:async chunk=>{
+const capture=new BrowserAudioCapture({onSamples:(samples,sampleRate)=>voiceSession?.feed(samples,sampleRate),
+  // the browser's noise filter reshapes voices and splits one person into two colours, so it is
+  // off while the voice view runs (Sanket measured this; Whisper captions are unaffected)
+  microphone:()=>(voiceSession?{noiseSuppression:false}:{}),onChunk:async chunk=>{
   if(!active)return;
   if(sending){showError("An audio packet was skipped because the connection is slow. Caption timestamps preserve the gap.");return;}
   const current=generation;sending=true;
@@ -120,19 +180,26 @@ async function start(source){
     if(attempt!==generation)return;
     if(!status.asr_installed)throw new Error(`Install ${status.asr_model} on the desktop Models page or run setup before starting captions.`);
     if(status.running)throw new Error("Stop the current audio session in the desktop app before starting here.");
+    applyVoiceSettings(status.voice_view ?? {});
+    if (voiceSettings.tone) await loadToneModel().catch(error => showError(error.message, "warning"));
+    voiceSession = newVoiceSession(); voiceView.reset();
     await capture.start(source);
     if(attempt!==generation)return;
     const result=await request("/api/start",{mode:"combined"});
     if(attempt!==generation){await request("/api/stop",{session_id:result.session_id});return;}
     active=true;starting=false;paused=false;sending=false;manualDisplay=false;sessionId=result.session_id;cursor=result.cursor;
+    voiceSession?.open();
     transcript.clear();$("capture-status").textContent="Listening to " + (capture.sourceLabel || "the audio you selected") + ". Loading local captions…";
     setButtons();
-  }catch(error){if(attempt===generation){starting=false;await capture.stop();setButtons();showError(error.message);}}
+  }catch(error){if(attempt===generation){starting=false;voiceSession=null;await capture.stop();setButtons();showError(error.message);}}
 }
 async function stop({flush=true}={}){
   if(stopping)return;
   stopping=true;$("stop").disabled=true;$("capture-status").textContent="Finishing the last audio packet…";
   if(active&&flush)await capture.flush().catch(error=>showError(error.message));
+  // deliver the last voice events (and the estimate for what was still being said) first
+  const ownedVoice=voiceSession;voiceSession=null;
+  if(ownedVoice&&active)await ownedVoice.stop().catch(error=>showError("Voice view: "+error.message,"warning"));
   const ownedSession=active?sessionId:null;active=false;starting=false;paused=false;sending=false;generation++;setButtons();await capture.stop();
   if(ownedSession)await request("/api/stop",{session_id:ownedSession}).catch(error=>showError(error.message));
   stopping=false;setButtons();
@@ -173,6 +240,8 @@ async function poll(){
       const data=event.data;
       if(event.kind==="caption")appendCaption(data);
       else if(event.kind==="partial")$("partial").textContent=data?"Live draft: "+data:"";
+      else if(event.kind==="voice")voiceView.apply(data.events);
+      else if(event.kind==="voice_settings")applyVoiceSettings(data);
       else if(event.kind==="prosody"){
         $("level").textContent=`${data.dbfs.toFixed(1)} dBFS`;$("pitch").textContent=data.f0_hz===null?"Unvoiced":`${Math.round(data.f0_hz)} Hz`;
         if (Object.hasOwn(data, "emotion")) lastEmotion = data.emotion;
@@ -205,6 +274,7 @@ async function refreshBrowserTabs() {
   try {
     const [result, status] = await Promise.all([request("/api/tabs"), request("/api/status")]);
     $("model-status").textContent = `${status.asr_model} ${status.asr_installed?"ready offline":"setup incomplete"} · speech ${status.language||"auto"} · ISL: ${status.vocabulary.entries} loaded signs`;
+    if (Boolean(result.capture) && !extensionActive) voiceView.reset();
     extensionActive = Boolean(result.capture);
     const profiles = result.profiles.filter(profile => profile.connected);
     const signature = JSON.stringify(profiles);
@@ -271,7 +341,7 @@ $("document-file").addEventListener("change", async event => {
   finally {event.target.value = "";}
 });
 addEventListener("pagehide",()=>{const ownedSession=active?sessionId:null;active=false;starting=false;generation++;capture.stop().catch(()=>{});if(ownedSession)navigator.sendBeacon("/api/stop",JSON.stringify({session_id:ownedSession}));});
-request("/api/status").then(status=>{cursor=status.cursor??0;$("auto-sign").checked=status.auto_sign;$("model-status").textContent=`${status.asr_model} ${status.asr_installed?"ready":"needs installation"} · speech ${status.language||"auto"} · ISL: ${status.vocabulary.entries} loaded signs`;poll();}).catch(error=>{showError(error.message);poll();});
+request("/api/status").then(status=>{cursor=status.cursor??0;$("auto-sign").checked=status.auto_sign;applyVoiceSettings(status.voice_view ?? {});$("model-status").textContent=`${status.asr_model} ${status.asr_installed?"ready":"needs installation"} · speech ${status.language||"auto"} · ISL: ${status.vocabulary.entries} loaded signs`;poll();}).catch(error=>{showError(error.message);poll();});
 const pageText=new URLSearchParams(location.hash.slice(1)).get("text");
 if(pageText){
   manualDisplay=true;
