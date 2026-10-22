@@ -42,12 +42,16 @@ class Settings:
             raise ValueError("Unknown performance preset or device.")
         if self.diarization not in {"off", "ecapa", "pyannote"}:
             raise ValueError("Unknown speaker backend.")
-        if not 0 <= self.sign_threshold <= 1 or not 0.25 <= self.sign_speed <= 2:
-            raise ValueError("Invalid sign threshold or playback speed.")
+        if not isinstance(self.sign_threshold, (int, float)) or not 0 <= self.sign_threshold <= 1:
+            raise ValueError("Invalid sign threshold.")
+        if not isinstance(self.sign_speed, (int, float)) or not 0.25 <= self.sign_speed <= 2:
+            raise ValueError("Invalid playback speed.")
         if self.microphone is not None and (not isinstance(self.microphone, int) or self.microphone < 0):
             raise ValueError("Invalid microphone index.")
-        if not isinstance(self.camera, int) or self.camera < 0 or len(self.intensity_colors) != 3:
-            raise ValueError("Invalid camera index or intensity colours.")
+        if not isinstance(self.camera, int) or self.camera < 0:
+            raise ValueError("Invalid camera index.")
+        if not isinstance(self.intensity_colors, list) or len(self.intensity_colors) != 3:
+            raise ValueError("Intensity colours must be a list of three values.")
         validate_palette(self.emotion_colors)
         if not all(isinstance(v, bool) for v in (self.voice_colors, self.voice_cues, self.voice_tone)):
             raise ValueError("Voice view preferences must be true or false.")
