@@ -68,7 +68,7 @@ class Played:
     def as_dict(self):
         return {"seq": self.command.seq, "zones": self.command.zone_letters, "mask": self.command.zones,
                 "pattern": self.pattern_key, "pattern_id": self.command.pattern, "intensity": self.command.intensity,
-                "repeat": self.command.repeat, "kind": self.intent.kind, "cue": self.intent.cue, "voice": self.intent.voice,
+                "repeat": self.command.repeat, "intent": self.intent.kind, "cue": self.intent.cue, "voice": self.intent.voice,
                 "zone": self.zone, "t": self.intent.t, "at": self.at, "until": self.until, "duration_ms": round((self.until - self.at) * 1000),
                 "preempted": self.preempted, "deferred": self.deferred, "demo": self.intent.demo}
 
@@ -119,6 +119,8 @@ class HapticScheduler:
         kind = intent.kind
         if kind in ("speaker", "voice_resumes"):
             zone = intent.zone or self.seat_lookup(intent.voice)
+            if zone == "me":
+                return None
             if zone is None:
                 return by["seat_unmapped"], zone_mask("F"), None
             return by["seat_tap"], zone_mask(zone), zone
@@ -162,6 +164,8 @@ class HapticScheduler:
             self.last_tapped_voice = None
         if intent.kind == "speaker" and intent.voice is not None and intent.voice == self.last_tapped_voice and not intent.zone:
             return self._drop(intent, "same-voice")
+        if intent.kind in ("speaker", "voice_resumes", "new_voice") and intent.voice is not None and self.seat_lookup(intent.voice) == "me":
+            return self._drop(intent, "self")
         if intent.kind == "cue":
             if now - self.last_cue_at < self.cue_gap:
                 return self._drop(intent, "cue-gap")
@@ -176,7 +180,7 @@ class HapticScheduler:
         if busy:
             playing = PRIORITY[self.current.intent.kind]
             mine = PRIORITY[intent.kind]
-            if mine > playing:
+            if mine > playing or intent.kind == "test":      # a newer test always replaces an older one
                 self.current.preempted = True
                 return [self._play(intent, now, preempted_current=True)]
             if intent.kind == "silence":

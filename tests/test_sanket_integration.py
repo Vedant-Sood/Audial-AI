@@ -9,7 +9,7 @@ import pytest
 
 from app.audio.capture import ExternalAudio
 from app.services import browser as browser_module
-from app.services.browser import SANKET_FILES, BrowserService
+from app.services.browser import KANDHA_FILES, SANKET_FILES, BrowserService
 from app.services.voice_view import VoiceTrack, clean_events
 from app.storage.transcript import Caption, Session
 from app.utils.config import Settings
@@ -43,25 +43,55 @@ def request(service, path, data=None, headers=None):
         return response.status, (json.loads(raw) if "application/json" in kind and raw[:1] in b"{[" else raw), response.headers
 
 
-def test_sanket_page_is_csp_safe_and_every_script_it_loads_is_served(companion):
-    status, page, headers = request(companion, "/sanket/")
+def test_kandha_page_is_csp_safe_and_every_script_it_loads_is_served(companion):
+    status, page, headers = request(companion, "/kandha/")
     assert status == 200
     assert "script-src 'self'" in headers["Content-Security-Policy"]
     assert "'unsafe-inline'" not in headers["Content-Security-Policy"].split("style-src")[0]
     assert not re.search(rb"<script(?![^>]*\bsrc=)", page), "no inline scripts"
+    assert not re.search(rb" on[a-z]+=", page), "no inline event handlers"
     for src in re.findall(rb'<script src="([^"]+)"', page):
-        assert src.decode() in SANKET_FILES
-        assert request(companion, "/sanket/" + src.decode())[0] == 200
-    assert request(companion, "/sanket/package.json")[0] == 404
-    assert request(companion, "/sanket/../app/main.py")[0] == 404
-    # the companion page keeps its strict policy
+        src = src.decode()
+        if src.startswith("../sanket/"):
+            assert src.removeprefix("../sanket/") in SANKET_FILES
+            assert request(companion, "/sanket/" + src.removeprefix("../sanket/"))[0] == 200
+        else:
+            assert src in KANDHA_FILES
+            assert request(companion, "/kandha/" + src)[0] == 200
+    assert request(companion, "/kandha/fonts/AtkinsonHyperlegible-Regular.ttf")[2]["Content-Type"] == "font/ttf"
+    assert request(companion, "/kandha/fonts/OFL.txt")[0] == 200
+    assert request(companion, "/kandha/patterns.json")[1]["protocol"]["name_prefix"] == "KandhaStole-"
+    assert request(companion, "/kandha/package.json")[0] == 404
+    assert request(companion, "/kandha/../app/main.py")[0] == 404
+    assert request(companion, "/sanket/band.js")[0] == 404, "the band is retired"
+    assert request(companion, "/sanket/app.js")[0] == 404, "the old Sanket app moved to /kandha/"
+    # the companion page keeps its strict policy and still loads the shared engine
     assert "'unsafe-inline'" not in request(companion, "/")[2]["Content-Security-Policy"]
-    for name in ("voice-session.js", "voice-view.js", "sanket/engine.js", "sanket/tone.js", "sanket/band.js"):
+    for name in ("voice-session.js", "voice-view.js", "sanket/engine.js", "sanket/tone.js"):
         assert request(companion, "/" + name)[0] == 200
+    assert b"band" not in request(companion, "/")[1].lower()
+
+
+def test_old_sanket_addresses_redirect_to_kandha(companion):
+    import urllib.request
+    for path in ("/sanket", "/sanket/", "/sanket/index.html", "/kandha"):
+        query = urllib.request.Request(companion.url + path)
+        opener = urllib.request.build_opener(NoRedirect())
+        try:
+            response = opener.open(query, timeout=10)
+        except urllib.error.HTTPError as error:
+            response = error
+        with response:
+            assert response.status == 308 and response.headers["Location"] == "/kandha/"
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args, **kwargs):
+        return None
 
 
 def test_tone_model_is_served_only_when_it_matches_its_recorded_hash(companion, tmp_path, monkeypatch):
-    status, model, _ = request(companion, "/sanket/tone-model.json")
+    status, model, _ = request(companion, "/kandha/tone-model.json")
     assert status == 200 and model["labels"] == ["angry", "disgust", "fear", "happy", "neutral", "sad"]
     provenance = json.loads((project_root() / "models/sanket/provenance.json").read_text())
     assert provenance["sha256"] == hashlib.sha256((project_root() / "models/sanket/tone_model.json").read_bytes()).hexdigest()
@@ -73,7 +103,7 @@ def test_tone_model_is_served_only_when_it_matches_its_recorded_hash(companion, 
     (fake / "models/sanket/tone_model.json").write_text("{}")
     (fake / "models/sanket/provenance.json").write_text(json.dumps({"sha256": "0" * 64}))
     monkeypatch.setattr(browser_module, "project_root", lambda: fake)
-    assert request(companion, "/sanket/tone-model.json")[0] == 400
+    assert request(companion, "/kandha/tone-model.json")[0] == 400 and request(companion, "/sanket/tone-model.json")[0] == 400
 
 
 def test_voice_events_need_the_owning_session_and_are_republished(companion):

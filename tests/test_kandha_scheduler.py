@@ -173,3 +173,11 @@ def test_queue_tracker_reminds_after_the_wait_and_at_most_once_a_minute():
     q.reminder_s = 0
     q.set(True, 500.0)
     assert not q.due(700.0), "0 disables reminders"
+
+
+def test_the_wearers_own_voice_never_taps():
+    s = HapticScheduler(lambda v: {1: "L", 2: "me"}.get(v), SchedulerSettings(mode="seminar"))
+    assert played(s, Intent("new_voice", created=0.0, voice=2, new=True), 0.0) is None and s.dropped[-1][1] == "self"
+    assert played(s, Intent("speaker", created=1.0, voice=2), 1.0) is None
+    assert played(s, Intent("voice_resumes", created=2.0, voice=2), 2.0) is None
+    assert played(s, Intent("speaker", created=3.0, voice=1), 3.0)["zones"] == "L"

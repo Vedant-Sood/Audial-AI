@@ -28,14 +28,18 @@ from app.utils.paths import project_root, data_root, atomic_json
 from app.services.browser_bridge import BrowserBridge
 from app.utils.palette import DEFAULT_EMOTION_COLORS, validate_palette
 from app.services.voice_view import clean_events
+from app.kandha.service import KandhaService
 
-# Sanket (browser/sanket/): static app files the companion may serve, and its tone model.
-SANKET_FILES = {"index.html", "styles.css", "app.js", "tone.js", "engine.js", "captions.js", "recognizer.js",
-                "translator.js", "band.js", "local-captions.js", "demo.js", "worklet.js"}
+# Sanket voice engine (browser/sanket/): shared library files the companion and Kandha load.
+SANKET_FILES = {"tone.js", "engine.js", "captions.js", "recognizer.js", "translator.js", "local-captions.js", "worklet.js"}
+# Kandha (browser/kandha/): the app, served under /kandha/ with its bundled font.
+KANDHA_FILES = {"index.html", "styles.css", "app.js", "views.js", "demo.js", "kandha-intents.js"}
+KANDHA_FONTS = {"AtkinsonHyperlegible-Regular.ttf", "AtkinsonHyperlegible-Bold.ttf", "AtkinsonHyperlegible-Italic.ttf",
+                "AtkinsonHyperlegible-BoldItalic.ttf", "OFL.txt"}
 SANKET_LANGUAGES = {"en", "hi"}
 CSP = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
-# Sanket's page colours voices with inline style attributes (--c custom properties); scripts stay 'self'.
-CSP_SANKET = CSP.replace("style-src 'self'", "style-src 'self' 'unsafe-inline'")
+# Kandha's page colours voices with inline style attributes (--c custom properties); scripts stay 'self'.
+CSP_SANKET = CSP.replace("style-src 'self'", "style-src 'self' 'unsafe-inline'").replace("default-src 'self'", "default-src 'self'; font-src 'self'")
 
 
 def sanket_model():
@@ -73,10 +77,13 @@ def pose_sequence(entry):
 
 
 class BrowserService:
-    def __init__(self, engine=None, settings=None, port=0, vocabulary=None):
+    def __init__(self, engine=None, settings=None, port=0, vocabulary=None, kandha_backend=None, kandha_bridge=True):
         self.settings = settings or Settings.load()
         self.engine = engine or AudioEngine(self.settings, queue_events=False)
         self.owns_engine = engine is None
+        # Kandha: haptic scheduling, seat map, queue, the virtual stole and the Bluetooth bridge.
+        # Captions never depend on it; a failure here is reported, not raised.
+        self.kandha = KandhaService(publish=self.on_event, backend=kandha_backend, start_bridge=kandha_bridge)
         self.vocabulary = vocabulary or ISLVocabulary()
         self.sign_media = {}
         self.port = port
@@ -95,7 +102,7 @@ class BrowserService:
         self.saved_language = None
 
     def on_event(self, kind, data):
-        if kind not in {"caption","partial","status","warning","error","prosody","performance","isl_settings","isl_vocabulary","emotion","caption_voice","voice","voice_settings"}:
+        if kind not in {"caption","partial","status","warning","error","prosody","performance","isl_settings","isl_vocabulary","emotion","caption_voice","voice","voice_settings","kandha"}:
             return
         with self.lock:
             if kind == "caption":
@@ -183,7 +190,7 @@ class BrowserService:
                 self.send_header("Content-Length",str(len(data)))
                 self.send_header("Cache-Control","no-store")
                 self.send_header("X-Content-Type-Options","nosniff")
-                self.send_header("Content-Security-Policy", CSP_SANKET if self.path.startswith("/sanket/") else CSP)
+                self.send_header("Content-Security-Policy", CSP_SANKET if self.path.startswith(("/sanket/", "/kandha/")) else CSP)
                 if filename:
                     self.send_header("Content-Disposition",f'attachment; filename="{filename}"')
                 self.end_headers()
@@ -242,12 +249,67 @@ class BrowserService:
                         self.wfile.write(chunk)
                         remaining -= len(chunk)
 
+            def serve_stream(self):
+                """Server-sent events: haptic commands, pad presses, stole status, seats, queue, settings."""
+                subscription = service.kandha.subscribe()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.send_header("Content-Security-Policy", CSP_SANKET)
+                self.end_headers()
+                try:
+                    self.wfile.write(b"retry: 1000\n\n")
+                    self.wfile.write(b"event: state\ndata: " + json.dumps(service.kandha.snapshot(), default=json_default).encode() + b"\n\n")
+                    self.wfile.flush()
+                    while not service.kandha.stopping.is_set() and service.server is not None:
+                        try:
+                            item = subscription.get(timeout=10)
+                        except Exception:
+                            self.wfile.write(b": ping\n\n")
+                            self.wfile.flush()
+                            continue
+                        kind = str(item.get("kind", "event"))
+                        self.wfile.write(f"event: {kind}\ndata: ".encode() + json.dumps(item, default=json_default).encode() + b"\n\n")
+                        self.wfile.flush()
+                except (BrokenPipeError, ConnectionResetError, OSError, ValueError):
+                    pass
+                finally:
+                    service.kandha.unsubscribe(subscription)
+                    self.close_connection = True
+
             def do_GET(self):
                 if not self.allowed():return
                 parsed = urlsplit(self.path)
                 query = parse_qs(parsed.query)
                 try:
-                    if parsed.path == "/api/tabs":
+                    if parsed.path == "/api/kandha/stream":
+                        self.serve_stream()
+                    elif parsed.path == "/api/kandha/state":
+                        self.respond(200, service.kandha.snapshot())
+                    elif parsed.path == "/api/kandha/rooms":
+                        self.respond(200, service.kandha.rooms("list"))
+                    elif parsed.path in {"/sanket", "/sanket/", "/sanket/index.html", "/kandha"}:
+                        self.send_response(308); self.send_header("Location", "/kandha/"); self.send_header("Content-Length", "0"); self.end_headers()
+                    elif parsed.path == "/kandha/tone-model.json":
+                        self.respond(200, sanket_model())
+                    elif parsed.path in {"/kandha/icon.svg", "/favicon.ico"}:
+                        self.respond(200, (project_root()/"assets"/"icon.svg").read_bytes(), "image/svg+xml")
+                    elif parsed.path == "/kandha/patterns.json":
+                        self.respond(200, (browser/"sanket"/"kandha-patterns.json").read_bytes())
+                    elif parsed.path.startswith("/kandha/fonts/"):
+                        filename = parsed.path.removeprefix("/kandha/fonts/")
+                        if filename not in KANDHA_FONTS:
+                            self.respond(404,{"error":"Not found."});return
+                        type_ = "font/ttf" if filename.endswith(".ttf") else "text/plain; charset=utf-8"
+                        self.respond(200,(browser/"kandha"/"fonts"/filename).read_bytes(),type_)
+                    elif parsed.path.startswith("/kandha/"):
+                        filename = parsed.path.removeprefix("/kandha/") or "index.html"
+                        if filename not in KANDHA_FILES:
+                            self.respond(404,{"error":"Not found."});return
+                        type_ = "text/html" if filename.endswith(".html") else "text/css" if filename.endswith(".css") else "text/javascript"
+                        self.respond(200,(browser/"kandha"/filename).read_bytes(),type_+"; charset=utf-8")
+                    elif parsed.path == "/api/tabs":
                         self.respond(200, service.bridge.snapshot())
                     elif parsed.path == "/api/status":
                         selected = PRESETS[service.settings.preset]["asr"]
@@ -279,8 +341,6 @@ class BrowserService:
                             target = Path(directory)/("transcript."+kind)
                             service.session.export(target,kind)
                             self.respond(200,target.read_bytes(),"text/vtt; charset=utf-8" if kind=="vtt" else "application/octet-stream","transcript."+kind)
-                    elif parsed.path == "/sanket":
-                        self.send_response(308); self.send_header("Location", "/sanket/"); self.send_header("Content-Length", "0"); self.end_headers()
                     elif parsed.path == "/sanket/tone-model.json":
                         self.respond(200, sanket_model())
                     elif parsed.path.startswith("/sanket/"):
@@ -307,7 +367,9 @@ class BrowserService:
                     body = self.rfile.read(size)
                     if len(body)!=size:raise ValueError("Incomplete request.")
                     parsed = urlsplit(self.path)
-                    if parsed.path == "/api/bridge":
+                    if parsed.path.startswith("/api/kandha/"):
+                        self.kandha_post(parsed.path.removeprefix("/api/kandha/"), json.loads(body or b"{}"))
+                    elif parsed.path == "/api/bridge":
                         if not secrets.compare_digest(self.headers.get("X-Audial-Bridge", ""), service.bridge_token):
                             self.respond(403, {"error": "Use the installed Audial-AI browser bridge."})
                             return
@@ -407,6 +469,50 @@ class BrowserService:
                 except (ValueError,TypeError,KeyError,OSError,RuntimeError) as error:
                     self.respond(400,{"error":str(error)})
 
+            def kandha_post(self, action, options):
+                if not isinstance(options, dict):
+                    raise ValueError("Send a JSON object.")
+                k = service.kandha
+                if action == "intents":
+                    self.respond(200, k.intents(options.get("intents"), options.get("current")))
+                elif action == "queue":
+                    self.respond(200, k.set_queue(bool(options.get("on")), str(options.get("source", "screen"))[:20]))
+                elif action == "settings":
+                    self.respond(200, k.update_settings(options.get("settings", options)))
+                elif action == "seats":
+                    self.respond(200, k.assign_seat(options.get("voice"), options.get("zone"), str(options.get("source", "screen"))[:20]))
+                elif action == "merge":
+                    self.respond(200, k.merge_voices(options.get("keep"), options.get("drop")))
+                elif action == "rooms":
+                    self.respond(200, k.rooms(options.get("action"), options.get("name")))
+                elif action == "test":
+                    self.respond(200, {"played": k.test(options.get("zone"), options.get("pattern"), int(options.get("repeat", 1)))})
+                elif action == "stop":
+                    self.respond(200, {"played": k.stop_haptics()})
+                elif action == "pad":
+                    self.respond(200, k.press_pad(options.get("pad"), options.get("gesture", "tap")))
+                elif action == "stole/scan":
+                    self.respond(200, {"devices": k.scan(float(options.get("timeout", 6)))})
+                elif action == "stole/pair":
+                    self.respond(200, {"connected": k.pair(options.get("address"), options.get("name")), "stole": k.snapshot()["stole"]})
+                elif action == "stole/forget":
+                    self.respond(200, k.forget())
+                elif action == "stole/simulate":
+                    self.respond(200, k.simulate(options.get("action"), options.get("value")))
+                elif action == "session/new":
+                    self.respond(200, k.new_session())
+                elif action == "session/save":
+                    if options.get("consent") is not True:
+                        self.respond(403, {"error": "Saving needs everyone's consent: tick the consent box first."}); return
+                    with service.lock:
+                        title = str(options.get("title") or service.session.title)[:120]
+                        service.session.title = title
+                        path = service.session.save()
+                    self.respond(200, {"saved": path.name, "title": title, "captions": len(service.session.captions),
+                                       "voice_events": len(service.session.voice_events)})
+                else:
+                    self.respond(404, {"error": "Not found."})
+
             def log_message(self,*args):pass
 
         self.server = ThreadingHTTPServer(("127.0.0.1",self.port),Handler)
@@ -424,6 +530,10 @@ class BrowserService:
 
     def stop(self):
         self.bridge_stopped.set()
+        try:
+            self.kandha.close()
+        except Exception:
+            pass
         if self.bridge.owner:
             self.bridge.stop(self.bridge.owner["profile"], self.bridge.owner["session_id"])
         if self.owns_engine:self.engine.stop()

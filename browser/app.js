@@ -18,15 +18,11 @@ let active=false,starting=false,stopping=false,paused=false,sending=false,cursor
 let extensionActive = false;
 let emotionColors = null, lastEmotion = null, defaultColors = null;
 
-// ---- Sanket voice view: colours and arrows per voice, tone cues, queue light ----
-const band = globalThis.SanketBand ? new globalThis.SanketBand({onButton: () => toggleQueue(),
-  onStatus: (on, name) => {$("voice-band").textContent = on ? "Disconnect band" : "Connect Sanket Band"; $("voice-status").textContent = on ? `Connected to ${name || "Sanket Band"}.` : "Band disconnected.";}}) : null;
-const voiceView = new VoiceView($, {band, palette: () => emotionColors,
+// ---- Kandha voice view: colours and arrows per voice, tone cues, queue light ----
+const voiceView = new VoiceView($, {palette: () => emotionColors,
   vibrate: pattern => {if ($("voice-vibrate").checked) navigator.vibrate?.(pattern);}});
 let voiceSettings = {colors: true, cues: false, tone: false, model: false}, voiceSession = null, toneModel = null;
 try { $("voice-vibrate").checked = localStorage.getItem("audial.voiceVibrate") === "1"; } catch { /* storage unavailable */ }
-if (band) band.phoneVibrate = $("voice-vibrate").checked;
-$("voice-band").disabled = !globalThis.SanketBand?.bluetoothSupported?.();
 async function loadToneModel() {
   if (toneModel || !voiceSettings.tone || !voiceSettings.model) return toneModel;
   const response = await fetch("./sanket/tone-model.json", {signal: AbortSignal.timeout(8000)});
@@ -46,12 +42,7 @@ async function saveVoiceSettings() {
 }
 for (const key of ["colors", "cues", "tone"]) $("voice-" + key).addEventListener("change", saveVoiceSettings);
 $("voice-vibrate").addEventListener("change", event => {
-  if (band) band.phoneVibrate = event.target.checked;
   try { localStorage.setItem("audial.voiceVibrate", event.target.checked ? "1" : "0"); } catch { /* storage unavailable */ }
-});
-$("voice-band").addEventListener("click", async () => {
-  try { if (band.connected) band.disconnect(); else await band.connect(); }
-  catch (error) { if (error?.name !== "NotFoundError") showError(error.message); }
 });
 function newVoiceSession() {
   const enabled = voiceSettings.colors || voiceSettings.cues || voiceSettings.tone;

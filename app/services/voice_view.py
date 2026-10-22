@@ -10,11 +10,14 @@ estimates of how a voice sounded compared with that person's usual voice, never 
 feelings; categories are named only when Sanket was at least 80% sure.
 """
 import math
+import re
 
 from app.utils.palette import DEFAULT_EMOTION_COLORS
 
-KINDS = {"voice", "cue", "tone", "queue"}
+KINDS = {"voice", "cue", "tone", "queue", "haptic", "seat"}
 CUES = {"drop", "rise", "hesitation", "silence"}
+ZONES = {"L", "R", "B", "F"}
+PATTERN_KEY = re.compile(r"^[a-z_][a-z0-9_-]{0,31}$")
 RELATIVE = {"learning", "usual", "intense", "softer"}
 LABELS = set(DEFAULT_EMOTION_COLORS)  # six acted categories plus "uncertain"
 MAX_BATCH = 200
@@ -69,6 +72,18 @@ def clean_events(events):
             clean.append({"kind": kind, "t0": t0, "t1": t1, "voice": _voice(event.get("voice")),
                           "relative": event["relative"], "label": event["label"],
                           "confidence": None if confidence is None else round(float(confidence), 3)})
+        elif kind == "haptic":
+            zones = event.get("zones")
+            pattern = event.get("pattern")
+            if not isinstance(zones, str) or not 0 <= len(zones) <= 4 or set(zones) - ZONES or not isinstance(pattern, str) or not PATTERN_KEY.match(pattern):
+                raise ValueError("Haptic events need zones from L, R, B, F and a pattern key.")
+            clean.append({"kind": kind, "t": _time(event.get("t"), "t"), "zones": zones, "pattern": pattern,
+                          "voice": _voice(event.get("voice"), allow_none=True)})
+        elif kind == "seat":
+            zone = event.get("zone")
+            if zone is not None and zone not in ZONES and zone != "me":
+                raise ValueError("Seat events need a zone of L, R, B, F, me or null.")
+            clean.append({"kind": kind, "t": _time(event.get("t"), "t"), "voice": _voice(event.get("voice")), "zone": zone})
         else:
             clean.append({"kind": kind, "t": _time(event.get("t"), "t"), "on": bool(event.get("on"))})
     return clean

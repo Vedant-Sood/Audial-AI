@@ -109,3 +109,14 @@ def test_snapshot_describes_the_window_and_reset_keeps_the_room(seat_map):
     assert seat_map.voices() == {} and seat_map.loaded_room.name == "Lab"
     seat_map.reset(keep_room=False)
     assert seat_map.loaded_room is None
+
+
+def test_the_wearers_own_voice_is_me_never_seated_and_never_saved(tmp_path):
+    seat_map = SeatMap(store_path=tmp_path / "rooms.json")
+    seat_map.new_voice(1, 0.0); seat_map.assign(1, "L")
+    seat_map.new_voice(2, 1.0); seat_map.assign(2, "me")
+    assert seat_map.zone_for(2) == "me" and seat_map.new_voice(2, 5.0) == "me"
+    seat_map.assign(3, "me")
+    assert seat_map.zone_for(2) is None, "only one voice can be the wearer"
+    assert seat_map.save_room("Lab")["slots"] == ["L"], "me is never stored in a room"
+    assert ManualSeatSource(seat_map).angles() == {1: 270.0}

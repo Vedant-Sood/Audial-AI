@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
     available through Advanced tools. Text playback never records audio.
     """
     TITLES = ["Start", "Captions", "Indian Sign Language", "Voice & emotion", "Conversation",
-              "Setup & models", "Training", "Settings", "Sessions", "Privacy", "Diagnostics", "About"]
+              "Setup & models", "Training", "Settings", "Sessions", "Privacy", "Diagnostics", "About", "Kandha"]
 
     def __init__(self, auto_setup=False):
         super().__init__()
@@ -70,6 +70,7 @@ class MainWindow(QMainWindow):
         self.responsive_layouts = []
         self.floating_display = None
         self.browser_service = None
+        self.kandha_window = None
         self.setWindowTitle("Audial-AI")
         self.resize(1160, 800)
         self.setMinimumSize(860, 600)
@@ -129,7 +130,8 @@ class MainWindow(QMainWindow):
         outer.addWidget(content, 1)
         pages = [self.home_page(), self.captions_page(), self.sign_page(), self.tone_page(),
                  self.combined_page(), self.models_page(), self.training_page(), self.settings_page(),
-                 self.sessions_page(), self.privacy_page(), self.diagnostics_page(), self.about_page()]
+                 self.sessions_page(), self.privacy_page(), self.diagnostics_page(), self.about_page(),
+                 self.kandha_page()]
         for page in pages:
             scroll = QScrollArea()
             scroll.setWidgetResizable(True)
@@ -1047,6 +1049,35 @@ class MainWindow(QMainWindow):
             self.floating_display.caption.setText(self.sign_text.toPlainText())
         self.floating_display.show()
         self.floating_display.raise_()
+
+    def kandha_page(self):
+        page, layout = self.page("Kandha: live captions in the speaker's colour, who is speaking and where they sit, "
+                                 "tone cues felt on the Kandha Stole, and a queue strip for taking a turn. "
+                                 "Built for deaf students who lip-read.")
+        layout.addWidget(button("Open Kandha", self.open_kandha, True))
+        note = QLabel("Kandha opens in its own window and uses the microphone only after you press Start there. "
+                      "The stole is optional: without one, the on-screen virtual stole shows every tap. "
+                      "Let people in the room know live captions are on. See docs/kandha/USER_GUIDE.md.")
+        note.setWordWrap(True)
+        note.setObjectName("muted")
+        layout.addWidget(note)
+        layout.addStretch(1)
+        return page
+
+    def open_kandha(self):
+        try:
+            self.start_browser_service()
+            if self.browser_service is None:
+                return
+            from app.ui.kandha_window import KandhaWindow, prepare_chromium_flags
+            prepare_chromium_flags()
+            if self.kandha_window is None:
+                self.kandha_window = KandhaWindow(self.browser_service.url)
+            self.kandha_window.show()
+            self.kandha_window.raise_()
+            self.statusBar().showMessage("Kandha: " + self.browser_service.url + "/kandha/")
+        except Exception as error:
+            self.alert(error)
 
     def open_browser(self):
         try:

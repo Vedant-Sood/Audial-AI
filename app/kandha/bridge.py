@@ -212,6 +212,48 @@ class MockBackend:
         return MockBleakClient(self.stoles.get(address), disconnected_callback, lambda: self.loop)
 
 
+class SimulatedStole(MockStole):
+    """The prototype's built-in stole: pairs like a real one, drains a little battery, can be told to
+    go out of range. It has no radio; it lives inside the app so pairing, status and reconnection
+    can be shown and tested before any hardware exists."""
+
+    ADDRESS = "SIM:KA:ND:HA:00:01"
+
+    def __init__(self, table=None, clock=time.monotonic):
+        super().__init__(self.ADDRESS, name="KandhaStole-SIM1", battery=92, charging=False, firmware=(0, 9), table=table, clock=clock)
+        self.started = clock()
+        self.drain_per_hour = 4            # percent; a slow, visible change during a demo day
+
+    def status(self):
+        hours = max(0.0, self.clock() - self.started) / 3600.0
+        self.battery = max(5, int(92 - self.drain_per_hour * hours))
+        return super().status()
+
+    def simulate(self, action, value=None):
+        """Actions the Stole panel can trigger: out_of_range, battery, charging, press."""
+        if action == "out_of_range":
+            self.connect_failures = 2
+            self.drop()
+            return {"simulated": "out of range for two reconnect attempts"}
+        if action == "battery":
+            self.started = self.clock() - ((92 - int(value)) / self.drain_per_hour) * 3600.0 if value is not None else self.started
+            self.set_battery(int(value) if value is not None else self.battery)
+            return {"simulated": f"battery {self.battery}%"}
+        if action == "charging":
+            self.set_battery(self.battery, charging=bool(value))
+            return {"simulated": "charging" if value else "not charging"}
+        if action == "press":
+            pad, gesture = value
+            self.press(pad, gesture)
+            from app.kandha.protocol import GESTURE_NAMES, PAD_NAMES
+            return {"simulated": f"pad {PAD_NAMES.get(pad, pad)} gesture {GESTURE_NAMES.get(gesture, gesture)}"}
+        raise ValueError("Unknown simulation.")
+
+
+def simulated_backend(table=None):
+    return MockBackend([SimulatedStole(table=table)])
+
+
 # ---------------------------------------------------------------------------- asyncio core
 class StoleLink:
     """Scan, pair, remember, connect, reconnect, write, listen. One paired address at a time."""

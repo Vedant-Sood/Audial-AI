@@ -15,6 +15,7 @@ from app.kandha.protocol import GESTURE_DOUBLE, GESTURE_LONG, GESTURE_TAP, PAD_B
 from app.utils.paths import atomic_json, data_root
 
 ZONES = ("L", "R", "B", "F")
+ME = "me"            # the wearer's own voice: no seat, no taps
 PAD_ZONE = {PAD_L: "L", PAD_R: "R", PAD_B: "B"}
 # nominal bearing of each zone from the wearer, degrees clockwise from straight ahead
 ZONE_ANGLE = {"F": 0.0, "R": 90.0, "B": 180.0, "L": 270.0}
@@ -46,7 +47,7 @@ class ManualSeatSource:
         self.seat_map = seat_map
 
     def angles(self):
-        return {voice: ZONE_ANGLE[zone] for voice, zone in self.seat_map.voices().items() if zone}
+        return {voice: ZONE_ANGLE[zone] for voice, zone in self.seat_map.voices().items() if zone in ZONE_ANGLE}
 
 
 @dataclass
@@ -85,10 +86,14 @@ class SeatMap:
     def assign(self, voice, zone, source="screen"):
         if type(voice) is not int or voice < 1:
             raise ValueError("Voices are positive integers.")
-        if zone is not None and zone not in ZONES:
-            raise ValueError("Zones are L, R, B or F.")
+        if zone is not None and zone not in ZONES and zone != ME:
+            raise ValueError("Zones are L, R, B, F or me.")
         if voice not in self.order:
             self.order.append(voice)
+        if zone == ME:
+            for other, other_zone in list(self.seats.items()):
+                if other_zone == ME and other != voice:
+                    self.seats[other] = None
         changed = self.seats.get(voice) != zone
         self.seats[voice] = zone
         if changed:
@@ -112,6 +117,8 @@ class SeatMap:
         if zone is None:
             zone = self.default_for_mode(index)
         self.seats.setdefault(voice, None)
+        if self.seats[voice] == ME:
+            return ME
         if zone is not None and self.seats[voice] is None:
             self.seats[voice] = zone
             self.changes.append((voice, zone, "room" if self.loaded_room else "mode-default"))
@@ -205,7 +212,7 @@ class SeatMap:
         name = str(name or "").strip()[:80]
         if not name:
             raise ValueError("Give the room a name.")
-        slots = [self.seats.get(v) for v in self.order]
+        slots = [self.seats.get(v) if self.seats.get(v) in ZONES else None for v in self.order]
         while slots and slots[-1] is None:
             slots.pop()
         room = Room(name, slots, self.mode)

@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kandha · Audial-AI</title>
+<meta name="description" content="Live captions in the speaker's colour, who is speaking and where they sit, and taps on the Kandha Stole. For deaf students who lip-read.">
+<meta name="kandha-host" content="accessibilityai">
+<meta name="kandha-tone-model" content="tone-model.json">
+<meta name="kandha-patterns" content="patterns.json">
+<meta name="kandha-worklet" content="../sanket/worklet.js">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to the live view</a>
+<div class="shell app" id="app" data-mode="seminar" data-screen="live">
+  <div class="strip" id="strip" role="status" aria-live="polite">
+    <span class="strip__label" id="stripLabel">Waiting to speak</span>
+    <span class="strip__time" id="stripTime">0:00</span>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand__mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15c3-5 6-7 9-7s6 2 9 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="6" cy="14" r="2.2" fill="currentColor"/><circle cx="18" cy="14" r="2.2" fill="currentColor"/><circle cx="12" cy="18.5" r="1.6" fill="currentColor"/></svg>
+      <span class="brand__name">Kandha</span>
+      <span class="brand__hi" lang="hi">कंधा</span>
+    </div>
+    <nav class="screens" aria-label="Screens">
+      <div class="seg seg--tabs" role="tablist" aria-label="Screen">
+        <button role="tab" id="tab-live" data-screen="live" aria-selected="true" aria-controls="live" tabindex="0">Live</button>
+        <button role="tab" id="tab-stole" data-screen="stole" aria-selected="false" aria-controls="stole" tabindex="-1">Stole</button>
+        <button role="tab" id="tab-seats" data-screen="seats" aria-selected="false" aria-controls="seats" tabindex="-1">Seats</button>
+        <button role="tab" id="tab-review" data-screen="review" aria-selected="false" aria-controls="review" tabindex="-1">Review</button>
+        <button role="tab" id="tab-settings" data-screen="settings" aria-selected="false" aria-controls="settings" tabindex="-1">Settings</button>
+      </div>
+    </nav>
+    <div class="seg" role="group" aria-label="Mode">
+      <span class="seg__label">Mode</span>
+      <button data-mode="lecture" aria-pressed="false">Lecture</button>
+      <button data-mode="seminar" aria-pressed="true">Seminar</button>
+      <button data-mode="practicum" aria-pressed="false">Practicum</button>
+    </div>
+    <div class="seg" role="group" aria-label="Language people are speaking">
+      <span class="seg__label">Speech</span>
+      <button data-speech="en" aria-pressed="true">English</button>
+      <button data-speech="hi" aria-pressed="false" lang="hi">हिन्दी</button>
+    </div>
+    <button class="dnd" id="dndBtn" aria-pressed="false" title="Do not disturb: the stole only answers the queue pad"><span aria-hidden="true">◌</span> Do not disturb</button>
+    <div class="status" id="status" data-state="idle">
+      <span class="status__dot" aria-hidden="true"></span>
+      <span class="status__text" id="statusText">Ready</span>
+      <span class="meter" aria-hidden="true"><span id="meterFill"></span></span>
+    </div>
+  </header>
+
+  <main class="main" id="main">
+    <!-- ------------------------------------------------------------ live -->
+    <section class="screen screen--live" id="live" role="tabpanel" aria-labelledby="tab-live">
+      <section class="stage" aria-label="Live captions">
+        <div class="now" id="now">
+          <div class="badge" id="nowBadge" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div>
+            <div class="now__who"><span class="now__name" id="nowName">No one yet</span><span class="now__seat" id="nowSeat"></span><span class="tone-chip" id="nowTone" hidden></span><span class="now__hint" id="nowHint">Press Start, or watch a demo.</span></div>
+            <p class="now__text is-idle" id="nowText">Captions appear here, in the colour of whoever is speaking.</p>
+          </div>
+        </div>
+        <ol class="history" id="history" aria-label="Transcript" aria-live="polite" aria-relevant="additions"></ol>
+
+        <div class="welcome" id="welcome">
+          <div class="welcome__card">
+            <h1>Keep your eyes on the person.</h1>
+            <p>Kandha captions the room, gives each voice its own colour, and taps your shoulder on the side of whoever is speaking. Tone cues reach the collarbone. Nothing needs looking at.</p>
+            <div class="welcome__actions">
+              <button class="btn btn--primary" id="welcomeStart">Start listening</button>
+              <button class="btn" data-demo="seminar">Watch the seminar demo</button>
+              <button class="btn" data-demo="roleplay">Watch the practicum demo</button>
+            </div>
+            <label class="check"><input type="checkbox" id="demoAloud"> Play the demo voices aloud</label>
+            <p class="welcome__fine">Let people in the room know live captions are on. Nothing is recorded, and nothing is saved unless you tick the consent box in Review.</p>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side" aria-label="Room and stole">
+        <section class="panel room-panel" aria-labelledby="roomTitle">
+          <h2 id="roomTitle">Room</h2>
+          <div class="room" id="roomLive" aria-label="Room diagram: who sits where"></div>
+          <p class="panel__hint" id="roomHint">Seats light up when that person speaks. Press 1–4 to seat the current voice left, right, behind or in front.</p>
+        </section>
+
+        <section class="panel stole-panel" aria-labelledby="stoleTitle">
+          <h2 id="stoleTitle">Stole <span class="stole-state" id="stoleStateLive">virtual</span></h2>
+          <div class="stolewrap" id="stoleLive"></div>
+          <div class="lastcue" aria-live="polite">
+            <span class="lastcue__label" id="cueLabel">No taps yet</span>
+            <span class="lastcue__sub" id="cueSub">The stole shows every tap here, even with no stole connected.</span>
+          </div>
+        </section>
+
+        <section class="panel voices-panel" aria-labelledby="voicesTitle">
+          <h2 id="voicesTitle">Voices</h2>
+          <ul class="voices" id="voices"></ul>
+          <p class="voices__empty" id="voicesEmpty">Each new voice gets its own colour. Two taps at the front mean someone new: touch a pad or press 1–4 to seat them.</p>
+        </section>
+      </aside>
+    </section>
+
+    <!-- ------------------------------------------------------------ stole -->
+    <section class="screen screen--stole" id="stole" role="tabpanel" aria-labelledby="tab-stole" hidden>
+      <div class="cols">
+        <section class="panel" aria-labelledby="connTitle">
+          <h2 id="connTitle">Kandha Stole <span class="stole-state" id="linkKind">simulated</span></h2>
+          <p class="fineprint" id="prototypeNote">Prototype: no hardware is needed. The virtual stole is the stole; every tap shows there. The simulated stole below shows what pairing, battery and reconnection will look like. Real Bluetooth is prepared but untested with hardware (Settings).</p>
+          <p class="bigstate" id="stoleState">No stole paired. The virtual stole below shows every tap.</p>
+          <dl class="facts">
+            <div><dt>Battery</dt><dd id="stoleBattery">—</dd></div>
+            <div><dt>Firmware</dt><dd id="stoleFirmware">—</dd></div>
+            <div><dt>Write latency</dt><dd id="stoleLatency">—</dd></div>
+            <div><dt>Paired</dt><dd id="stolePaired">—</dd></div>
+          </dl>
+          <div class="row">
+            <button class="btn btn--primary" id="scanBtn">Scan for a stole</button>
+            <button class="btn" id="forgetBtn" disabled>Forget this stole</button>
+          </div>
+          <ul class="devices" id="deviceList" aria-label="Stoles found"></ul>
+          <p class="fineprint" id="scanHint">Press Scan, then Pair the stole that appears. Kandha remembers the stole you choose and reconnects on its own. Pad presses are accepted only from that stole.</p>
+          <div class="row" id="simulateRow">
+            <span class="fineprint">Simulate:</span>
+            <button class="btn btn--sm" data-simulate="out_of_range">Out of range</button>
+            <button class="btn btn--sm" data-simulate="battery" data-value="18">Battery 18%</button>
+            <button class="btn btn--sm" data-simulate="charging" data-value="1">Plug in</button>
+            <button class="btn btn--sm" data-simulate="press" data-pad="Q" data-gesture="tap">Pad Q tap</button>
+            <button class="btn btn--sm" data-simulate="press" data-pad="L" data-gesture="tap">Pad L tap</button>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="zonesTitle">
+          <h2 id="zonesTitle">Zones</h2>
+          <div class="stolewrap stolewrap--big" id="stoleBig"></div>
+          <div class="zonegrid">
+            <div class="zonerow" data-zone="L"><span class="zonerow__name">Left shoulder</span><label class="zonerow__slider">Intensity <input type="range" min="0" max="100" step="5" data-intensity="L" aria-label="Left shoulder intensity"><output>100%</output></label><button class="btn btn--sm" data-test="L">Test</button></div>
+            <div class="zonerow" data-zone="R"><span class="zonerow__name">Right shoulder</span><label class="zonerow__slider">Intensity <input type="range" min="0" max="100" step="5" data-intensity="R" aria-label="Right shoulder intensity"><output>100%</output></label><button class="btn btn--sm" data-test="R">Test</button></div>
+            <div class="zonerow" data-zone="B"><span class="zonerow__name">Back of the neck</span><label class="zonerow__slider">Intensity <input type="range" min="0" max="100" step="5" data-intensity="B" aria-label="Back of the neck intensity"><output>100%</output></label><button class="btn btn--sm" data-test="B">Test</button></div>
+            <div class="zonerow" data-zone="F"><span class="zonerow__name">Front (collarbone)</span><label class="zonerow__slider">Intensity <input type="range" min="0" max="100" step="5" data-intensity="F" aria-label="Front intensity"><output>100%</output></label><button class="btn btn--sm" data-test="F">Test</button></div>
+            <div class="zonerow" data-zone="LR"><span class="zonerow__name">Both shoulders (squeeze)</span><span></span><button class="btn btn--sm" data-test="LR">Test</button></div>
+          </div>
+          <div class="toggles">
+            <label class="check"><input type="checkbox" id="setMirror"> Mirror left and right (wearing the stole the other way round)</label>
+            <label class="check"><input type="checkbox" id="setDnd"> Do not disturb: only the queue pad answers</label>
+          </div>
+          <div class="row"><button class="btn btn--primary" id="learnBtn">Learn the taps (5 minutes)</button><button class="btn" id="stopTapsBtn">Stop taps</button></div>
+          <p class="fineprint">Taps are felt where the speaker sits. Tone cues are felt at the collarbone. A squeeze on both shoulders is about you: your turn request was noted, or the floor is open.</p>
+        </section>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------------ seats -->
+    <section class="screen screen--seats" id="seats" role="tabpanel" aria-labelledby="tab-seats" hidden>
+      <div class="cols">
+        <section class="panel" aria-labelledby="seatsTitle">
+          <h2 id="seatsTitle">Who sits where</h2>
+          <p class="panel__hint">Drag a voice onto a seat, or select a voice and press 1 (left), 2 (right), 3 (behind) or 4 (front). On the stole: when two taps at the front announce a new voice, touch the L, R or B pad within six seconds. Double-tap a pad to move the person speaking now; hold it to clear their seat.</p>
+          <div class="room room--big" id="roomBig" aria-label="Room diagram with draggable voices"></div>
+          <ul class="chips" id="unseated" aria-label="Voices without a seat"></ul>
+        </section>
+        <section class="panel" aria-labelledby="roomsTitle">
+          <h2 id="roomsTitle">Saved rooms</h2>
+          <p class="panel__hint">A room remembers which seat the first, second and third voice usually take. Voices are new every session; a room is a starting layout, not a list of people.</p>
+          <div class="row"><input type="text" id="roomName" placeholder="e.g. Seminar room 2.14" aria-label="Room name" autocomplete="off"><button class="btn btn--primary" id="saveRoomBtn">Save this layout</button></div>
+          <ul class="rooms" id="roomList" aria-label="Saved rooms"></ul>
+          <label class="check"><input type="checkbox" id="setLastLayout" checked> Start new sessions with the last layout</label>
+        </section>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------------ review -->
+    <section class="screen screen--review" id="review" role="tabpanel" aria-labelledby="tab-review" hidden>
+      <section class="panel review-panel" aria-labelledby="reviewTitle">
+        <h2 id="reviewTitle">Session review</h2>
+        <p class="fineprint" id="reviewSummary"></p>
+        <div class="timeline-wrap" id="timelineWrap" tabindex="0" aria-label="Timeline: voices, cues, tone estimates, queue moments, taps and seat changes"></div>
+        <div class="legend-inline" id="reviewLegend"></div>
+        <div class="tone-summary" id="toneSummary" hidden></div>
+        <ol class="review-list" id="reviewList" aria-label="Transcript with tone notes"></ol>
+        <div class="group">
+          <p class="fineprint"><button type="button" class="linkish" id="toneAboutBtn">How accurate is this?</button> · Tone cues describe what a voice did, never what someone feels. Saving a practicum transcript with a real client needs supervisor and ethics approval.</p>
+          <label class="check"><input type="checkbox" id="consentBox"> Everyone in this session agreed to keep a transcript</label>
+          <div class="row">
+            <button type="button" class="btn btn--primary" id="saveSession" disabled>Save to sessions</button>
+            <button type="button" class="btn" id="saveHtml" disabled>Web page</button>
+            <button type="button" class="btn" id="saveTxt" disabled>Text</button>
+            <button type="button" class="btn" data-export="vtt" disabled>VTT</button>
+            <button type="button" class="btn" data-export="srt" disabled>SRT</button>
+            <button type="button" class="btn" data-export="json" disabled>JSON</button>
+          </div>
+          <p class="fineprint" id="saveNote">VTT, SRT and JSON come from Audial-AI's session exports and need captions from the local Whisper model.</p>
+        </div>
+      </section>
+    </section>
+
+    <!-- ------------------------------------------------------------ settings -->
+    <section class="screen screen--settings" id="settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
+      <div class="cols cols--settings">
+        <section class="panel" aria-labelledby="youTitle">
+          <h2 id="youTitle">You and the screen</h2>
+          <label class="field"><span>Your name</span><input type="text" id="setName" placeholder="e.g. Vikram" autocomplete="off"><small>Shown on the strip while you wait to speak.</small></label>
+          <label class="field"><span>Caption size</span><select id="setCap"><option value="S">Small</option><option value="M">Medium</option><option value="L">Large</option><option value="XL">Extra large</option></select></label>
+          <label class="field"><span>Theme</span><select id="setTheme"><option value="system">Match my device</option><option value="dark">Dark</option><option value="light">Light</option></select></label>
+          <label class="field"><span>Stole link</span><select id="setLink"><option value="simulated">Simulated stole (prototype, no hardware)</option><option value="bluetooth">Real Bluetooth (experimental, untested with hardware)</option></select><small>The virtual stole on screen always shows every tap. Choose Bluetooth only if you have a Kandha Stole running the firmware.</small></label>
+          <label class="field"><span>Microphone</span><select id="setMic"><option value="">Default microphone</option></select><small>The laptop's own microphone and a USB conference microphone both work. Changes apply the next time you press Start.</small></label>
+          <label class="check"><input type="checkbox" id="setNoise"> Busy room: filter background noise</label>
+          <p class="fineprint">The filter helps captions in a loud room but makes voice colours less reliable: in testing it split one person into two colours. Echo cancellation stays on.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="cuesTitle">
+          <h2 id="cuesTitle">Cues in each mode</h2>
+          <table class="cuetable" id="cueTable">
+            <thead><tr><th scope="col">Cue</th><th scope="col">Lecture</th><th scope="col">Seminar</th><th scope="col">Practicum</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Voice softened (one slow swell)</th><td><input type="checkbox" data-cue="drop" data-cmode="lecture" aria-label="Voice softened in Lecture"></td><td><input type="checkbox" data-cue="drop" data-cmode="seminar" aria-label="Voice softened in Seminar"></td><td><input type="checkbox" data-cue="drop" data-cmode="practicum" aria-label="Voice softened in Practicum"></td></tr>
+              <tr><th scope="row">Voice rose (three quick taps)</th><td><input type="checkbox" data-cue="rise" data-cmode="lecture" aria-label="Voice rose in Lecture"></td><td><input type="checkbox" data-cue="rise" data-cmode="seminar" aria-label="Voice rose in Seminar"></td><td><input type="checkbox" data-cue="rise" data-cmode="practicum" aria-label="Voice rose in Practicum"></td></tr>
+              <tr><th scope="row">Hesitation (soft flutter)</th><td><input type="checkbox" data-cue="hesitation" data-cmode="lecture" aria-label="Hesitation in Lecture"></td><td><input type="checkbox" data-cue="hesitation" data-cmode="seminar" aria-label="Hesitation in Seminar"></td><td><input type="checkbox" data-cue="hesitation" data-cmode="practicum" aria-label="Hesitation in Practicum"></td></tr>
+              <tr><th scope="row">Long silence (two gentle ticks)</th><td><input type="checkbox" data-cue="silence" data-cmode="lecture" aria-label="Long silence in Lecture"></td><td><input type="checkbox" data-cue="silence" data-cmode="seminar" aria-label="Long silence in Seminar"></td><td><input type="checkbox" data-cue="silence" data-cmode="practicum" aria-label="Long silence in Practicum"></td></tr>
+            </tbody>
+          </table>
+          <label class="check"><input type="checkbox" id="setSeminarCues"> Give tone cues in Seminar mode (off by default: seat taps only)</label>
+          <p class="fineprint">Lecture mode never taps for seats; the stole only answers the queue pad and marks long silences. Practicum has tone cues on. Speaker taps are never limited by these switches.</p>
+          <label class="field"><span>A silence counts as long after</span><select id="setSilence"><option value="3">3 seconds</option><option value="4">4 seconds</option><option value="5">5 seconds</option><option value="6">6 seconds</option><option value="8">8 seconds</option><option value="10">10 seconds</option></select></label>
+          <label class="field"><span>Remind me while I wait to speak after</span><select id="setReminder"><option value="0">Never</option><option value="30">30 seconds</option><option value="60">60 seconds</option><option value="120">2 minutes</option></select><small>One squeeze on both shoulders, at most once a minute.</small></label>
+        </section>
+
+        <section class="panel" aria-labelledby="toneTitle2">
+          <h2 id="toneTitle2">Tone estimates</h2>
+          <label class="check"><input type="checkbox" id="setToneReview"> Estimate each person's tone for the session review</label>
+          <label class="check"><input type="checkbox" id="setToneLive"> Also show tone estimates live, next to the captions</label>
+          <p class="fineprint">Kandha compares each voice with how that person usually sounds, after hearing them a few times. It notes "more intense than usual" or "softer, sad-sounding", and names an emotion only when it is at least 80% sure. These are estimates of how a voice sounds, learned from actors, not readings of what anyone feels. <button type="button" class="linkish" id="toneAboutBtn2">How accurate is this?</button></p>
+          <h3>Voices</h3>
+          <label class="field"><span>How readily Kandha gives a new colour</span><input type="range" id="setSens" min="0.6" max="1.6" step="0.1" aria-label="Sensitivity to new voices"><span class="range-ends"><span>Fewer new voices</span><span>More new voices</span></span></label>
+          <label class="field"><span>Most voices in a seminar</span><select id="setMax"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><small>Practicum always uses two: you and your partner.</small></label>
+        </section>
+
+        <section class="panel" aria-labelledby="vocabTitle">
+          <h2 id="vocabTitle">Psychology vocabulary</h2>
+          <label class="check"><input type="checkbox" id="setAutocorrect"> Fix psychology terms the captions mishear</label>
+          <label class="field"><span>Your own terms</span><textarea id="setTerms" placeholder="One per line, e.g.&#10;Zeigarnik effect = Unfinished tasks are remembered better"></textarea><small>Terms are underlined in captions. Select one to see what it means.</small></label>
+          <h3>Translation</h3>
+          <p class="fineprint" id="translateNote">English and हिन्दी captions use the local Whisper model. Translation between them is off in this window because nothing on this computer can translate without sending text away. In Google Chrome 138 or newer the page can use the browser's on-device translator.</p>
+          <label class="check"><input type="checkbox" id="setOrig"> When translating in a browser tab, also show the original words</label>
+        </section>
+
+        <section class="panel" aria-labelledby="privacyTitle">
+          <h2 id="privacyTitle">Privacy</h2>
+          <p class="fineprint">Audio never leaves this computer: the microphone feeds the voice engine in this page and Audial-AI's Whisper model over the loopback address only. No recording is kept. The transcript stays on this screen unless you tick the consent box and save. The stole link carries taps, pad presses and battery level, never audio or words. There is no telemetry.</p>
+          <p class="fineprint">Let people in the room know live captions are on. Saving a practicum transcript with a real client needs supervisor and ethics approval.</p>
+          <p class="fineprint" id="aboutLine">Kandha inside Audial-AI · docs/kandha/USER_GUIDE.md</p>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer class="dock">
+    <button class="btn btn--primary" id="startBtn" data-running="false" title="Shortcut: S">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span id="startLabel">Start</span>
+    </button>
+    <button class="btn" id="missBtn" aria-label="What did I miss? The last 30 seconds" title="Shortcut: M"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="label-long">What did I miss?</span></button>
+    <button class="btn" id="newVoiceBtn" title="Shortcut: N">New voice</button>
+    <span class="dock__keys" aria-hidden="true"><span class="kbd">Q</span> queue · <span class="kbd">S</span> start · <span class="kbd">M</span> missed · <span class="kbd">1–4</span> seat</span>
+    <span class="dock__spacer"></span>
+    <button class="queue-btn" id="queueBtn" aria-pressed="false" title="Shortcut: Q">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V6.5a1.5 1.5 0 0 1 3 0V11M10 10V4.5a1.5 1.5 0 0 1 3 0V10M13 10V5.5a1.5 1.5 0 0 1 3 0V12M16 9.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.2a6 6 0 0 1-4.6-2.2L4.6 15.6a1.6 1.6 0 0 1 2.4-2.1L7 13.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span id="queueText">I want to speak</span>
+    </button>
+  </footer>
+</div>
+
+<dialog id="voiceDlg" aria-labelledby="voiceTitle">
+  <form method="dialog" class="dlg">
+    <div class="dlg__head"><span class="badge badge--sm" id="voiceBadge" aria-hidden="true"></span><h2 id="voiceTitle">Voice</h2><button class="icon-btn dlg__close" value="close" aria-label="Close">✕</button></div>
+    <label class="field"><span>Name</span><input type="text" id="voiceName" autocomplete="off"></label>
+    <div class="field"><span>Seat</span><div class="row seatrow" id="voiceSeatRow"><button type="button" class="btn btn--sm" data-seat="L">Left</button><button type="button" class="btn btn--sm" data-seat="R">Right</button><button type="button" class="btn btn--sm" data-seat="B">Behind</button><button type="button" class="btn btn--sm" data-seat="F">Front</button><button type="button" class="btn btn--sm" data-seat="me">This is me</button><button type="button" class="btn btn--sm btn--ghost" data-seat="">No seat</button></div><small>"This is me" is your own voice: the stole never taps for it.</small></div>
+    <div class="field" id="lineMoveField" hidden><span>This line was said by</span><div class="row"><select id="lineMoveSel" aria-label="Speaker of this line"></select><button type="button" class="btn" id="lineMoveBtn">Move line</button></div></div>
+    <div class="field"><span>Same person as another voice?</span><div class="row"><select id="mergeSel" aria-label="Voice to join with"></select><button type="button" class="btn" id="mergeBtn">Join voices</button></div><small>Kandha sometimes splits one person into two colours. Joining them teaches it.</small></div>
+    <div class="row"><button type="button" class="btn" id="makeCurrentBtn">This person is speaking now</button></div>
+    <div class="dlg__foot"><button class="btn btn--primary" value="save" id="voiceSave">Save</button></div>
+  </form>
+</dialog>
+
+<dialog id="missDlg" aria-labelledby="missTitle">
+  <form method="dialog" class="dlg">
+    <div class="dlg__head"><h2 id="missTitle">The last 30 seconds</h2><button class="icon-btn dlg__close" value="close" aria-label="Close">✕</button></div>
+    <ol class="miss" id="missList"></ol>
+    <div class="dlg__foot"><button class="btn btn--primary" value="close">Back to live</button></div>
+  </form>
+</dialog>
+
+<dialog id="learnDlg" aria-labelledby="learnTitle">
+  <form method="dialog" class="dlg">
+    <div class="dlg__head"><h2 id="learnTitle">Learn the taps</h2><button class="icon-btn dlg__close" value="close" aria-label="Close">✕</button></div>
+    <p class="fineprint" id="learnProgress">Step 1 of 9</p>
+    <div class="learn">
+      <div class="stolewrap" id="stoleLearn"></div>
+      <div class="learn__text">
+        <h3 id="learnName">Someone starts speaking</h3>
+        <p id="learnMeaning"></p>
+        <p class="fineprint" id="learnWhere"></p>
+      </div>
+    </div>
+    <div class="dlg__foot">
+      <button type="button" class="btn" id="learnBack">Back</button>
+      <button type="button" class="btn" id="learnPlay">Feel it again</button>
+      <button type="button" class="btn btn--primary" id="learnNext">Next</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="toneDlg" aria-labelledby="toneTitle">
+  <form method="dialog" class="dlg">
+    <div class="dlg__head"><h2 id="toneTitle">How accurate are tone estimates?</h2><button class="icon-btn dlg__close" value="close" aria-label="Close">✕</button></div>
+    <p>Kandha's tone model learned from <b>CREMA-D</b>: 7,441 short sentences by 91 actors, each acting six emotions. It was tested on <b>10 actors it never heard in training</b>, using the speaker split from Audial-AI, and on natural, unacted reading. "Was" is the earlier loudness-and-pitch rules on the same test.</p>
+    <table class="acc">
+      <thead><tr><th scope="col">Tested on 10 actors the model never heard</th><th scope="col">Result</th></tr></thead>
+      <tbody>
+        <tr><td>Best guess among six acted emotions (chance: 17%)</td><td>56%</td></tr>
+        <tr><td>Emotion named (≥ 80% sure): how often right</td><td>98%</td></tr>
+        <tr><td>…and how often it is that sure</td><td>4% of sentences</td></tr>
+        <tr><td>"Voice rose" on angry, happy or fearful speech</td><td>50% (was 41%)</td></tr>
+        <tr><td>"Voice rose" wrongly, on neutral speech</td><td>2% (was 12%)</td></tr>
+        <tr><td>"Voice softened" on sad speech</td><td>43% (was 28%)</td></tr>
+        <tr><td>"Voice softened" wrongly, on angry, happy or fearful speech</td><td>6% (was 12%)</td></tr>
+      </tbody>
+    </table>
+    <p>On 4 minutes of natural, calm reading by three other people, the model named an emotion once in 55 stretches (wrongly: "happy") and gave no tone cues. Speaker colours in a stitched four-person seminar were right 98% of the time.</p>
+    <p class="fineprint"><b>Limits.</b> The actors are American and the emotions are acted. Nothing has been tested on Indian English or Hindi speakers, on real classroom conversation, or with a physical stole. Treat every estimate as a hint to look again, not a fact about how someone feels. Kandha needs to hear a person a few times before it estimates anything about them.</p>
+    <p class="fineprint"><b>Credits.</b> Model trained on CREMA-D (Cao et al., 2014; ODbL 1.0 / DbCL 1.0), using the speaker splits and evaluation approach of Audial-AI by Vedant Sood (MIT licence). Natural-speech checks use LibriSpeech (CC BY 4.0). Everything runs on this device.</p>
+    <div class="dlg__foot"><button class="btn btn--primary" value="close">Close</button></div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="../sanket/tone.js"></script>
+<script src="../sanket/engine.js"></script>
+<script src="../sanket/captions.js"></script>
+<script src="../sanket/recognizer.js"></script>
+<script src="../sanket/translator.js"></script>
+<script src="../sanket/local-captions.js"></script>
+<script src="kandha-intents.js"></script>
+<script src="views.js"></script>
+<script src="demo.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

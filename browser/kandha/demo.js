@@ -1,8 +1,8 @@
 /*
- * Built-in demo: plays a scripted seminar and a role-play through the real interface,
- * with no microphone needed. Useful for trying Sanket and for filming.
- * Tone estimates in the demo are scripted to illustrate the feature (step.tone); in a real
- * session they come from the voice engine.
+ * Built-in demos: a scripted seminar and a scripted practicum role-play played through the real
+ * interface and the real haptic scheduler, with no microphone. For trying Kandha and for filming.
+ * Tone estimates in a demo are scripted to illustrate the feature (step.tone) and are labelled as
+ * such; in a real session they come from the voice engine.
  */
 (function (root) {
   'use strict';
@@ -11,28 +11,34 @@
     seminar: {
       title: 'Case seminar',
       mode: 'seminar',
+      room: { 1: 'F', 2: 'L', 3: 'R' },
       speakers: [{ id: 1, name: 'Dr Rao' }, { id: 2, name: 'Priya' }, { id: 3, name: 'Arjun' }],
       voices: { 1: { pitch: 0.85, rate: 0.95 }, 2: { pitch: 1.35, rate: 1.05 }, 3: { pitch: 1.0, rate: 1.1 } },
       steps: [
-        { say: 1, en: 'Let’s look at the case. Meera has stopped enjoying music, her friends, even food.', hi: 'चलिए केस देखते हैं। मीरा को अब संगीत, दोस्तों, यहाँ तक कि खाने में भी आनंद नहीं आता।' },
-        { say: 2, en: 'That sounds like and hedonia. I’d check the DSM 5 criteria for depression.', hi: 'यह एनहेडोनिया जैसा लगता है। मैं डिप्रेशन के लिए DSM-5 के मानदंड देखूँगी।' },
-        { say: 3, en: 'But she still goes to college every day. Could it be dis thymia instead?', hi: 'लेकिन वह अब भी रोज़ कॉलेज जाती है। क्या यह डिस्थाइमिया हो सकता है?' },
+        { say: 1, new: true, en: 'Let’s look at the case. Meera has stopped enjoying music, her friends, even food.', hi: 'चलिए केस देखते हैं। मीरा को अब संगीत, दोस्तों, यहाँ तक कि खाने में भी आनंद नहीं आता।' },
+        { say: 2, new: true, en: 'That sounds like and hedonia. I’d check the DSM 5 criteria for depression.', hi: 'यह एनहेडोनिया जैसा लगता है। मैं डिप्रेशन के लिए DSM-5 के मानदंड देखूँगी।' },
+        { say: 3, new: true, en: 'But she still goes to college every day. Could it be dis thymia instead?', hi: 'लेकिन वह अब भी रोज़ कॉलेज जाती है। क्या यह डिस्थाइमिया हो सकता है?' },
         { queue: true, wait: 600 },
         { say: 2, en: 'Her sleep changed only last month, so the timeline really matters here.', hi: 'उसकी नींद पिछले महीने ही बदली है, इसलिए यहाँ समय-क्रम बहुत मायने रखता है।' },
         { say: 1, en: 'Good point. Vikram, you wanted to add something?', hi: 'अच्छा बिंदु। विक्रम, आप कुछ जोड़ना चाहते थे?' },
-        { queue: false, wait: 2500 },
+        { queue: false, wait: 1200 },
+        { silence: 4400 },
+        { say: 3, en: 'Shall we map the timeline on the board?', hi: 'क्या हम बोर्ड पर समय-क्रम बनाएँ?' },
+        { wait: 2000 },
       ],
     },
     roleplay: {
-      title: 'Role-play',
+      title: 'Practicum role-play',
       mode: 'practicum',
+      room: { 1: 'F' },
+      own: 2,
       speakers: [{ id: 1, name: 'Client' }, { id: 2, name: 'Vikram' }],
       voices: { 1: { pitch: 1.3, rate: 0.95 }, 2: { pitch: 0.9, rate: 1.0 } },
       steps: [
-        { say: 1, en: 'I thought I was fine. Everyone kept telling me I was fine.', hi: 'मुझे लगा मैं ठीक हूँ। सब मुझसे यही कहते रहे कि मैं ठीक हूँ।' },
-        { say: 2, en: 'It sounds like that was hard to hear.', hi: 'लगता है वह सुनना आपके लिए मुश्किल था।' },
+        { say: 1, new: true, en: 'I thought I was fine. Everyone kept telling me I was fine.', hi: 'मुझे लगा मैं ठीक हूँ। सब मुझसे यही कहते रहे कि मैं ठीक हूँ।' },
+        { say: 2, new: true, en: 'It sounds like that was hard to hear.', hi: 'लगता है वह सुनना आपके लिए मुश्किल था।' },
         { say: 1, en: 'But at night, when it’s quiet, I don’t feel fine at all.', hi: 'लेकिन रात को, जब सब शांत होता है, मैं बिल्कुल ठीक महसूस नहीं करती।', cueAfter: 3, cue: 'drop', volume: 0.5, tone: { relative: 'softer', label: 'sad', confidence: 0.84 } },
-        { silence: 4200 },
+        { silence: 4400 },
         { say: 1, en: 'I don’t… I’m not sure… how to say it.', hi: 'मैं… मुझे नहीं पता… कैसे कहूँ।', cue: 'hesitation', cueAfter: 4, rate: 0.7, tone: { relative: 'softer' } },
         { say: 2, en: 'Take your time. I’m here.', hi: 'आराम से। मैं यहीं हूँ।' },
         { say: 1, en: 'And then my brother says I’m overreacting!', hi: 'और फिर मेरा भाई कहता है कि मैं ज़्यादा प्रतिक्रिया दे रही हूँ!', cue: 'rise', cueAfter: 4, rate: 1.2, pitch: 1.6, tone: { relative: 'intense', label: 'angry', confidence: 0.82 } },
@@ -42,7 +48,7 @@
   };
 
   class Demo {
-    constructor(hooks) { this.h = hooks; this.running = false; this.timer = null; this.utter = null; }
+    constructor(hooks) { this.h = hooks; this.running = false; this.timer = null; }
 
     async play(sceneKey, opts) {
       opts = opts || {};
@@ -57,7 +63,7 @@
         if (step.silence) { this.h.silence(step.silence); await this._sleep(step.silence); continue; }
         if (step.wait && !step.say) { await this._sleep(step.wait); continue; }
         if (step.say) {
-          this.h.speaker(step.say);
+          this.h.speaker(step.say, !!step.new);
           await this._sleep(350);
           const text = step[lang] || step.en;
           const words = text.split(/\s+/);
@@ -87,9 +93,7 @@
       if (this._wake) this._wake();
     }
 
-    _sleep(ms) {
-      return new Promise((res) => { this._wake = res; this.timer = setTimeout(res, ms); });
-    }
+    _sleep(ms) { return new Promise((res) => { this._wake = res; this.timer = setTimeout(res, ms); }); }
 
     _speak(text, lang, voice, step) {
       return new Promise((res) => {
@@ -110,5 +114,6 @@
   }
 
   Demo.SCENES = SCENES;
-  root.SanketDemo = Demo;
-})(typeof self !== 'undefined' ? self : this);
+  if (typeof module !== 'undefined' && module.exports) module.exports = Demo;
+  root.KandhaDemo = Demo;
+})(typeof self !== 'undefined' ? self : typeof globalThis !== 'undefined' ? globalThis : this);
