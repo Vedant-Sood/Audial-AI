@@ -21,7 +21,7 @@
    "calibration": 9,
    "test": 10
   },
-  "note": "The same actor-disjoint split as the Audial emotion models."
+  "note": "The same actor-disjoint split as the Audial emotion models. SHA-256 of the file with LF line endings."
  },
  "features": {
   "code": [

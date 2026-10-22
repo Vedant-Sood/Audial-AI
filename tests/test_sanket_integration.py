@@ -65,7 +65,9 @@ def test_tone_model_is_served_only_when_it_matches_its_recorded_hash(companion, 
     assert status == 200 and model["labels"] == ["angry", "disgust", "fear", "happy", "neutral", "sad"]
     provenance = json.loads((project_root() / "models/sanket/provenance.json").read_text())
     assert provenance["sha256"] == hashlib.sha256((project_root() / "models/sanket/tone_model.json").read_bytes()).hexdigest()
-    assert provenance["splits"]["sha256"] == hashlib.sha256((project_root() / "models/emotion/splits.json").read_bytes()).hexdigest()
+    # Windows checkouts may convert this shared text file to CRLF; the recorded hash is of the LF file.
+    splits = (project_root() / "models/emotion/splits.json").read_bytes().replace(b"\r\n", b"\n")
+    assert provenance["splits"]["sha256"] == hashlib.sha256(splits).hexdigest()
     fake = tmp_path / "root"
     (fake / "models/sanket").mkdir(parents=True)
     (fake / "models/sanket/tone_model.json").write_text("{}")
