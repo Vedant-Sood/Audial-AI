@@ -62,6 +62,31 @@ arrow keys move between screens; Escape closes dialogs. Controls per screen (dar
 live 19, stole 30, seats 18, review 15, settings 41.
 Not done: a screen-reader walkthrough with a user.
 
+## Windows installer (GitHub Actions, windows-2022 runners)
+
+Run [39807417445](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39807417445) on commit
+`305b77c` passed on both runtimes (CPU and NVIDIA): the Windows regression suite including the
+Kandha tests, `python -m app.main --kandha-check` from source (page ready in 0.8 s), the
+Audial-AI and Kandha installer builds, Chrome for Testing and Edge transport, the installed
+Audial-AI lifecycle, and the installed Kandha acceptance (`scripts/verify_kandha_windows.ps1`):
+`Kandha-Setup-0.6.0.exe` installed on a disposable account, `Kandha.exe` and the Start-menu entry
+"Kandha" present, firmware sources, bundled font and tone model in the payload, the packaged
+QtWebEngine page ready in 0.8 s with the `QWebEnginePermission` API, uninstall with purge. The
+artifacts `Kandha-Windows-x64-CPU` (1.38 GB) and `Kandha-Windows-x64-NVIDIA` (5.26 GB) hold
+`Kandha-Setup-0.6.0.exe`, `Kandha-0.6.0-windows.zip`, their `.sha256` files and the acceptance
+report. An earlier run on `7bb5b52` failed only because the page check then gave up after 40 s on
+a cold runner; the window now waits 150 s and reports why it gave up. **Not covered:** a
+microphone, Bluetooth hardware, and a human looking at the window.
+
+## Linux portable build (this container)
+
+`python -m PyInstaller packaging/AccessibilityAI.spec` produced `dist/AccessibilityAI` (2.3 GB:
+`AccessibilityAI`, `AccessibilityAIWorker`, `Kandha`, QtWebEngine, bleak, firmware, fonts, models,
+docs); `./AccessibilityAIWorker --kandha-check` from that folder reported the page ready.
+`scripts/package_kandha_portable.py` wrote `Kandha-0.6.0-linux.tar.gz` (940 MB, SHA-256
+`500a46af2cc036e66d2310d1459c97684243537b358330008135d44ebe632717`). The archive was built and
+checked here only; it is not published anywhere yet.
+
 ## Still needs real-world testing
 
 A physical stole (tap feel, pad thresholds, battery, Bluetooth latency), Windows installer

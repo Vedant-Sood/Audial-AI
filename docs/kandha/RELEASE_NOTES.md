@@ -36,6 +36,8 @@ opt-in setting marked untested.
 - Accessibility audit: every control reachable by keyboard with visible focus, no contrast
   failure, no overflow at 1280 × 720, both themes.
 - Tests: pytest 206 passed, npm 38 passed (baseline before Kandha: 132 and 31).
+- Windows CI: `Kandha-Setup-0.6.0.exe` built, installed on a disposable Windows account, the
+  packaged page ready in 0.8 s, uninstalled cleanly (run 39807417445, both runtimes).
 
 ## Not measured
 

@@ -19,8 +19,10 @@ prepared but untested with hardware.
 
 - Windows: `Kandha-Setup-<version>.exe` or `Kandha-<version>-windows.zip` from the
   [Windows workflow](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml)
-  artifacts (`Kandha-Windows-x64-CPU`) or a `kandha-v*` [release](https://github.com/Vedant-Sood/Audial-AI/releases);
-  check the `.sha256` beside each file. Start-menu entry: **Kandha**.
+  artifacts (`Kandha-Windows-x64-CPU`; the first accepted build is on
+  [run 39807417445](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39807417445)) or a
+  `kandha-v*` [release](https://github.com/Vedant-Sood/Audial-AI/releases); check the `.sha256`
+  beside each file. Start-menu entry: **Kandha**. Unsigned, like the Audial-AI installer.
 - From source: `python -m app.main --kandha` (also **Kandha** in the desktop navigation, and
   `http://127.0.0.1:<port>/kandha/` in Chrome or Edge).
 - Design: [docs/kandha/DESIGN.md](docs/kandha/DESIGN.md) · protocol:
