@@ -35,7 +35,7 @@ opt-in setting marked untested.
   on, 1.0 per minute; Practicum 1.0 per minute (target ≤ 6).
 - Accessibility audit: every control reachable by keyboard with visible focus, no contrast
   failure, no overflow at 1280 × 720, both themes.
-- Tests: pytest 204 passed, npm 38 passed (baseline before Kandha: 132 and 31).
+- Tests: pytest 206 passed, npm 38 passed (baseline before Kandha: 132 and 31).
 
 ## Not measured
 

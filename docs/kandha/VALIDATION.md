@@ -8,7 +8,7 @@ over Bluetooth, on Windows, or with Indian English or Hindi speakers.
 | Check | Script | Record |
 |---|---|---|
 | Test baseline before Kandha | `npm test`, `pytest` | [baseline.json](validation/baseline.json): npm 31/31, pytest 132 passed, 1 skipped |
-| Tests after Kandha | `npm test`, `pytest` | npm 38/38, pytest 204 passed, 1 skipped |
+| Tests after Kandha | `npm test`, `pytest` | npm 38/38, pytest 206 passed, 1 skipped |
 | Back-channel hold | `node scripts/kandha_backchannel_study.mjs` | [backchannel.json](validation/backchannel.json) |
 | End to end in Chromium | `python -m scripts.verify_kandha` | [e2e-chromium.json](validation/e2e-chromium.json) |
 | Tap budget | `node scripts/kandha_tap_budget.mjs` + `python -m scripts.kandha_tap_budget` | [tap_budget.json](validation/tap_budget.json) |
