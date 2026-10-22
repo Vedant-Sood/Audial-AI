@@ -2,7 +2,7 @@ name: Windows installers and acceptance
 on:
   push:
     branches: [main, 'codex/audial-desktop-upgrade']
-    tags: ['v*']
+    tags: ['v*', 'kandha-v*']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -64,6 +64,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Browser regressions failed' }
           python -m app.main --smoke-test 2>&1 | Tee-Object windows-source-startup.txt
           if ($LASTEXITCODE -ne 0) { throw 'Source native UI failed' }
+          $env:QTWEBENGINE_CHROMIUM_FLAGS = '--disable-gpu --no-sandbox'
+          python -m app.main --kandha-check 2>&1 | Tee-Object windows-source-kandha.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Source Kandha page did not become ready in QtWebEngine' }
       - name: Build versioned Setup.exe and checksums
         id: build_installer
         shell: pwsh
@@ -75,6 +78,8 @@ jobs:
           # upgrade path. It does not validate a historical binary upgrade.
           ./scripts/build_windows.ps1 -Runtime '${{ matrix.runtime }}' -Version "$version.1" -PayloadDir dist/AccessibilityAI 2>&1 | Tee-Object windows-upgrade-build.txt
           if ($LASTEXITCODE -ne 0) { throw 'Upgrade fixture build failed' }
+          ./scripts/build_kandha_windows.ps1 -Runtime '${{ matrix.runtime }}' 2>&1 | Tee-Object windows-kandha-build.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Kandha installer build failed' }
       - name: Actual extension/native capture in Chrome for Testing
         id: chrome_acceptance
         if: ${{ !cancelled() && steps.build_installer.outcome == 'success' && matrix.runtime == 'CPU' }}
@@ -112,6 +117,34 @@ jobs:
             $report = Get-Content $file -Raw | ConvertFrom-Json | ConvertTo-Json -Depth 12 -Compress
             Write-Output ('::notice title=Installed Windows acceptance::' + $report.Replace('%', '%25').Replace([string][char]13, '%0D').Replace([string][char]10, '%0A'))
           }
+      - name: Actual installed Kandha acceptance
+        id: kandha_acceptance
+        if: ${{ !cancelled() && steps.installed_acceptance.outcome == 'success' }}
+        shell: pwsh
+        run: |
+          $version = python -c 'from app import __version__; print(__version__)'
+          ./scripts/verify_kandha_windows.ps1 -Installer "dist/installers/Kandha-Setup-$version.exe" 2>&1 | Tee-Object windows-kandha-acceptance.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Installed Kandha acceptance failed' }
+      - name: Stage Kandha installer and portable build
+        id: stage_kandha
+        if: ${{ !cancelled() && steps.regression.outcome == 'success' && steps.kandha_acceptance.outcome == 'success' }}
+        shell: pwsh
+        run: |
+          $version = python -c 'from app import __version__; print(__version__)'
+          New-Item -ItemType Directory -Force dist/kandha | Out-Null
+          Copy-Item "dist/installers/Kandha-Setup-$version.exe*" dist/kandha
+          Copy-Item "dist/installers/Kandha-$version-windows.zip*" dist/kandha
+          Copy-Item "dist/installers/Kandha-$version-windows.json" dist/kandha
+          Copy-Item build/build-info.json dist/kandha
+          Copy-Item windows-kandha-acceptance/kandha-acceptance.json dist/kandha
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        if: ${{ !cancelled() && steps.stage_kandha.outcome == 'success' }}
+        with:
+          name: Kandha-Windows-x64-${{ matrix.runtime }}
+          path: dist/kandha/*
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error
       - name: Stage installers after passed Windows lifecycle acceptance
         id: stage_installer
         if: ${{ !cancelled() && steps.regression.outcome == 'success' && steps.installed_acceptance.outcome == 'success' }}
@@ -174,12 +207,82 @@ jobs:
             windows-tests.xml
             windows-tests.txt
             windows-source-startup.txt
+            windows-source-kandha.txt
+            windows-kandha-build.txt
+            windows-kandha-acceptance.txt
+            windows-kandha-acceptance/
             windows-resolved-dependencies.txt
             windows-acceptance/
             windows-browser-chromium/
             windows-browser-edge/
             build/build-info.json
           retention-days: 14
+  firmware:
+    if: startsWith(github.ref, 'refs/tags/kandha-v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - run: python scripts/generate_kandha_patterns.py --check
+      - name: Compile the stole firmware
+        run: |
+          curl -fsSL -o arduino-cli.tar.gz https://github.com/arduino/arduino-cli/releases/download/v1.2.2/arduino-cli_1.2.2_Linux_64bit.tar.gz
+          echo "a5ad085d1b02fd4010df18b1bbf20453276efe6c6e2ac323baa0cac4e96a85b4  arduino-cli.tar.gz" | sha256sum -c -
+          sudo tar -xzf arduino-cli.tar.gz -C /usr/local/bin arduino-cli
+          arduino-cli version
+          arduino-cli config init --overwrite
+          arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32@3.1.1
+          arduino-cli compile --fqbn esp32:esp32:esp32s3:CDCOnBoot=cdc --export-binaries firmware/kandha
+          version=$(python -c 'from app import __version__; print(__version__)')
+          mkdir -p dist/firmware
+          cp firmware/kandha/build/esp32.esp32.esp32s3/*.bin dist/firmware/
+          cp firmware/kandha/README.md dist/firmware/FLASHING.md
+          (cd dist/firmware && zip -r "../kandha-stole-firmware-$version.zip" . && cd .. && sha256sum "kandha-stole-firmware-$version.zip" > "kandha-stole-firmware-$version.zip.sha256")
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: kandha-stole-firmware
+          path: |
+            dist/kandha-stole-firmware-*.zip
+            dist/kandha-stole-firmware-*.zip.sha256
+          if-no-files-found: error
+  release-kandha:
+    if: startsWith(github.ref, 'refs/tags/kandha-v')
+    needs: [windows, firmware]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          pattern: Kandha-Windows-x64-*
+          path: release-assets
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: kandha-stole-firmware
+          path: release-assets/firmware
+      - name: Publish the Kandha installer, portable build, firmware and checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          # The CPU and NVIDIA jobs build the same Kandha-Setup-<version>.exe name; publish the CPU one
+          # (smaller, runs everywhere) and keep the NVIDIA installer under its runtime name.
+          version=$(python3 -c 'from app import __version__; print(__version__)')
+          mkdir -p publish
+          cp "release-assets/Kandha-Windows-x64-CPU/Kandha-Setup-$version.exe" publish/
+          cp "release-assets/Kandha-Windows-x64-CPU/Kandha-$version-windows.zip" publish/
+          if [ -f "release-assets/Kandha-Windows-x64-NVIDIA/Kandha-Setup-$version.exe" ]; then
+            cp "release-assets/Kandha-Windows-x64-NVIDIA/Kandha-Setup-$version.exe" "publish/Kandha-Setup-$version-NVIDIA.exe"
+          fi
+          cp release-assets/firmware/kandha-stole-firmware-*.zip publish/
+          (cd publish && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          gh release create "$GITHUB_REF_NAME" publish/* --title "Kandha $GITHUB_REF_NAME" --notes-file docs/kandha/RELEASE_NOTES.md
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: windows

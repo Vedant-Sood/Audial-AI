@@ -1,0 +1,281 @@
+{
+  "platform": "Linux-6.18.44-fc-v140-x86_64-with-glibc2.39",
+  "scope": "Two LibriSpeech readers take turns (A B A B, tests/fixtures/sanket). Whisper is replaced by a stub that captions each received stretch with its own time span, and the stole is the in-process mock (the same bytes and timing as the firmware simulation). This verifies the integration, not speech or emotion accuracy:",
+  "simulated": [
+    "Whisper is a stub (captions are time spans, not words)",
+    "the stole is the in-process mock, so Bluetooth latency is not measured",
+    "the microphone is Chromium's fake device playing a WAV file"
+  ],
+  "page_errors": [],
+  "browser_version": "141.0.7390.37",
+  "stole_received": [
+    {
+      "at": -1.017,
+      "pattern": "connected",
+      "zones": "LR",
+      "seq": 1
+    },
+    {
+      "at": 1.466,
+      "pattern": "new_voice",
+      "zones": "F",
+      "seq": 2
+    },
+    {
+      "at": 1.682,
+      "pattern": "queue_ack",
+      "zones": "LR",
+      "seq": 3
+    },
+    {
+      "at": 3.14,
+      "pattern": "queue_ack",
+      "zones": "LR",
+      "seq": 4
+    },
+    {
+      "at": 4.766,
+      "pattern": "queue_ack",
+      "zones": "LR",
+      "seq": 5
+    },
+    {
+      "at": 6.487,
+      "pattern": "queue_ack",
+      "zones": "LR",
+      "seq": 6
+    },
+    {
+      "at": 10.369,
+      "pattern": "new_voice",
+      "zones": "F",
+      "seq": 7
+    },
+    {
+      "at": 19.895,
+      "pattern": "seat_tap",
+      "zones": "L",
+      "seq": 8
+    },
+    {
+      "at": 25.585,
+      "pattern": "seat_tap",
+      "zones": "R",
+      "seq": 9
+    },
+    {
+      "at": 34.289,
+      "pattern": "silence",
+      "zones": "LR",
+      "seq": 10
+    }
+  ],
+  "speaker_taps_in_order": [
+    [
+      "new_voice",
+      "F"
+    ],
+    [
+      "new_voice",
+      "F"
+    ],
+    [
+      "seat_tap",
+      "L"
+    ],
+    [
+      "seat_tap",
+      "R"
+    ]
+  ],
+  "latency_ms": {
+    "page_to_dispatch": {
+      "n": 5,
+      "p50": 4.3,
+      "p95": 6.5,
+      "max": 6.5
+    },
+    "bridge_write_rtt": {
+      "n": 10,
+      "max": 0.09
+    },
+    "budget_in_app_ms": 150,
+    "budget_with_bluetooth_ms": 300,
+    "note": "mock stole: the Bluetooth part is a budget, not a measurement"
+  },
+  "cue_storm_worst_window_1_5s": 1,
+  "session_events": {
+    "voice": 4,
+    "cue": 1,
+    "tone": 10,
+    "queue": 4,
+    "haptic": 9,
+    "seat": 1
+  },
+  "queue": {
+    "strip_after_key": true,
+    "strip_after_second_key": false,
+    "strip_after_pad": true,
+    "lines": [
+      "You asked to speak",
+      "Turn taken after 2 s",
+      "You asked to speak (stole pad)",
+      "Turn taken after 2 s"
+    ]
+  },
+  "pad_double_tap_reseated_current_voice_to": "B",
+  "page": {
+    "voices": [
+      1,
+      2
+    ],
+    "lines": 20,
+    "taps": [
+      {
+        "zones": "F",
+        "pattern": "new_voice",
+        "voice": 1,
+        "device": "stole",
+        "latency": 4.3,
+        "intent": "new_voice"
+      },
+      {
+        "zones": "LR",
+        "pattern": "queue_ack",
+        "voice": null,
+        "device": "stole",
+        "latency": null,
+        "intent": "queue_ack"
+      },
+      {
+        "zones": "LR",
+        "pattern": "queue_ack",
+        "voice": null,
+        "device": "stole",
+        "latency": null,
+        "intent": "queue_ack"
+      },
+      {
+        "zones": "LR",
+        "pattern": "queue_ack",
+        "voice": null,
+        "device": "stole",
+        "latency": null,
+        "intent": "queue_ack"
+      },
+      {
+        "zones": "LR",
+        "pattern": "queue_ack",
+        "voice": null,
+        "device": "stole",
+        "latency": null,
+        "intent": "queue_ack"
+      },
+      {
+        "zones": "F",
+        "pattern": "new_voice",
+        "voice": 2,
+        "device": "stole",
+        "latency": 6.5,
+        "intent": "new_voice"
+      },
+      {
+        "zones": "L",
+        "pattern": "seat_tap",
+        "voice": 1,
+        "device": "stole",
+        "latency": 4.3,
+        "intent": "speaker"
+      },
+      {
+        "zones": "R",
+        "pattern": "seat_tap",
+        "voice": 2,
+        "device": "stole",
+        "latency": 4.2,
+        "intent": "speaker"
+      },
+      {
+        "zones": "LR",
+        "pattern": "silence",
+        "voice": null,
+        "device": "stole",
+        "latency": 6.5,
+        "intent": "silence"
+      }
+    ],
+    "queue_lines": [
+      "You asked to speak",
+      "Turn taken after 2 s",
+      "You asked to speak (stole pad)",
+      "Turn taken after 2 s"
+    ],
+    "seats": {
+      "1": "B",
+      "2": "R"
+    }
+  },
+  "all_taps_in_order": [
+    [
+      "connected",
+      "connected",
+      "LR",
+      -1.02
+    ],
+    [
+      "new_voice",
+      "new_voice",
+      "F",
+      1.46
+    ],
+    [
+      "queue_ack",
+      "queue_ack",
+      "LR",
+      1.68
+    ],
+    [
+      "queue_ack",
+      "queue_ack",
+      "LR",
+      3.14
+    ],
+    [
+      "queue_ack",
+      "queue_ack",
+      "LR",
+      4.77
+    ],
+    [
+      "queue_ack",
+      "queue_ack",
+      "LR",
+      6.49
+    ],
+    [
+      "new_voice",
+      "new_voice",
+      "F",
+      10.37
+    ],
+    [
+      "speaker",
+      "seat_tap",
+      "L",
+      19.89
+    ],
+    [
+      "speaker",
+      "seat_tap",
+      "R",
+      25.58
+    ],
+    [
+      "silence",
+      "silence",
+      "LR",
+      34.29
+    ]
+  ],
+  "result": "PASS"
+}

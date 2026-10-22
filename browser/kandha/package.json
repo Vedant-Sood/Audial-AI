@@ -1,0 +1,1 @@
+{ "type": "commonjs", "private": true, "description": "Kandha browser scripts are classic scripts (UMD): Node loads them with require() in tests and measurement scripts." }

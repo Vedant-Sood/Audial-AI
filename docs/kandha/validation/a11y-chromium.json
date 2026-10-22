@@ -1,0 +1,108 @@
+{
+  "scope": "Automated audit in Chromium; not a screen-reader session with a user",
+  "screens": {
+    "dark/live": {
+      "focusable": 19,
+      "unnamed": [],
+      "reached_by_tab": 19,
+      "focus_not_visible": [],
+      "text_elements": 56,
+      "contrast_failures": [],
+      "horizontal_overflow": false
+    },
+    "dark/stole": {
+      "focusable": 30,
+      "unnamed": [],
+      "reached_by_tab": 30,
+      "focus_not_visible": [],
+      "text_elements": 65,
+      "contrast_failures": [],
+      "horizontal_overflow": false
+    },
+    "dark/seats": {
+      "focusable": 18,
+      "unnamed": [],
+      "reached_by_tab": 18,
+      "focus_not_visible": [],
+      "text_elements": 34,
+      "contrast_failures": [],
+      "horizontal_overflow": false
+    },
+    "dark/review": {
+      "focusable": 15,
+      "unnamed": [],
+      "reached_by_tab": 15,
+      "focus_not_visible": [],
+      "text_elements": 53,
+      "contrast_failures": [],
+      "horizontal_overflow": false
+    },
+    "dark/settings": {
+      "focusable": 41,
+      "unnamed": [],
+      "reached_by_tab": 41,
+      "focus_not_visible": [],
+      "text_elements": 74,
+      "contrast_failures": [],
+      "horizontal_overflow": false
+    },
+    "light/live": {
+      "focusable": 19,
+      "unnamed": [],
+      "reached_by_tab": 19,
+      "focus_not_visible": [],
+      "text_elements": 56,
+      "contrast_failures": [],
+      "horizontal_overflow": false
+    },
+    "light/stole": {
+      "focusable": 30,
+      "unnamed": [],
+      "reached_by_tab": 30,
+      "focus_not_visible": [],
+      "text_elements": 65,
+      "contrast_failures": [],
+      "horizontal_overflow": false
+    },
+    "light/seats": {
+      "focusable": 18,
+      "unnamed": [],
+      "reached_by_tab": 18,
+      "focus_not_visible": [],
+      "text_elements": 34,
+      "contrast_failures": [],
+      "horizontal_overflow": false
+    },
+    "light/review": {
+      "focusable": 15,
+      "unnamed": [],
+      "reached_by_tab": 15,
+      "focus_not_visible": [],
+      "text_elements": 53,
+      "contrast_failures": [],
+      "horizontal_overflow": false
+    },
+    "light/settings": {
+      "focusable": 41,
+      "unnamed": [],
+      "reached_by_tab": 41,
+      "focus_not_visible": [],
+      "text_elements": 74,
+      "contrast_failures": [],
+      "horizontal_overflow": false
+    }
+  },
+  "problems": [],
+  "arrow_keys_move_tabs": true,
+  "end_key_reaches_last_tab": true,
+  "dialog_escape_closes": true,
+  "landmarks": {
+    "main": true,
+    "nav": true,
+    "skip": true,
+    "tablist": true,
+    "live_regions": 4,
+    "lang": "en"
+  },
+  "result": "PASS"
+}

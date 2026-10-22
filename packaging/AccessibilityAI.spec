@@ -17,7 +17,22 @@ hiddenimports += [name for name in collect_submodules('scripts') if name not in 
     'scripts.verify_browser', 'scripts.benchmark_browser', 'scripts.benchmark_ui',
     'scripts.evaluate_voice_models', 'scripts.package_extension', 'scripts.verify_ui',
     'scripts.verify_browser_ui', 'scripts.diagnose_browser_discard',
-    'scripts.verify_sanket', 'scripts.sync_sanket'}]
+    'scripts.verify_sanket', 'scripts.sync_sanket', 'scripts.verify_kandha',
+    'scripts.audit_kandha_a11y', 'scripts.kandha_tap_budget', 'scripts.package_kandha_portable'}]
+# Kandha: the embedded web view (QtWebEngine resources come with the PySide6 hooks once these
+# modules are imported) and the Bluetooth bridge with its platform backend.
+hiddenimports += ['PySide6.QtWebEngineWidgets', 'PySide6.QtWebEngineCore', 'PySide6.QtWebChannel', 'PySide6.QtNetwork',
+                  'PySide6.QtPositioning', 'PySide6.QtPrintSupport']
+if find_spec('bleak') is not None:
+    d, b, h = collect_all('bleak')
+    datas += d
+    binaries += b
+    hiddenimports += h
+    for backend in ['winrt', 'bleak_winrt', 'winrt.windows.devices.bluetooth', 'winrt.windows.devices.bluetooth.advertisement',
+                    'winrt.windows.devices.bluetooth.genericattributeprofile', 'winrt.windows.devices.enumeration',
+                    'winrt.windows.foundation', 'winrt.windows.foundation.collections', 'winrt.windows.storage.streams']:
+        if find_spec(backend.split('.')[0]) is not None:
+            hiddenimports += collect_submodules(backend)
 hiddenimports += collect_submodules('accessibilityai_upgrade')
 if find_spec('pyannote') is not None and find_spec('pyannote.audio') is not None:
     d, b, h = collect_all('pyannote.audio')
@@ -28,21 +43,21 @@ if find_spec('pyannote') is not None and find_spec('pyannote.audio') is not None
 from PyInstaller.utils.hooks import copy_metadata
 for package in ['faster-whisper', 'speechbrain', 'torch', 'torchaudio', 'ctranslate2',
                 'mediapipe', 'PySide6', 'numpy', 'scipy', 'scikit-learn', 'soundfile',
-                'sounddevice', 'pyttsx3', 'pyannote.audio', 'filelock']:
+                'sounddevice', 'pyttsx3', 'pyannote.audio', 'filelock', 'bleak']:
     try:
         datas += copy_metadata(package, recursive=True)
     except Exception:
-        if package != 'pyannote.audio':
+        if package not in {'pyannote.audio', 'bleak'}:
             raise
 datas += [(str(project / 'assets'), 'assets'), (str(project / 'training'), 'training'),
           (str(project / 'browser'), 'browser'), (str(project / 'docs'), 'docs'),
-          (str(project / 'models'), 'models')]
+          (str(project / 'models'), 'models'), (str(project / 'firmware'), 'firmware')]
 icon_path = project / 'assets' / 'icon.ico'
 icon = str(icon_path) if icon_path.is_file() else None
 a = Analysis([str(project / 'launcher.py')], pathex=[str(project)], binaries=binaries,
              datas=datas, hiddenimports=hiddenimports,
              hookspath=[str(project / 'packaging' / 'hooks')],
-             excludes=['tkinter', 'IPython', 'notebook', 'playwright', 'pytest'], noarchive=False)
+             excludes=['tkinter', 'IPython', 'notebook', 'playwright', 'pytest', 'PySide6.QtWebEngineQuick', 'PySide6.QtQuick', 'PySide6.QtQml'], noarchive=False)
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='AccessibilityAI', debug=False,
           bootloader_ignore_signals=False, strip=False, upx=False, console=False,
@@ -52,4 +67,8 @@ exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='AccessibilityAI', deb
 worker = EXE(pyz, a.scripts, [], exclude_binaries=True, name='AccessibilityAIWorker', debug=False,
              bootloader_ignore_signals=False, strip=False, upx=False, console=True,
              icon=icon)
-coll = COLLECT(exe, worker, a.binaries, a.datas, strip=False, upx=False, name='AccessibilityAI')
+# Kandha.exe: the same program; launcher.py adds --kandha when the executable is named Kandha.
+kandha = EXE(pyz, a.scripts, [], exclude_binaries=True, name='Kandha', debug=False,
+             bootloader_ignore_signals=False, strip=False, upx=False, console=False,
+             icon=icon)
+coll = COLLECT(exe, worker, kandha, a.binaries, a.datas, strip=False, upx=False, name='AccessibilityAI')

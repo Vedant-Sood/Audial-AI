@@ -1,8 +1,9 @@
-"""Copy the Sanket voice-cue app into browser/sanket/ as CSP-safe static files.
+"""Copy a Sanket engine source tree into browser/sanket/ as CSP-safe static files.
 
-Sanket (built for Hackcessible India 2026, Vikram's challenge) is developed as a
-single-file app. The companion's Content-Security-Policy forbids inline scripts, so this script
-copies its sources as separate same-origin files and writes an index.html that loads them.
+Historical: Sanket 1 was developed as a single-file app and synced here. Kandha now lives in
+browser/kandha/ (the app) and browser/sanket/ keeps only the shared engine, tone, caption,
+recogniser, translator and local-caption libraries. This script still copies those library files
+(it no longer writes an index.html or a band link), for anyone retraining the engine upstream.
 
     python scripts/sync_sanket.py --source path/to/sanket/src
 
@@ -18,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "browser" / "sanket"
 # load order matters: tone.js before engine.js; app.js last
 SCRIPTS = ["engine/tone.js", "engine/engine.js", "captions.js", "recognizer.js", "translator.js",
-           "band.js", "local-captions.js", "demo.js", "app.js"]
+           "local-captions.js"]
 
 HEAD = """<!doctype html>
 <html lang="en">
@@ -47,20 +48,11 @@ def worklet_source(app_js):
 def sync(source):
     source = Path(source).resolve()
     TARGET.mkdir(parents=True, exist_ok=True)
-    for name in SCRIPTS + ["styles.css"]:
+    for name in SCRIPTS:
         shutil.copyfile(source / name, TARGET / Path(name).name)
-    body = (source / "body.html").read_text(encoding="utf-8")
-    # the dialog width was the only inline style; it moves to the stylesheet
-    body = body.replace(' style="width:min(980px, calc(100vw - 32px))"', ' class="dlg--wide"')
-    if re.search(r"<script(?![^>]*\bsrc=)", body, re.I):
-        raise ValueError("body.html must not contain inline scripts.")
-    tags = "\n".join(f'<script src="{Path(name).name}"></script>' for name in SCRIPTS)
-    (TARGET / "index.html").write_text(HEAD + body + "\n" + tags + "\n</body>\n</html>\n", encoding="utf-8")
-    (TARGET / "worklet.js").write_text(worklet_source((source / "app.js").read_text(encoding="utf-8")), encoding="utf-8")
-    css = TARGET / "styles.css"
-    text = css.read_text(encoding="utf-8")
-    if ".dlg--wide" not in text:
-        css.write_text(text + "\n#reviewDlg.dlg--wide { width: min(980px, calc(100vw - 32px)); }\n", encoding="utf-8")
+    app_js = source / "app.js"
+    if app_js.is_file():
+        (TARGET / "worklet.js").write_text(worklet_source(app_js.read_text(encoding="utf-8")), encoding="utf-8")
     return sorted(p.name for p in TARGET.iterdir())
 
 

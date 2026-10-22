@@ -1,0 +1,59 @@
+name: Kandha Stole firmware
+on:
+  push:
+    branches: [main]
+    tags: ['kandha-v*']
+    paths:
+      - 'firmware/kandha/**'
+      - 'browser/sanket/kandha-patterns.json'
+      - 'scripts/generate_kandha_patterns.py'
+      - '.github/workflows/firmware.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'firmware/kandha/**'
+      - 'browser/sanket/kandha-patterns.json'
+      - 'scripts/generate_kandha_patterns.py'
+      - '.github/workflows/firmware.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: The pattern header must match the shared JSON table
+        run: python scripts/generate_kandha_patterns.py --check
+      - name: Install arduino-cli 1.2.2 (pinned release, checksum verified; the install script needs the GitHub API, which shared runners rate-limit)
+        run: |
+          curl -fsSL -o arduino-cli.tar.gz https://github.com/arduino/arduino-cli/releases/download/v1.2.2/arduino-cli_1.2.2_Linux_64bit.tar.gz
+          echo "a5ad085d1b02fd4010df18b1bbf20453276efe6c6e2ac323baa0cac4e96a85b4  arduino-cli.tar.gz" | sha256sum -c -
+          sudo tar -xzf arduino-cli.tar.gz -C /usr/local/bin arduino-cli
+          arduino-cli version
+      - name: Install the Arduino-ESP32 core 3.x
+        run: |
+          arduino-cli config init --overwrite
+          arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32@3.1.1
+      - name: Compile for ESP32-S3
+        run: |
+          arduino-cli compile --fqbn esp32:esp32:esp32s3:CDCOnBoot=cdc --export-binaries --warnings default firmware/kandha 2>&1 | tee firmware-build.txt
+      - name: Checksums
+        run: |
+          cd firmware/kandha/build/esp32.esp32.esp32s3
+          sha256sum *.bin > kandha-stole-firmware.sha256
+          cat kandha-stole-firmware.sha256
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: kandha-stole-firmware
+          path: |
+            firmware/kandha/build/esp32.esp32.esp32s3/*.bin
+            firmware/kandha/build/esp32.esp32.esp32s3/kandha-stole-firmware.sha256
+            firmware-build.txt
+          retention-days: 30

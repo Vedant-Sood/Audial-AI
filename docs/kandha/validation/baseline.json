@@ -1,0 +1,9 @@
+{
+  "what": "Test baseline on main (87ed5e8) before any Kandha change, Linux cloud container",
+  "date": "2026-10-22",
+  "platform": "Linux x86_64, Python 3.12.3 venv from requirements-cloud.lock (torch 2.8.0+cpu), Node 22.22.0",
+  "npm_test": {"tests": 31, "pass": 31, "fail": 0},
+  "pytest": {"passed": 132, "skipped": 1, "failed": 0,
+             "note": "The first run failed tests/test_device_failures.py because the container had no PortAudio library (OSError: PortAudio library not found) and could not import PySide6 without libEGL. After apt-get install libportaudio2 libegl1 (and the usual QtWebEngine X libraries) every test passed. Both are system libraries, not repository code."},
+  "command": "QT_QPA_PLATFORM=offscreen python -m pytest -q; npm test"
+}

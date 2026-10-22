@@ -8,6 +8,10 @@ if __name__ == "__main__":
         main()
         sys.exit(0)
     try:
+        import os
+        # Kandha.exe is the same program started with --kandha (packaging/AccessibilityAI.spec)
+        if os.path.basename(sys.argv[0]).lower().startswith("kandha") and not any(a.startswith("--") for a in sys.argv[1:]):
+            sys.argv.append("--kandha")
         from app.main import main
         main()
     except Exception:

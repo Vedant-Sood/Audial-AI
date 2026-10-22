@@ -81,6 +81,29 @@ stream, and decorates `TranscriptView` rows by audio-time overlap. Exports name 
 captions by voice. The tone model is served only when its SHA-256 matches
 `models/sanket/provenance.json`. See [sanket.md](sanket.md).
 
+## Kandha
+
+`browser/kandha/` is the Kandha app (the evolution of Sanket's app): `index.html`, `app.js`,
+`views.js` (virtual stole, room diagram, review timeline), `demo.js`, `kandha-intents.js`
+(engine events to haptic intents, with the back-channel hold) and the bundled Atkinson
+Hyperlegible font. It is served at `/kandha/` under the same CSP as `/sanket/` was, loads the
+shared engine from `/sanket/`, and talks to `app/kandha/` through `/api/kandha/*` and a
+server-sent event stream.
+
+`app/kandha/` holds the pattern table loader and firmware-parity player (`patterns.py`), the
+protocol bytes (`protocol.py`), the pure `HapticScheduler` and `QueueTracker` (`scheduler.py`),
+the `SeatMap` with saved rooms and the `SeatSource` interface (`seatmap.py`), the
+`VirtualStole` (`virtual.py`), the Bluetooth `StoleBridge` with its mock and simulated devices
+(`bridge.py`) and `KandhaService` (`service.py`), which `BrowserService` owns. The single
+source of the tap language is `browser/sanket/kandha-patterns.json`;
+`scripts/generate_kandha_patterns.py` writes `firmware/kandha/patterns.h` from it.
+
+`app/ui/kandha_window.py` is a `QWebEngineView` over `/kandha/` that grants the microphone to
+the loopback origin; `python -m app.main --kandha` opens it, `--kandha-check` loads it
+headlessly and reports readiness. The desktop navigation has a Kandha page. The firmware for
+the stole is in `firmware/kandha/` (compiled by CI, untested on hardware). Design, protocol,
+decisions and validation records are under `docs/kandha/`.
+
 ## Training and packaging
 
 `scripts/train_indian_emotion.py` validates real labeled data and divides it by
@@ -92,8 +115,10 @@ trusted trained result. `training/` retains the uploaded sign/prosody experiment
 `scripts/package_windows_portable.py` obtains official Windows Python with a
 pinned SHA512, resolves Windows wheels and verifies their RECORD contents before
 assembling a portable desktop. `packaging/AccessibilityAI.spec` builds native
-executables on Windows; `.github/workflows/windows-release.yml` gates native
-release publication on its Windows tests. Packaging never implies a new model
+executables on Windows (`AccessibilityAI.exe`, the console worker and `Kandha.exe`);
+`.github/workflows/windows-release.yml` gates native release publication on its Windows tests,
+builds `Kandha-Setup-<version>.exe` and the portable ZIP from the same payload, and publishes
+them with the firmware on `kandha-v*` tags. Packaging never implies a new model
 accuracy result or a successful test on the user's hardware.
 
 

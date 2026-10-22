@@ -1,6 +1,6 @@
-// Sanket voice view in the Audial-AI companion: who is speaking (a colour and an arrow per
-// voice), tone cues on screen / vibration / Sanket Band, tone compared with each person's usual
-// voice, and a queue light. It draws only from the local app's event stream, so it works the
+// Kandha voice view in the Audial-AI companion: who is speaking (a colour and an arrow per
+// voice), tone cues on screen or by device vibration, tone compared with each person's usual
+// voice, and a queue light. The Kandha Stole is driven from the full Kandha page (/kandha/). It draws only from the local app's event stream, so it works the
 // same whether the page or the extension captured the audio.
 import { displayEmotion } from "./emotion.js";
 
@@ -12,10 +12,10 @@ export const VOICE_COLORS = {
 // One arrow per colour until a microphone array reports real directions.
 export const VOICE_ARROWS = [180, 0, -90, -135, -45, 90];
 export const CUE_INFO = {
-  drop: {label: "Voice softened", detail: "quieter or sadder-sounding than usual", pattern: [700], band: 1},
-  rise: {label: "Voice rose", detail: "louder or more intense than usual", pattern: [90, 80, 90, 80, 90], band: 2},
-  hesitation: {label: "Hesitation", detail: "several short pauses", pattern: [40, 40, 40, 40, 40, 40, 40, 40, 40], band: 3},
-  silence: {label: "Long silence", detail: "no one is speaking", pattern: [150, 300, 150], band: 4},
+  drop: {label: "Voice softened", detail: "quieter or sadder-sounding than usual", pattern: [700]},
+  rise: {label: "Voice rose", detail: "louder or more intense than usual", pattern: [80, 70, 80, 70, 80]},
+  hesitation: {label: "Hesitation", detail: "several short pauses", pattern: [40, 40, 40, 40, 40, 40, 40, 40, 40]},
+  silence: {label: "Long silence", detail: "no one is speaking", pattern: [60, 240, 60]},
 };
 export const RELATIVE_TEXT = {intense: "More intense than usual", softer: "Softer, sad-sounding", usual: "Usual for them", learning: "Learning this voice"};
 
@@ -68,8 +68,8 @@ export class VoiceTimeline {
 const ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 export class VoiceView {
-  constructor(get, {band = null, vibrate = () => {}, palette = () => null, now = () => Date.now()} = {}) {
-    this.$ = get; this.band = band; this.vibrate = vibrate; this.palette = palette; this.now = now;
+  constructor(get, {vibrate = () => {}, palette = () => null, now = () => Date.now()} = {}) {
+    this.$ = get; this.vibrate = vibrate; this.palette = palette; this.now = now;
     this.timeline = new VoiceTimeline();
     this.settings = {colors: true, cues: false, tone: false};
     this.current = null; this.queue = {on: false, since: 0, timer: 0};
@@ -108,7 +108,6 @@ export class VoiceView {
         if (this.settings.colors) {
           this.renderBadge(event.id);
           this.$("voice-name").textContent = voiceName(event.id) + (event.new ? " · new voice" : "");
-          this.band?.colour?.(this.colour(event.id));
         }
       } else if (event.kind === "cue" && this.settings.cues) this.cue(event);
       else if (event.kind === "tone" && this.settings.tone && event.voice === this.current) this.renderTone(event);
@@ -120,8 +119,7 @@ export class VoiceView {
     this.$("voice-cue").textContent = `${info.label} · ${event.voice ? voiceName(event.voice) + " · " : ""}${info.detail}`;
     const row = this.$("voice-now");
     row.classList.remove("is-cue"); void row.offsetWidth; row.classList.add("is-cue");
-    // the band link also vibrates this device when that preference is on
-    if (this.band) this.band.cue(event.cue); else this.vibrate(info.pattern);
+    this.vibrate(info.pattern);
   }
   renderTone(tone) {
     const out = this.$("voice-tone-out");

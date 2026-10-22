@@ -12,7 +12,7 @@ def test_all_pages_start_and_navigate():
         window.nav.setCurrentRow(index)
         app.processEvents()
         assert window.heading.text() == title
-    assert window.stack.count() == 12
+    assert window.stack.count() == 13
     assert not window.engine.running
     window.close()
 
