@@ -14,3 +14,17 @@ body.floating-view{margin:0;padding:0;background:#102b38;color:#e8f4f3}.floating
 @media(max-width:680px){.workspace{grid-template-columns:1fr}.app-header{display:block}.input-column{gap:14px}.panel canvas{max-height:260px}.prosody{grid-template-columns:repeat(3,minmax(0,1fr))}.notice{align-items:flex-start}.notice button{padding:7px}.panel .actions button{font-size:.78rem}.panel .playback-settings{gap:0}.palette{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 .notice{display:block}.notice-row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.notice-row+ .notice-row{margin-top:10px;padding-top:10px;border-top:1px solid #d8aaa3}.notice-row span{min-width:0;overflow-wrap:anywhere}.notice-row[data-severity=warning]{color:#653c20}.notice>button{margin-top:10px}
+/* Sanket voice view: who is speaking, tone cues, queue light */
+.queue-strip{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:-24px -24px 18px;padding:12px 24px;min-height:48px;border-radius:16px 16px 0 0;background:#f5b53d;color:#1b1404;font-weight:750;font-size:1rem;box-shadow:0 0 28px 4px rgba(245,181,61,.55);animation:queue-glow 1.6s ease-in-out infinite alternate}#queue-time{font-variant-numeric:tabular-nums}
+@keyframes queue-glow{from{box-shadow:0 0 12px 1px rgba(245,181,61,.35)}to{box-shadow:0 0 30px 6px rgba(245,181,61,.7)}}
+.voice-now{display:flex;align-items:center;gap:14px;margin:14px 0 4px;padding:12px 14px;background:#183b48;border:1px solid #315966;border-radius:10px}.voice-now.is-cue{animation:cue-flash 1.2s ease-out}
+@keyframes cue-flash{from{box-shadow:0 0 0 3px #ffc66d}to{box-shadow:0 0 0 0 transparent}}
+.voice-badge{--voice:#8aa3ad;flex:none;display:grid;place-items:center;width:52px;height:52px;border-radius:50%;border:2px solid var(--voice);color:var(--voice);background:color-mix(in srgb,var(--voice) 20%,transparent);transition:color .3s,border-color .3s,background-color .3s}.voice-badge svg{width:60%;height:60%;transition:transform .35s ease}
+.voice-text{min-width:0;flex:1}.voice-name{font-size:1.05rem;font-weight:750;margin:0}.voice-text .hint{margin:2px 0 0;min-height:1.2em}
+.panel .queue-button{flex:none;background:transparent;border-color:#f5b53d;color:#ffd58a}.panel .queue-button[aria-pressed=true]{background:#f5b53d;color:#1b1404}.panel .queue-button:hover{background:#3a3220}
+.prosody{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}#voice-tone-out{padding:5px 9px;border-radius:7px;display:inline-block}
+.transcript li.has-voice{box-shadow:inset 4px 0 0 var(--voice);padding-left:16px}.voice-tag{font-weight:750;color:var(--voice)}
+.tone-chip{display:inline-block;margin-top:2px;padding:1px 9px;border:1px dashed #b8c9d3;border-radius:999px;font-size:.74rem;color:#526b79;background:#f3f7fa}
+.button-link{display:inline-flex;align-items:center;min-height:40px;padding:9px 12px;border:2px solid #d4e1e8;border-radius:8px;color:#173f4b;font-size:.86rem;text-decoration:none}.button-link:hover{background:#e9f4f5}
+.floating-view .queue-strip{margin:-14px -14px 6px;border-radius:0}.floating-view .voice-now{order:0;margin:0}
+@media (prefers-reduced-motion:reduce){.queue-strip,.voice-now.is-cue{animation:none}.voice-badge,.voice-badge svg{transition:none}}

@@ -167,7 +167,21 @@ class BrowserBridge:
                         "title": tab["title"],
                         "session_id": self.service.session_id,
                     }
-                    return dict(self.owner)
+                    # the offscreen capture runs Sanket's voice view with these preferences
+                    return {**self.owner, "voice_view": self.service.voice_settings()}
+            if kind == "voice":
+                if (
+                    not self.owner
+                    or self.owner["profile"] != profile
+                    or self.owner["session_id"] != data.get("session_id")
+                ):
+                    raise ValueError(
+                        "These voice events belong to a stopped or different capture session."
+                    )
+                try:
+                    return self.service.add_voice_events(data.get("session_id"), data.get("events"))
+                except PermissionError as error:
+                    raise ValueError(str(error)) from error
             if kind == "stop":
                 self.stop(profile, data.get("session_id"))
                 return {"stopped": True}

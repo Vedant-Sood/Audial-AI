@@ -77,6 +77,10 @@ $("translate").addEventListener("click", async () => {
   } catch (error) {status(error.message + " Restricted pages can be copied into the desktop text input instead.", true);}
   finally {pending = false; buttons();}
 });
+$("open-sanket").addEventListener("click", async () => {
+  if (state?.companionUrl) await chrome.tabs.create({url: new URL("/sanket/", state.companionUrl).href});
+  else status("Start Audial-AI and choose Open browser companion to connect.", true);
+});
 $("open-companion").addEventListener("click", async () => {
   if (state?.companionUrl) await chrome.tabs.create({url: state.companionUrl});
   else status("Start Audial-AI and choose Open browser companion to connect.", true);

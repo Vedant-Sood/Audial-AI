@@ -27,8 +27,12 @@ def build(output):
     for source in (root / "browser-extension").iterdir():
         if source.is_file():
             shutil.copyfile(source, output / source.name)
-    for name in ["capture.js", "pcm-worklet.js"]:
+    for name in ["capture.js", "pcm-worklet.js", "voice-session.js"]:
         shutil.copyfile(root / "browser" / name, output / name)
+    # Sanket's voice engine runs in the offscreen capture document
+    shutil.copyfile(root / "browser" / "sanket" / "engine.js", output / "sanket-engine.js")
+    shutil.copyfile(root / "browser" / "sanket" / "tone.js", output / "sanket-tone.js")
+    shutil.copyfile(root / "models" / "sanket" / "tone_model.json", output / "sanket-tone-model.json")
     manifest = json.loads((output / "manifest.json").read_text())
     result = {
         "id": extension_id(manifest),

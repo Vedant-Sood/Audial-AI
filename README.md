@@ -75,6 +75,27 @@ before discarding the tab, then verifies actual browser API observations and
 matching native bridge state. This avoids the browser's crash when discarding
 a debugged tab. Behavior on a physical Windows laptop is unverified.
 
+## Sanket voice view (who is speaking, tone cues, queue light)
+
+Browser capture can also run [Sanket](docs/sanket.md), built for deaf students who lip-read:
+- **Voices:** each voice gets a colour and an arrow on the live panel and in the transcript.
+- **Tone cues:** *voice rose*, *voice softened*, *hesitation* and *long silence* show on
+  screen and can vibrate an Android device or a Sanket Band.
+- **Queue light:** *I want to speak* (Q) lights a strip across the floating panel.
+- **Tone estimates:** each voice can be compared with how that person usually sounds.
+
+Open **Voices, queue and tone cues** in the companion. Colours are on by default; cues and tone
+estimates are opt-in. Everything runs in the browser on the audio already captured: the
+companion page or the extension's offscreen document. Events are stored with the session,
+and exports name *Unattributed* captions by voice. The full Sanket app is at `/sanket/` and
+can caption with the local Whisper model in English or हिन्दी.
+
+On CREMA-D's 10 test actors, Sanket's browser tone model names an emotion only when it is at
+least 80% sure. That happens on 4% of sentences, and those names were right 98% of the time.
+Its cues reduced false "voice rose" alerts on neutral speech from 12% to 1.5%. On natural calm
+reading it named one emotion in 55 stretches and gave no false cues. The tests use acted
+American English; there is no Indian-language or natural-conversation validation.
+
 ## Responsiveness and notifications
 
 - Intentional keyboard focus replaces duplicate native dotted button outlines;
@@ -122,6 +143,7 @@ python -m app.main --smoke-test
 python -m app.main --setup-models
 python -m app.main --verify-inference
 python -m app.main --verify-live-inference
+python -m scripts.verify_sanket --browser <chromium> --output artifacts/sanket
 ```
 
 The two inference checks use real local ASR, expression and prosody with socket

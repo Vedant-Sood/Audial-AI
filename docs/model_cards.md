@@ -33,6 +33,26 @@ and 56.1% single-label macro F1 on its test actors. Its 6.7% sadness recall make
 it unsuitable as the desktop's selected model. These results measure a different
 label target and are separate from the actor-label comparison.
 
+## Sanket browser tone model
+
+48 utterance features, computed by Sanket's JavaScript voice engine (pitch, loudness, MFCC,
+spectral shape, voicing), feed two small heads. A general MLP is kept but never named in the
+interface. A person-relative MLP sees the features z-scored against that person's earlier
+utterances; its "usual voice" baseline is built mostly from calm sentences. Training used the
+63 Audial training actors; 9 actors selected the model, 9 calibrated its temperature, and the
+10 test actors were held out.
+
+On the test actors, the best guess is 56% over six acted classes. Named estimates (personal,
+confidence ≥ 0.80) were right 98% of the time but cover 4% of sentences. Calm-versus-intense
+AUC is 0.91. Model-backed "voice rose" / "voice softened" cues gave fewer false and
+wrong-direction alerts than loudness/pitch rules (see `models/sanket/evaluation.json`).
+On 3.8 minutes of natural calm reading, one emotion was named in 55 stretches and no
+rose/softened cue fired.
+
+The model is about 130 KB of JSON and runs in the browser; it is no substitute for the WavLM
+ensemble. The benchmark is acted American English, with no Indian-language or meeting
+validation. Weights, provenance and SHA-256 are in `models/sanket/`.
+
 ## CREMA-D emotion baseline
 
 183 acoustic features feed an SVM chosen on validation actors. A logistic probability head fits margins on four independent calibration actors; five different actors select an uncertainty threshold. Ten test actors are held out. Six actor-directed classes are angry, disgust, fear, happy, neutral and sad. Calibrated overall test accuracy is 51.6%; accepted accuracy is 71.5% at 22.9% coverage. Silence, clipped audio, short/long segments and low confidence abstain. The model is disabled by default and not validated on meetings. Detailed license, data hashes, splits, software versions, confusion matrices and limitations accompany the weights in models/emotion.

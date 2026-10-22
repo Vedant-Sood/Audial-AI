@@ -1,0 +1,46 @@
+{
+ "artifact": "models/sanket/tone_model.json",
+ "sha256": "1da59013e2d2c1b26f31f7b0d85ef976cd5b5bdf5af0b0349f47ab3a83718bde",
+ "dataset": {
+  "name": "CREMA-D",
+  "upstream": "https://github.com/CheyneyComputerScience/CREMA-D",
+  "download": "https://media.githubusercontent.com/media/CheyneyComputerScience/CREMA-D/master/AudioWAV/<file>",
+  "license": "ODbL-1.0 (database); DbCL-1.0 (individual contents); full text in CREMA-D-LICENSE.txt",
+  "clips_used": 7441,
+  "clips_missing": [
+   "1040_ITH_SAD_X.wav (train split; not retrievable from the mirror)"
+  ],
+  "raw_audio_redistributed": false
+ },
+ "splits": {
+  "file": "models/emotion/splits.json",
+  "sha256": "6f67e1a57d4033526478475fdb24ebcbad4697bbf36ddcff4c6c1c166e27ac3d",
+  "actors": {
+   "train": 63,
+   "validation": 9,
+   "calibration": 9,
+   "test": 10
+  },
+  "note": "The same actor-disjoint split as the Audial emotion models. SHA-256 of the file with LF line endings."
+ },
+ "features": {
+  "code": [
+   "browser/sanket/engine.js (FrameAnalyser, 32 ms frames / 16 ms hop at 16 kHz)",
+   "browser/sanket/tone.js (48 utterance features)"
+  ],
+  "note": "Training extracted features with the same JavaScript that runs in the browser (training/sanket/extract_crema.mjs)."
+ },
+ "training": {
+  "script": "training/sanket/train_tone.py",
+  "software": {
+   "scikit-learn": "1.9.1",
+   "numpy": "2.5.3",
+   "python": "3.13",
+   "node": "22"
+  },
+  "general_head": "MLP (96, 48), alpha 0.1, temperature-calibrated",
+  "personal_head": "MLP (64,), alpha 0.1, on features z-scored against a mostly calm usual-voice baseline, temperature-calibrated"
+ },
+ "evaluation": "models/sanket/evaluation.json; tests/sanket.test.js re-checks browser inference against the training report on every run",
+ "credits": "Speaker splits and evaluation approach from Audial AI (Vedant Sood, MIT). Built for Hackcessible India 2026."
+}

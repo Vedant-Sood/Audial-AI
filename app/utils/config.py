@@ -30,6 +30,10 @@ class Settings:
     sign_speed: float = 1.0
     intensity_colors: list = field(default_factory=lambda: ["#2263ac", "#087f75", "#b75a17"])
     emotion_colors: dict = field(default_factory=lambda: DEFAULT_EMOTION_COLORS.copy())
+    # Sanket voice view in browser capture: colours on; cues and tone estimates are opt-in
+    voice_colors: bool = True
+    voice_cues: bool = False
+    voice_tone: bool = False
 
     def validate(self):
         if self.sign_language != "ISL" or not isinstance(self.auto_sign, bool):
@@ -45,6 +49,8 @@ class Settings:
         if not isinstance(self.camera, int) or self.camera < 0 or len(self.intensity_colors) != 3:
             raise ValueError("Invalid camera index or intensity colours.")
         validate_palette(self.emotion_colors)
+        if not all(isinstance(v, bool) for v in (self.voice_colors, self.voice_cues, self.voice_tone)):
+            raise ValueError("Voice view preferences must be true or false.")
         return self
 
     def save(self, path=None):

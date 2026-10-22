@@ -27,6 +27,11 @@ remain in the repository for provenance. They do not establish a new Indian voic
 accuracy result. Windows device capture, target-machine speed, and signer assessment
 require testing on the target machine.
 
+`tests/sanket.test.js`, `tests/test_sanket_integration.py` and `python -m scripts.verify_sanket`
+cover the Sanket voice view (see [sanket.md](sanket.md)). The browser check uses a fake microphone
+and a stub in place of Whisper, so it verifies timing, voices, cues, exports and CSP, not ASR
+or emotion accuracy.
+
 `tests/test_isl_inputs.py` covers the fixed ISL default, old-settings migration,
 shared pack selection, mixed scripts/symbols, genuine video byte ranges, all
 document adapters, input limits, long plans, and recovery from invalid pose media.
