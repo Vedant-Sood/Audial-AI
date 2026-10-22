@@ -1,5 +1,8 @@
 # Sanket voice view
 
+> Next version: Sanket 2 for laptops with the Kandha haptic stole (the wrist band is retired).
+> The build brief for Claude Code is [prompts/sanket-kandha-app.md](prompts/sanket-kandha-app.md).
+
 Sanket (संकेत, "signal") was built for Hackcessible India 2026 (Vikram's challenge: a deaf
 psychology student who lip-reads). It adds four things to Audial-AI's browser capture:
 
