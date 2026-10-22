@@ -56,7 +56,12 @@ class AudioEngine:
             try:
                 observer(kind, data)
             except Exception:
-                pass
+                if kind == "error":
+                    pass
+                try:
+                    self.observers.remove(observer)
+                except ValueError:
+                    pass
         if not self.queue_events:
             return
         try:
