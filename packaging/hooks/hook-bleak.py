@@ -1,5 +1,6 @@
 # PyInstaller hook: bleak and its platform backends (WinRT on Windows, CoreBluetooth on macOS, BlueZ/dbus on Linux).
-from PyInstaller.utils.hooks import collect_all, collect_submodules, is_win, is_darwin
+from PyInstaller.compat import is_darwin, is_win
+from PyInstaller.utils.hooks import collect_all, collect_submodules
 
 datas, binaries, hiddenimports = collect_all('bleak')
 if is_win:

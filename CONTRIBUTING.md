@@ -26,6 +26,11 @@ PyInstaller, then checks the packaged console worker. Tagged builds publish the
 native ZIP only after checks pass. Live device capture and target-machine latency
 remain separate Windows tests.
 
+Kandha's tap language lives in `browser/sanket/kandha-patterns.json`; after editing it run
+`python scripts/generate_kandha_patterns.py` so `firmware/kandha/patterns.h` matches (a test
+checks). `python -m app.main --kandha-check` loads the Kandha page headlessly; see
+`docs/kandha/VALIDATION.md` for the Chromium end-to-end, tap-budget and accessibility scripts.
+
 See `docs/architecture.md` for the code map and `docs/indian_voice_training.md` for
 model training, provenance and activation. Every distributed dataset/model or
 native dependency must retain its notices. Do not put credential values or user

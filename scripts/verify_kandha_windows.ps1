@@ -36,7 +36,6 @@ try {
     $result = $line | ConvertFrom-Json
     if (-not $result.ok) { throw "Packaged Kandha page did not become ready: $line" }
     $report.packaged_page_ready = $result
-    $report.bluetooth_backend_import = (& "$target\AccessibilityAIWorker.exe" --list-devices 2>$null; 'see kandha-check; bleak is imported lazily on the Bluetooth link only')
 } finally {
     if (Test-Path "$target\unins000.exe") {
         $uninstall = Start-Process "$target\unins000.exe" -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/PURGEUSERDATA=1', "/LOG=`"$Output\kandha-uninstall.log`"") -PassThru -Wait
