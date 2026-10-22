@@ -1,9 +1,33 @@
-# Audial-AI 0.5.0
+# Audial-AI 0.6.0 · with Kandha
 
 A private Windows workspace for local captions, Indian Sign Language (ISL),
 objective voice measurements and optional vocal-expression estimates. Processing
 uses your computer; no paid inference API is required. Microphone, camera and tab
 capture start only when you choose them.
+
+## Kandha: captions, who is speaking, and a haptic scarf
+
+[Kandha](docs/kandha/USER_GUIDE.md) (कंधा, "shoulder") is the app for deaf students who
+lip-read, built for Hackcessible India 2026 (Vikram's challenge). It captions the room in the
+speaker's colour, shows where each person sits, and taps the **Kandha Stole** on the shoulder
+of whoever is speaking; tone cues are felt at the collarbone and a queue pad lights an
+*I want to speak* strip. It replaces Sanket as the product and reuses its voice engine.
+
+**Prototype: no hardware needed.** The virtual stole on screen shows every tap and a simulated
+stole shows pairing, battery and reconnection. Real Bluetooth and the ESP32-S3 firmware are
+prepared but untested with hardware.
+
+- Windows: `Kandha-Setup-<version>.exe` or `Kandha-<version>-windows.zip` from the
+  [Windows workflow](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml)
+  artifacts (`Kandha-Windows-x64-CPU`) or a `kandha-v*` [release](https://github.com/Vedant-Sood/Audial-AI/releases);
+  check the `.sha256` beside each file. Start-menu entry: **Kandha**.
+- From source: `python -m app.main --kandha` (also **Kandha** in the desktop navigation, and
+  `http://127.0.0.1:<port>/kandha/` in Chrome or Edge).
+- Design: [docs/kandha/DESIGN.md](docs/kandha/DESIGN.md) · protocol:
+  [PROTOCOL.md](docs/kandha/PROTOCOL.md) · decisions: [decisions/](docs/kandha/decisions/) ·
+  measurements: [VALIDATION.md](docs/kandha/VALIDATION.md) · firmware:
+  [firmware/kandha/](firmware/kandha/README.md) · demo video script:
+  [DEMO_SCRIPT.md](docs/kandha/DEMO_SCRIPT.md).
 
 The official 0.5.0 source is on `main`, tagged `v0.5.0`. Windows installer
 publication runs from that tag and requires its acceptance checks to pass.
@@ -75,22 +99,21 @@ before discarding the tab, then verifies actual browser API observations and
 matching native bridge state. This avoids the browser's crash when discarding
 a debugged tab. Behavior on a physical Windows laptop is unverified.
 
-## Sanket voice view (who is speaking, tone cues, queue light)
+## Voice view in the companion (who is speaking, tone cues, queue light)
 
-Browser capture can also run [Sanket](docs/sanket.md), built for deaf students who lip-read:
+Browser capture also runs the [voice engine](docs/sanket.md) that Kandha uses:
 - **Voices:** each voice gets a colour and an arrow on the live panel and in the transcript.
 - **Tone cues:** *voice rose*, *voice softened*, *hesitation* and *long silence* show on
-  screen and can vibrate an Android device or a Sanket Band.
+  screen (and on the Kandha Stole in the Kandha app).
 - **Queue light:** *I want to speak* (Q) lights a strip across the floating panel.
 - **Tone estimates:** each voice can be compared with how that person usually sounds.
 
 Open **Voices, queue and tone cues** in the companion. Colours are on by default; cues and tone
 estimates are opt-in. Everything runs in the browser on the audio already captured: the
 companion page or the extension's offscreen document. Events are stored with the session,
-and exports name *Unattributed* captions by voice. The full Sanket app is at `/sanket/` and
-can caption with the local Whisper model in English or हिन्दी.
+and exports name *Unattributed* captions by voice.
 
-On CREMA-D's 10 test actors, Sanket's browser tone model names an emotion only when it is at
+On CREMA-D's 10 test actors, the browser tone model names an emotion only when it is at
 least 80% sure. That happens on 4% of sentences, and those names were right 98% of the time.
 Its cues reduced false "voice rose" alerts on neutral speech from 12% to 1.5%. On natural calm
 reading it named one emotion in 55 stretches and gave no false cues. The tests use acted
@@ -144,6 +167,9 @@ python -m app.main --setup-models
 python -m app.main --verify-inference
 python -m app.main --verify-live-inference
 python -m scripts.verify_sanket --browser <chromium> --output artifacts/sanket
+python -m app.main --kandha-check
+python -m scripts.verify_kandha --browser <chromium> --output artifacts/kandha
+python -m scripts.audit_kandha_a11y --browser <chromium> --output artifacts/a11y
 ```
 
 The two inference checks use real local ASR, expression and prosody with socket

@@ -1,7 +1,10 @@
 # Sanket voice view
 
-> Next version: Sanket 2 for laptops with the Kandha haptic stole (the wrist band is retired).
-> The build brief for Claude Code is [prompts/sanket-kandha-app.md](prompts/sanket-kandha-app.md).
+> **Sanket has become [Kandha](kandha/DESIGN.md).** The full app now lives at `/kandha/` and in
+> the Kandha window (`python -m app.main --kandha`), paired with the Kandha Stole, a haptic
+> scarf (prototype: virtual and simulated stoles, no hardware needed). The wrist band is
+> retired. This page describes the voice engine and the companion's voice view, which Kandha
+> reuses unchanged. User guide: [kandha/USER_GUIDE.md](kandha/USER_GUIDE.md).
 
 Sanket (संकेत, "signal") was built for Hackcessible India 2026 (Vikram's challenge: a deaf
 psychology student who lip-reads). It adds four things to Audial-AI's browser capture:
@@ -10,16 +13,16 @@ psychology student who lip-reads). It adds four things to Audial-AI's browser ca
   as it starts, so the reader can look at the right face. Voices are session-only slots, not
   identities.
 - **Tone cues.** *Voice rose*, *voice softened*, *hesitation* and *long silence*, shown on the
-  live panel. They can also vibrate an Android device or a Sanket Band (ESP32, Web Bluetooth).
+  live panel. In Kandha they are felt at the collarbone of the Kandha Stole.
 - **Tone compared with each person's usual voice** (experimental). For example *more intense
   than usual* or *softer, sad-sounding*. An emotion is named only when Sanket is at least 80%
   sure, after it has heard that person at least four times.
 - **A queue light.** *I want to speak* (or **Q**) lights a strip across the live panel. It
-  floats with the panel and can be held up in a seminar. A band button can toggle it too.
+  floats with the panel and can be held up in a seminar. The stole's queue pad toggles it too.
 
-The full Sanket app (lecture, seminar and practicum modes, review timeline, Hindi captions,
-demos) is served at `http://127.0.0.1:<port>/sanket/`. Inside Audial-AI it can take captions
-from Audial's local Whisper model instead of the browser's speech service.
+The full app (lecture, seminar and practicum modes, review timeline, Hindi captions, demos,
+seats and the stole) is Kandha, served at `http://127.0.0.1:<port>/kandha/`; `/sanket/`
+redirects there. It takes captions from Audial's local Whisper model.
 
 ## Where it runs
 
@@ -32,7 +35,7 @@ unchanged.
 |---|---|---|
 | Companion page: Share tab audio / microphone | the companion page (`browser/voice-session.js`) | `POST /api/voice-events` with the session ID |
 | Extension tab capture | the extension's offscreen document | `voice` bridge message from the owning capture |
-| Sanket app at `/sanket/` | the Sanket page | local captions use `/api/start`, `/api/audio`, `/api/events` |
+| Kandha at `/kandha/` (window or tab) | the Kandha page | local captions use `/api/start`, `/api/audio`, `/api/events`; taps go to `/api/kandha/intents` |
 | Desktop microphone / system audio / files | not available yet (the engine is JavaScript) | — |
 
 The app validates every batch (`app/services/voice_view.py`): known kinds, finite times, voice
@@ -57,13 +60,15 @@ captures when they start. Vibration is a per-device choice stored in the page.
 
 ## Security
 
-The companion keeps `script-src 'self'`. `browser/sanket/index.html` loads its scripts as
-same-origin files (`scripts/sync_sanket.py` checks that the page has no inline scripts).
-Pages under `/sanket/` alone add `style-src 'unsafe-inline'`, because Sanket colours voices
-with inline custom properties. The companion page uses the CSS object model only.
+The companion keeps `script-src 'self'`. `browser/kandha/index.html` loads its scripts as
+same-origin files (`tests/test_sanket_integration.py` checks that the page has no inline
+scripts or handlers). Pages under `/kandha/` alone add `style-src 'unsafe-inline'` and
+`font-src 'self'`, because Kandha colours voices with inline custom properties and bundles its
+font. The companion page uses the CSS object model only.
 
-`browser/sanket/package.json` marks these UMD files as CommonJS for Node. The server never
-serves it: `/sanket/` files are an explicit allowlist. The tone model is served from
+`browser/sanket/package.json` and `browser/kandha/package.json` mark these UMD files as
+CommonJS for Node. The server never serves them: `/sanket/` and `/kandha/` are explicit
+allowlists. The tone model is served from
 `models/sanket/tone_model.json` only while its SHA-256 matches `models/sanket/provenance.json`.
 
 While the voice view is on, the page's microphone capture turns the browser's noise
@@ -113,11 +118,12 @@ second one.
   - the model hash check;
   - event ownership and validation, including from the extension bridge;
   - exports, preferences, and the session-only Hindi caption language.
-- `python -m scripts.verify_sanket --browser <chromium> --output <dir>`:
+- `python -m scripts.verify_sanket --browser <chromium> --output <dir>` (companion voice view)
+  and `python -m scripts.verify_kandha` (the Kandha page with the mock stole):
   - real Chromium with a fake microphone playing two readers;
   - checks the companion voice view, the queue light and Q key, stored events, VTT names, and
-    the Sanket app on local captions;
-  - Whisper is stubbed, so it says nothing about ASR accuracy.
+    Kandha's taps, latency and queue on local captions;
+  - Whisper is stubbed, so they say nothing about ASR accuracy.
 
 Retraining needs CREMA-D's `AudioWAV` folder. Run:
 
@@ -130,7 +136,7 @@ node training/sanket/eval_cues.mjs <AudioWAV> models/emotion/splits.json tone_mo
 Copy the new model into `models/sanket/`, update `sha256` in `provenance.json`, and run the
 tests above. If cue thresholds change, update `TUNING` in `browser/sanket/engine.js`.
 
-To pull in a newer Sanket app, run `python scripts/sync_sanket.py --source <sanket>/src`.
+`scripts/sync_sanket.py` copies a newer engine source tree into `browser/sanket/`; the app itself is developed in `browser/kandha/`.
 
 Credits: CREMA-D (Cao et al., 2014; ODbL-1.0 / DbCL-1.0). LibriSpeech test fixtures (Panayotov
 et al., 2015; CC BY 4.0). Speaker splits and evaluation approach from Audial-AI (Vedant Sood).

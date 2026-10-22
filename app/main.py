@@ -97,8 +97,11 @@ def main():
         from scripts.local_validation import main
         main()
         return
+    from PySide6.QtCore import Qt
     from PySide6.QtWidgets import QApplication
     from app.ui.main_window import MainWindow
+    # the Kandha window embeds QtWebEngine, which needs shared GL contexts set before the app exists
+    QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts, True)
     app = QApplication(sys.argv[:1])
     app.setApplicationName("Audial-AI")
     app.setOrganizationName("Audial-AI")

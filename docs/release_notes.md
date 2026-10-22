@@ -1,4 +1,12 @@
-## Unreleased: Sanket voice view
+## 0.6.0: Kandha (prototype)
+
+Kandha replaces Sanket as the product: see [kandha/RELEASE_NOTES.md](kandha/RELEASE_NOTES.md)
+for what is included, what was measured (end-to-end latency, tap budget, accessibility) and what
+is simulated. The Sanket wrist band is removed; `/sanket/` redirects to `/kandha/`. New Windows
+artifacts: `Kandha-Setup-<version>.exe`, `Kandha-<version>-windows.zip`, with checksums, plus the
+stole firmware zip on `kandha-v*` releases. The application version is 0.6.0.
+
+## 0.5.x: Sanket voice view
 
 - Browser capture (companion page and extension tab capture) runs Sanket's voice engine on
   the captured audio:

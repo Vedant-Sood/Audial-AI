@@ -15,3 +15,5 @@ why, what was rejected and what would change the decision. New records get the n
 | [0008](0008-packaging.md) | One Audial payload; `Kandha.exe`, `Kandha-Setup-<version>.exe` and a portable ZIP |
 | [0009](0009-event-transport.md) | Haptic commands return in the intent response; everything else arrives over SSE |
 | [0010](0010-retire-band.md) | The Sanket wrist band is removed from code and UI |
+| [0011](0011-prototype-without-hardware.md) | The prototype runs without hardware: a simulated stole is the default link |
+| [0012](0012-own-voice.md) | A voice can be "me": the wearer's own speech never taps |

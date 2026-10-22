@@ -27,8 +27,18 @@ remain in the repository for provenance. They do not establish a new Indian voic
 accuracy result. Windows device capture, target-machine speed, and signer assessment
 require testing on the target machine.
 
+Kandha: `tests/kandha.test.js` (pattern table, intents on LibriSpeech turns) and
+`tests/test_kandha_*.py` (pattern table and firmware header, protocol bytes, scheduler rules,
+seat map and rooms, virtual-stole parity, bridge with mock bleak, service and HTTP routes, SSE,
+consent gate). `python -m app.main --kandha-check` loads the page in QtWebEngine headlessly.
+`python -m scripts.verify_kandha` is the Chromium end-to-end check with the mock stole;
+`scripts/kandha_tap_budget.{mjs,py}` measure taps per minute; `scripts/audit_kandha_a11y.py`
+audits keyboard, focus, names and contrast. Records: [kandha/VALIDATION.md](kandha/VALIDATION.md).
+The Windows workflow installs `Kandha-Setup-<version>.exe` on the CI account and loads the
+packaged page (`scripts/verify_kandha_windows.ps1`).
+
 `tests/sanket.test.js`, `tests/test_sanket_integration.py` and `python -m scripts.verify_sanket`
-cover the Sanket voice view (see [sanket.md](sanket.md)). The browser check uses a fake microphone
+cover the voice engine and the companion voice view (see [sanket.md](sanket.md)). The browser check uses a fake microphone
 and a stub in place of Whisper, so it verifies timing, voices, cues, exports and CSP, not ASR
 or emotion accuracy.
 

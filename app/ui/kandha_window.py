@@ -105,6 +105,7 @@ def launch(check=False, port=0, timeout_s=40):
     from PySide6.QtWidgets import QApplication
     from app.services.browser import BrowserService
     from app.utils.config import Settings
+    QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts, True)
     app = QApplication.instance() or QApplication(sys.argv[:1])
     app.setApplicationName("Kandha")
     app.setOrganizationName("Audial-AI")

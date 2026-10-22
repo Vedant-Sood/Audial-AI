@@ -10,6 +10,12 @@ document that come from a measurement say so and point at the record under
 
 Built for Hackcessible India 2026 (Vikram's challenge).
 
+> **Prototype status.** Kandha runs entirely without hardware: the virtual stole shows every
+> tap and a simulated stole demonstrates pairing, battery and reconnection (decision 0011).
+> The physical stole, its firmware and the Bluetooth link are designed, written and tested
+> against mocks, but nothing has run on hardware. Measured results are summarised in
+> [VALIDATION.md](VALIDATION.md).
+
 ## 1. The rule behind every decision
 
 Vikram's eyes stay on faces. Anything that makes him look down at a screen costs him the lips
@@ -140,7 +146,9 @@ dark and light themes, visible focus on every control, WCAG 2.1 AA contrast, usa
 2. **Stole panel** (`#stole`). Scan and pair, forget, battery and firmware, connection state
    and last error; a test button per zone; per-zone intensity sliders; mirror left/right;
    do-not-disturb; "Learn the taps", a five-minute tutorial that plays each pattern on the
-   stole (real or virtual) and says what it means, with Repeat and Next.
+   stole (real or virtual) and says what it means, with Repeat and Next. With the simulated
+   link (the default) the panel also offers *Simulate: out of range, battery 18 %, plug in,
+   pad presses*.
 3. **Seat setup** (`#seats`). The room diagram with drag-and-drop voice chips (and keyboard:
    select a chip, press 1–4), saved rooms (name, save, load, delete) and "start with last
    layout".
@@ -317,6 +325,8 @@ it, so there is never a double tap.
   "Start with last layout" pre-assigns voice slots in order of appearance. No cross-session
   voice identity is attempted.
 - **Practicum default**: the second voice defaults to `F`.
+- **"This is me"**: one voice can be the wearer's own; it is never tapped and never saved
+  (decision 0012).
 - **`SeatSource`**: an interface (`angles() -> {voice: degrees}`) for a future microphone array.
   `ManualSeatSource` is the only implementation; the angle-to-zone mapping is defined
   (front ±45°, right 45–135°, behind 135–225°, left 225–315°) so an array can plug in.
