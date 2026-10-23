@@ -1,6 +1,7 @@
 """VirtualStole parity: the same HAPTIC bytes produce the same zone timeline as the mock stole.
 
-Both are driven by the Python PatternPlayer; the C++ pattern engine is compiled in CI, not executed here."""
+Both are driven by the Python PatternPlayer; tests/test_kandha_firmware_host.py runs the C++ pattern engine
+against that player."""
 from app.kandha.bridge import MockStole
 from app.kandha.patterns import effective_level, table, zone_mask
 from app.kandha.protocol import GESTURE_DOUBLE, PAD_Q, HapticCommand, PadInput, StoleConfig, uuids

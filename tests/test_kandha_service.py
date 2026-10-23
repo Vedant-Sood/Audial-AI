@@ -358,6 +358,42 @@ def test_a_page_clock_that_steps_costs_a_few_taps_at_most(tmp_path):
         service.close()
 
 
+def test_one_odd_sent_or_another_page_s_clock_never_makes_this_page_s_taps_look_late(tmp_path):
+    """The clocks' difference is kept per page (the page's tag), and one batch alone never sets
+    it: a single `sent` ahead of the rest (a bad value, a clock ahead for one batch) or a second
+    page whose clock runs 5 s ahead all along drops no tap, and a held-up batch is still dropped."""
+    from app.kandha.service import CLOCK_PAGES, CLOCK_SAMPLES
+    now = [100.0]
+    service = KandhaService(home=tmp_path, start_bridge=False, ticker=False, clock=lambda: now[0])
+    voices = iter(range(1, 1000))
+
+    def tap(ahead_ms=0, page=None, held_ms=0):
+        now[0] += 1.0                           # the tap before has finished
+        intent = speaker(next(voices), time.time() * 1000 + ahead_ms - held_ms, age_ms=0 if held_ms else 20)
+        if page is not None:
+            intent["page"] = page
+        return bool(service.intents([intent])["played"])
+
+    try:
+        service.update_settings({"mode": "practicum"})
+        for odd in (5000, 1e15):                # pages that send no tag share one history
+            assert all(tap() for _ in range(3))
+            tap(odd)
+            assert [tap() for _ in range(CLOCK_SAMPLES + 2)] == [True] * (CLOCK_SAMPLES + 2), odd
+            assert not tap(held_ms=3000), "held up 3 s on the way: never tapped late"
+        # two pages, one on time and one 5 s ahead, taking turns
+        both = [(tap(page="here"), tap(5000, page="there")) for _ in range(CLOCK_SAMPLES + 2)]
+        assert both == [(True, True)] * (CLOCK_SAMPLES + 2), both
+        assert not tap(page="here", held_ms=3000) and not tap(5000, page="there", held_ms=3000)
+        assert tap(page="here") and tap(5000, page="there")
+        # many pages over a long run: only the last few are remembered
+        for n in range(CLOCK_PAGES + 4):
+            tap(page=f"page-{n}")
+        assert len(service.clock_gaps) == CLOCK_PAGES and "page-0" not in service.clock_gaps
+    finally:
+        service.close()
+
+
 def test_the_seat_window_closing_tells_every_page_that_nobody_waits(tmp_path):
     """The 6 s seat window after a new voice: when it runs out unused the service says pending: null,
     and a pad tap with no window (or one that seats the voice) says so too, so no page keeps the

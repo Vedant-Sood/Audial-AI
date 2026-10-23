@@ -4,7 +4,8 @@
 notifications, the paired-address allowlist). `StoleBridge` runs it on its own thread and offers
 blocking calls to the rest of the app. `MockBackend` and `MockStole` stand in for `bleak` and a
 real stole: they apply the same bytes to a PatternPlayer, so tests and the end-to-end check can
-read back exactly what the motors would have done and when.
+read back what the motors would have done and when (without the firmware's motor floor and
+spin-up kick, see MockStole).
 
 Captions never depend on anything here: every call is bounded and every failure becomes an
 event, not an exception, for the caller.

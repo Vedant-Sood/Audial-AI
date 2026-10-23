@@ -5,7 +5,8 @@ C17 (Demos in the dock), C19 (the voice dialog's Enter, Escape and close), C20 (
 demo or a pause), C22 (the seat highlight ends with the seat window), C23 (no "Turn taken" from a
 new session), C24 (the queue strip after a reload), G4 (browser captions only as an opt-in), C1
 (the intents know the silence setting), G7 (the on-screen pads read gestures as the stole does),
-the unreachable-service status and flash, and the microphone remembered by its name.
+the unreachable-service status and flash, the page's tag on every intent (its clock measured on its
+own), and the microphone remembered by its name.
 
 The browser's speech recognition is replaced by a counting fake, the microphone is Chromium's fake
 device, and demos are fast-forwarded with Playwright's clock. Skipped without Playwright or Chromium
@@ -41,6 +42,10 @@ RECORD_MICROPHONE = """
   const md = navigator.mediaDevices, open = md.getUserMedia.bind(md);
   md.getUserMedia = async (c) => { const s = await open(c); window.__gum.push({ asked: c && c.audio && c.audio.deviceId || null, label: s.getAudioTracks()[0].label }); return s; };
 })();
+"""
+# the page's own timers of 5 s or more never fire (so only the service can end the seat highlight)
+NO_LONG_TIMERS = """
+(() => { const later = window.setTimeout; window.setTimeout = (f, ms, ...args) => (+ms >= 5000 ? 0 : later(f, ms, ...args)); })();
 """
 READY = "() => window.Kandha && window.Kandha.ready().ready && window.Kandha.ready().stream === 'open'"
 STATUS = "() => [document.querySelector('#status').dataset.state, document.querySelector('#statusText').textContent]"
@@ -207,13 +212,28 @@ def test_c19_enter_saves_the_voice_name_and_escape_or_close_never_renames(kandha
         assert not page.evaluate("() => document.querySelector('#missDlg').open")
 
 
-def test_c22_the_seat_highlight_ends_when_the_seat_window_closes(kandha):
+def test_c22_the_seat_highlight_ends_when_the_seat_window_closes(kandha, monkeypatch):
+    """Two ways, each checked alone: the page's own timer (the service's window-closed event never
+    arrives, as on a dropped stream) and the service's event (the page's own timer never fires)."""
+    new_voice = "() => fetch('/api/kandha/intents', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ intents: [{ kind: 'new_voice', voice: 7, t: 0, new: true, age_ms: 0, sent: Date.now() }] }) })"
+    highlighted = "() => document.querySelectorAll('.room__seat.is-over').length"
+    cleared = "() => document.querySelectorAll('.room__seat.is-over').length === 0 && window.Kandha.K.pending === null"
+    service = kandha.service.kandha
+    publish = service.publish
+    monkeypatch.setattr(service, "publish", lambda kind, data: None if data.get("action") == "window-closed" else publish(kind, data))
     with kandha_page(kandha) as page:
-        page.evaluate("() => fetch('/api/kandha/intents', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ intents: [{ kind: 'new_voice', voice: 7, t: 0, new: true, age_ms: 0, sent: Date.now() }] }) })")
+        page.evaluate(new_voice)
         page.wait_for_timeout(800)
-        assert page.evaluate("() => document.querySelectorAll('.room__seat.is-over').length") == 8, "highlighted while the window is open"
-        page.wait_for_function("() => document.querySelectorAll('.room__seat.is-over').length === 0 && window.Kandha.K.pending === null", timeout=9000)
-        assert kandha.service.kandha.seats.snapshot(kandha.service.kandha.clock())["pending"] is None
+        assert page.evaluate(highlighted) == 8, "highlighted while the window is open"
+        page.wait_for_function(cleared, timeout=9000)
+        assert service.seats.snapshot(service.clock())["pending"] is None
+    monkeypatch.undo()
+    with kandha_page(kandha, scripts=(FAKE_SR, NO_LONG_TIMERS)) as page:
+        page.evaluate(new_voice)
+        page.wait_for_timeout(800)
+        assert page.evaluate(highlighted) == 8
+        page.wait_for_function(cleared, timeout=9000)
+        assert page.evaluate("() => window.Kandha.S.lines.filter(l => l.kind === 'seat').length") == 0, "a window closing is not a seat change"
 
 
 def test_c23_a_new_session_with_the_queue_on_adds_no_turn_taken(kandha):
@@ -390,6 +410,11 @@ def test_c1_the_intents_follow_the_silence_setting_with_the_cue_on_or_off(kandha
         page.locator("#startBtn").click()
         page.wait_for_function("() => window.Kandha.S.running === true", timeout=10000)
         assert page.evaluate(intents) == [3, "page"]
+        # lowered during a silence, the engine's silence cue comes late (4 s after the speech, not
+        # 3): the page's setting stays, the late cue does not replace it
+        page.evaluate("""() => { const E = window.Kandha.engine, t = window.Kandha.intents.engineT + 0.1;
+            E.onEvent({ type: 'speech-end', t }); E.onEvent({ type: 'cue', kind: 'silence', t: t + 4 }); }""")
+        assert page.evaluate(intents) == [3, "page"]
         page.locator("#startBtn").click()
 
 
@@ -419,6 +444,20 @@ def test_an_unreachable_service_flashes_every_seat_tap_and_a_new_session_drops_t
         page.evaluate("() => window.Kandha.intents.emit({ kind: 'silence', t: 1, voice: null })")
         page.wait_for_function("() => !document.querySelector('#statusText').textContent.startsWith('Stole service unreachable')")
         assert page.evaluate(STATUS) == ["demo", "Demo · Case seminar"]
+
+
+def test_each_intent_carries_the_page_tag_so_the_service_measures_this_page_s_clock_alone(kandha):
+    bodies = []
+    with kandha_page(kandha) as page:
+        for t in (1, 2):
+            with page.expect_response(lambda r: r.request.method == "POST" and r.url.endswith("/api/kandha/intents")) as answer:
+                page.evaluate("(t) => window.Kandha.intents.emit({ kind: 'silence', t, voice: null })", t)
+            bodies.extend(json.loads(answer.value.request.post_data)["intents"])
+        tags = {b.get("page") for b in bodies}
+        assert len(bodies) == 2 and len(tags) == 1, bodies
+        tag = tags.pop()
+        assert isinstance(tag, str) and tag, bodies
+        assert len(kandha.service.kandha.clock_gaps.get(tag, ())) == 2, "the service keeps this page's clock gaps under its tag"
 
 
 def test_g7_the_on_screen_stole_pads_send_the_stole_s_gestures(kandha):

@@ -1,4 +1,5 @@
-"""VirtualStole: the on-screen stole. Same bytes, same config arithmetic, same timing as the real one.
+"""VirtualStole: the on-screen stole. Same bytes, same config arithmetic, same timing as the real one;
+the levels leave out the firmware's 60/255 motor floor and 15 ms spin-up kick (PROTOCOL.md).
 
 The scheduler writes the five HAPTIC bytes to every device it has; the virtual stole decodes
 them exactly as the firmware would and runs a PatternPlayer so the page can draw each zone's
@@ -50,7 +51,8 @@ class VirtualStole:
             return None
         effective = self.player.current["command"]      # after mute / mirror
         # zones, mask and intensity as played (after CONFIG); each segment's level has the
-        # zone's intensity scale applied, exactly as the motor would run it
+        # zone's intensity scale applied, as the motor would run it before the firmware's
+        # 60/255 floor and 15 ms spin-up kick
         played = {"device": "virtual", "seq": command.seq, "zones": "".join(mask_zones(effective.zones)), "mask": effective.zones,
                   "pattern_id": command.pattern, "pattern": pattern.key if hasattr(pattern, "key") else f"custom-{command.pattern}",
                   "intensity": effective.intensity, "repeat": command.repeat,

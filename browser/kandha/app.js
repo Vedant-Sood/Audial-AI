@@ -413,7 +413,8 @@
     if (sessionRecord.id && (sessionRecord.events.length || sessionRecord.captions.length) && !sessionRecord.timer) sessionRecord.timer = setTimeout(flushSessionEvents, 400);
     updateSaveButtons();
   }
-  // this window's tag: the service's "session" event names the window that started a session
+  // this window's tag: the service's "session" event names the window that started a session,
+  // and each intent carries it so the service measures this window's clock on its own
   const PAGE_TAG = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
   async function newServiceSession() { startRecord(await api('/api/kandha/session/new', { page: PAGE_TAG })); }
   // another Kandha window started a session, so the service no longer holds this one.
@@ -525,9 +526,10 @@
     const batch = pendingIntents.splice(0, 50);
     if (pendingIntents.length) { flushing = true; queueMicrotask(flushIntents); }
     // each intent's real age as it leaves the page, and the wall-clock moment it leaves: the
-    // service adds the trip and drops anything older than 1.5 s rather than tapping late
+    // service adds the trip and drops anything older than 1.5 s rather than tapping late. The
+    // page tag keeps this window's clock apart from any other page's on the service.
     const now = performance.now(), sent = Date.now();
-    const body = batch.map((i) => Object.assign({}, i.body, { age_ms: Math.min(600000, Math.max(0, Math.round(now - i.raised))), sent }));
+    const body = batch.map((i) => Object.assign({}, i.body, { age_ms: Math.min(600000, Math.max(0, Math.round(now - i.raised))), sent, page: PAGE_TAG }));
     try {
       const out = await api('/api/kandha/intents', { intents: body, current: S.current });
       if (unreachable) {
@@ -603,7 +605,8 @@
     if (K.queue.on || K.queue.on !== S.queue.on) applyQueue({ on: K.queue.on, waited_s: K.queue.waited_s, source: 'state', changed: true });
   }
   // A new voice waits for a seat while the service's window is open (until_s from now). The
-  // service closes the window without saying so, so the drop highlight goes at that moment too.
+  // service says when the window closes (pending: null), and the drop highlight also goes at that
+  // moment on its own, so a page that missed the event (a dropped stream) never keeps it.
   let pendingTimer = 0;
   function setPending(pending, windowS) {
     clearTimeout(pendingTimer);
@@ -762,6 +765,9 @@
   let meterRaf = 0, meterDb = -90;
   function onEngineEvent(e) {
     intents.handle(e);
+    // a silence cue that comes late (the setting was lowered during the silence) must not leave the
+    // intents on the length it measured: the page's setting is the one the engine uses
+    if (e.type === 'cue' && e.kind === 'silence') intents.configure(engineSettings());
     switch (e.type) {
       case 'speaker': onSpeaker(e.id, e.t, e.isNew); break;
       case 'cue': onCue(e.kind, e.t, e.speakerId); break;
