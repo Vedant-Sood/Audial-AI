@@ -1,10 +1,12 @@
-"""Actual Chromium: Sanket voice view in the companion page, and the Sanket app on local captions.
+"""Actual Chromium: Sanket voice view in the companion page, and the retired Sanket app's redirect.
 
 A fake microphone plays two LibriSpeech readers taking turns (tests/fixtures/sanket). Whisper
 is replaced by a stub that captions each received audio stretch with its own time span, so this
-verifies the integration (shared clock, voices, cues, queue light, local captions, exports,
-CSP), not speech-recognition or emotion accuracy (see tests/sanket.test.js and
-models/sanket/evaluation.json for those).
+verifies the integration (shared clock, voices, cues, queue light, exports, CSP), not
+speech-recognition or emotion accuracy (see tests/sanket.test.js and
+models/sanket/evaluation.json for those). The Sanket app itself was replaced by Kandha:
+/sanket/ redirects to /kandha/, which this checks loads under its CSP; the Kandha app is
+checked end to end by scripts/verify_kandha.py.
 
     python -m scripts.verify_sanket --browser /usr/bin/chromium --output artifacts/sanket
 """
@@ -92,7 +94,7 @@ def main():
         audio = Path(directory) / "conversation.wav"
         seconds = conversation(audio)
         service = BrowserService(settings=Settings(device="cpu", voice_colors=True, voice_cues=True, voice_tone=True))
-        state = stub_engine(service)
+        stub_engine(service)
         service.start()
         report = {"platform": platform.platform(), "scope": __doc__.split("\n\n")[1].replace("\n", " "), "page_errors": []}
         try:
@@ -141,29 +143,19 @@ def main():
                 report["companion"] = "PASS; colours per voice, transcript attribution, queue light and Q key, stored events, VTT names"
                 page.close()
 
-                # 2. Sanket app at /sanket/ with captions from the local (stub) engine
+                # 2. The Sanket app is retired: /sanket/ redirects to Kandha, which must load under its CSP
                 page = context.new_page(); watch(page)
-                page.goto(service.url + "/sanket/")
-                page.wait_for_function("window.Sanket && window.Sanket.localHost && window.Sanket.toneModel")
-                page.locator("#welcomeStart").click()
-                page.wait_for_timeout(int((seconds + 5) * 1000))
-                status = page.locator("#statusText").inner_text()
-                info = page.evaluate("""() => ({
-                    speakers: [...new Set(window.Sanket.S.lines.filter(l => l.kind === 'speech').map(l => l.speakerId))],
-                    lines: window.Sanket.S.lines.filter(l => l.kind === 'speech').length,
-                    tones: window.Sanket.S.tones.length,
-                    colour: getComputedStyle(document.querySelector('#history .line')).borderLeftColor })""")
-                page.screenshot(path=str(args.output / "sanket-local-captions.png"))
-                page.locator("#startBtn").click()
-                page.wait_for_timeout(800)
-                report["sanket_status"] = status
-                report["sanket"] = info
-                report["sanket_session_languages"] = state["languages"]
-                assert "AccessibilityAI on this computer" in status
-                assert info["lines"] >= 4 and len(info["speakers"]) >= 2, "timed captions split between the two voices"
-                assert info["tones"] > 0 and info["colour"] != "rgba(0, 0, 0, 0)", "inline voice colours allowed by the Sanket CSP"
-                assert state["languages"][-1] == "en" and not service.engine.running
-                report["sanket_app"] = "PASS; served under CSP, model loaded with hash check, local captions with per-word voice attribution"
+                response = page.goto(service.url + "/sanket/")
+                first = response.request
+                while first.redirected_from is not None:
+                    first = first.redirected_from
+                redirect = first.response()
+                report["sanket_redirect"] = {"status": redirect.status if redirect else None, "to": page.url}
+                assert redirect is not None and redirect.status == 308, report["sanket_redirect"]
+                assert page.url.rstrip("/").endswith("/kandha"), page.url
+                page.wait_for_function("() => !!(window.Kandha && window.Kandha.ready().ready)")
+                report["sanket_app"] = "PASS; retired: /sanket/ redirects (308) to /kandha/, which loads under its CSP (scripts.verify_kandha checks the Kandha app)"
+                page.close()
                 assert not report["page_errors"], report["page_errors"]
                 browser.close()
         finally:

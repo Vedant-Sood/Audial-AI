@@ -60,7 +60,9 @@ packaged page (`scripts/verify_kandha_windows.ps1`).
 `tests/sanket.test.js`, `tests/test_sanket_integration.py` and `python -m scripts.verify_sanket`
 cover the voice engine and the companion voice view (see [sanket.md](sanket.md)). The browser check uses a fake microphone
 and a stub in place of Whisper, so it verifies timing, voices, cues, exports and CSP, not ASR
-or emotion accuracy.
+or emotion accuracy. The Sanket app itself is retired: the check confirms `/sanket/` redirects
+to `/kandha/` and that Kandha loads under its CSP. The Linux source workflow runs it and then
+`python -m scripts.verify_kandha` in the same Chromium.
 
 `tests/test_isl_inputs.py` covers the fixed ISL default, old-settings migration,
 shared pack selection, mixed scripts/symbols, genuine video byte ranges, all
