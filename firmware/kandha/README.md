@@ -43,7 +43,7 @@ You need a computer with a USB port and the free **Arduino IDE 2** (Windows, mac
 8. Press **Upload** (the arrow). If the upload does not start, hold the board's **BOOT** button,
    tap **RESET**, release **BOOT**, and press Upload again.
 9. **Tools → Serial Monitor**, set **115200 baud**. You should see
-   `Kandha Stole firmware 0.9, pattern table …` and `Advertising as KandhaStole-XXXX`.
+   `Kandha Stole firmware 0.9, pattern table …` and `Advertising as Kandha-XXXX`.
    Type `help` and press Enter.
 
 ### Command line (optional)
@@ -74,7 +74,7 @@ mirror 1          swap left and right
 ## Pairing with Kandha
 
 In the app's **Settings**, set **Stole link** to **Real Bluetooth (experimental)**, then on the
-**Stole** screen press **Scan** and **Pair** the `KandhaStole-XXXX` that appears. The firmware
+**Stole** screen press **Scan** and **Pair** the `Kandha-XXXX` that appears. The firmware
 requests LE Secure Connections "Just Works" bonding; the app also only accepts pad input from the
 address it paired with.
 

@@ -6,8 +6,10 @@ Authoritative values live in `browser/sanket/kandha-patterns.json` (`protocol`, 
 
 ## Advertising and pairing
 
-- Name: `KandhaStole-XXXX`, where `XXXX` are the last four hex digits of the BLE address.
-- Advertised service: `2ad2fdad-b9e2-4025-af4d-b35e6f13c100`.
+- Name: `Kandha-XXXX` (as the brief specifies), where `XXXX` are the last four hex digits of the
+  BLE address. The prototype's simulated stole is `Kandha-SIM1`.
+- Advertised service: `2ad2fdad-b9e2-4025-af4d-b35e6f13c100`. A scan lists a device that
+  advertises this service UUID **or** a name starting with `Kandha-`.
 - Pairing is user-initiated in the Stole panel (scan, choose, pair). The app remembers the
   address and reconnects only to it. `INPUT` notifications from any other address are ignored.
   The firmware requests LE Secure Connections "Just Works" bonding; the app does not rely on it.
