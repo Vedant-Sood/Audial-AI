@@ -111,6 +111,11 @@ jobs:
           ./scripts/prepare_edge_ci.ps1 -Output windows-browser-edge/edge-runtime.json
           $edge = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
           if (-not (Test-Path $edge)) { throw 'Microsoft Edge is missing from the Windows runner' }
+          # Programs with a window, and every Edge, Python and Audial-AI process, before the check:
+          # a leftover window can take the focus that the extension's toolbar popup needs.
+          Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'msedge|python|AccessibilityAI|Kandha|QtWebEngine|unins' -or (Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue).MainWindowHandle -ne 0 } |
+            Select-Object ProcessId, ParentProcessId, Name, CommandLine, @{ n = 'Window'; e = { (Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue).MainWindowTitle } } |
+            ConvertTo-Json -Depth 3 | Set-Content windows-browser-edge/processes-before.json
           python -m scripts.verify_browser --browser "$edge" --native-host dist/AccessibilityAI/AccessibilityAIWorker.exe --output windows-browser-edge 2>&1 | Tee-Object windows-browser-edge.txt
           if ($LASTEXITCODE -ne 0) {
             python -m scripts.diagnose_browser_discard --browser "$edge" --output windows-browser-edge/minimal-discard.json 2>&1 | Tee-Object windows-browser-edge/minimal-discard.txt
