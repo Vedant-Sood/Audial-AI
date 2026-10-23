@@ -7,3 +7,16 @@ pywin32>=306
 comtypes>=1.4,<2
 colorama>=0.4,<1
 pypiwin32==223
+# bleak (pinned in requirements.txt) is fetched with --no-deps by scripts/package_windows_portable.py, because
+# pip would read its markers for the build host: Linux-only dbus-fast in, the WinRT backend out. Its Windows
+# backend is listed here instead; keep it in step with bleak's win32 requirements and packaging/kandha_bluetooth.py.
+winrt-runtime==3.2.1
+winrt-Windows.Devices.Bluetooth==3.2.1
+winrt-Windows.Devices.Bluetooth.Advertisement==3.2.1
+winrt-Windows.Devices.Bluetooth.GenericAttributeProfile==3.2.1
+winrt-Windows.Devices.Enumeration==3.2.1
+winrt-Windows.Devices.Radios==3.2.1
+winrt-Windows.Foundation==3.2.1
+winrt-Windows.Foundation.Collections==3.2.1
+winrt-Windows.Storage.Streams==3.2.1
+typing_extensions>=4.12.2

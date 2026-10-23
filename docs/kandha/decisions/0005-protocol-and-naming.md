@@ -1,11 +1,11 @@
-# 0005 · Protocol v1 UUIDs, `KandhaStole-XXXX`, pairing by remembered address
+# 0005 · Protocol v1 UUIDs, `Kandha-XXXX`, pairing by remembered address
 
 **Decision.**
 - Service UUID `2ad2fdad-b9e2-4025-af4d-b35e6f13c100`, generated with `uuid.uuid4()` on
   2026-10-22; characteristics use the same base with the last byte 01–05. The retired band's
   `a7c2f3e0-5b1d-4c8e-9f3a-53414e4b0001` family is never reused.
-- The device advertises `KandhaStole-XXXX` (last four hex digits of its address) and the
-  service UUID.
+- The device advertises `Kandha-XXXX` (last four hex digits of its address), the name the
+  brief specifies, and the service UUID. The simulated stole is `Kandha-SIM1`.
 - Pairing is application-level: a user-initiated scan filtered by the service UUID or the name
   prefix, the chosen address saved in `<data>/kandha/stole.json`, reconnects only to that
   address, and `INPUT` notifications from any other address ignored. The firmware enables
@@ -21,3 +21,10 @@ desktop Bluetooth stacks through `bleak`.
 
 **Rejected.** A 16-bit vendor UUID (needs Bluetooth SIG registration). Pairing by PIN (no
 display on the stole).
+
+**Revised: the name now follows the brief.** The first build advertised `KandhaStole-XXXX`,
+which departed from the brief's `Kandha-XXXX` without recording why. The name prefix in
+`kandha-patterns.json` is now `Kandha-`, and the firmware header, the simulated stole, the
+tests and the docs follow it. A scan still matches the service UUID or the name prefix, so a
+stole flashed with the old firmware (which also advertises the service UUID) is still found;
+reflash it to get the new name.

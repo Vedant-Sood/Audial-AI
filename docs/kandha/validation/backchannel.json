@@ -150,6 +150,171 @@
    "decisions_total": 3
   }
  },
+ "resume_after_silence": {
+  "description": "First turn after a long silence (times from the first speech-start after it): engine_settled_after_start_s is when the engine assigned that first voice segment (in the noise cases, the noise), seat_intents what kandha-intents.js sent and when",
+  "cases": {
+   "A_silence4.5_A": {
+    "engine_settled_after_start_s": 1.456,
+    "seat_intents": [
+     {
+      "kind": "voice_resumes",
+      "voice": 1,
+      "sent_after_start_s": 1.552
+     }
+    ]
+   },
+   "A_B_silence4.5_B": {
+    "engine_settled_after_start_s": 0.672,
+    "seat_intents": [
+     {
+      "kind": "voice_resumes",
+      "voice": 2,
+      "sent_after_start_s": 1.568
+     }
+    ]
+   },
+   "A_B_silence4.5_A": {
+    "engine_settled_after_start_s": 1.456,
+    "seat_intents": [
+     {
+      "kind": "voice_resumes",
+      "voice": 1,
+      "sent_after_start_s": 1.456
+     }
+    ]
+   },
+   "A_silence4.5_B_new": {
+    "engine_settled_after_start_s": 0.656,
+    "seat_intents": [
+     {
+      "kind": "new_voice",
+      "voice": 2,
+      "sent_after_start_s": 0.656
+     }
+    ]
+   },
+   "A_silence4.5_C_new": {
+    "engine_settled_after_start_s": 0.656,
+    "seat_intents": [
+     {
+      "kind": "new_voice",
+      "voice": 2,
+      "sent_after_start_s": 0.656
+     }
+    ]
+   },
+   "A_silence4.5_noise0.3_A": {
+    "engine_settled_after_start_s": 0.64,
+    "seat_intents": [
+     {
+      "kind": "voice_resumes",
+      "voice": 1,
+      "sent_after_start_s": 2.368
+     }
+    ]
+   },
+   "A_silence4.5_burst0.2_quiet0.3_A": {
+    "engine_settled_after_start_s": 0.544,
+    "seat_intents": [
+     {
+      "kind": "voice_resumes",
+      "voice": 1,
+      "sent_after_start_s": 2.688
+     }
+    ]
+   },
+   "A_B_silence4.5_noise0.5_quiet0.28_B": {
+    "engine_settled_after_start_s": 0.816,
+    "seat_intents": [
+     {
+      "kind": "voice_resumes",
+      "voice": 2,
+      "sent_after_start_s": 3.536
+     }
+    ]
+   },
+   "A_silence6_A": {
+    "engine_settled_after_start_s": 1.456,
+    "seat_intents": [
+     {
+      "kind": "voice_resumes",
+      "voice": 1,
+      "sent_after_start_s": 1.552
+     }
+    ]
+   },
+   "A_B_silence6_B": {
+    "engine_settled_after_start_s": 0.672,
+    "seat_intents": [
+     {
+      "kind": "voice_resumes",
+      "voice": 2,
+      "sent_after_start_s": 1.568
+     }
+    ]
+   },
+   "A_B_silence6_A": {
+    "engine_settled_after_start_s": 1.456,
+    "seat_intents": [
+     {
+      "kind": "voice_resumes",
+      "voice": 1,
+      "sent_after_start_s": 1.456
+     }
+    ]
+   },
+   "A_silence6_B_new": {
+    "engine_settled_after_start_s": 0.656,
+    "seat_intents": [
+     {
+      "kind": "new_voice",
+      "voice": 2,
+      "sent_after_start_s": 0.656
+     }
+    ]
+   },
+   "A_silence6_C_new": {
+    "engine_settled_after_start_s": 0.656,
+    "seat_intents": [
+     {
+      "kind": "new_voice",
+      "voice": 2,
+      "sent_after_start_s": 0.656
+     }
+    ]
+   },
+   "A_silence6_noise0.3_A": {
+    "engine_settled_after_start_s": 0.64,
+    "seat_intents": [
+     {
+      "kind": "voice_resumes",
+      "voice": 1,
+      "sent_after_start_s": 2.368
+     }
+    ]
+   },
+   "A_silence6_burst0.2_quiet0.3_A": {
+    "engine_settled_after_start_s": 0.512,
+    "seat_intents": [
+     {
+      "kind": "voice_resumes",
+      "voice": 1,
+      "sent_after_start_s": 2.656
+     }
+    ]
+   },
+   "A_B_silence6_noise0.5_quiet0.28_B": {
+    "engine_settled_after_start_s": 0.816,
+    "seat_intents": [
+     {
+      "kind": "voice_resumes",
+      "voice": 2,
+      "sent_after_start_s": 3.536
+     }
+    ]
+   }
+  }
+ },
  "summary": {
   "real_turn_decisions_min_turn_so_far_s": 0.624,
   "decisions_under_hold": [
@@ -158,6 +323,11 @@
     "id": 2
    }
   ],
+  "resume_turns_without_exactly_one_seat_intent": [],
+  "resume_first_tap_after_start_s": {
+   "min": 0.656,
+   "max": 3.536
+  },
   "note": "turnSoFar is the turn length known when the engine decides; kandha-intents.js taps only when it reaches min_turn_s (or once speech continues to it)."
  }
 }

@@ -23,3 +23,8 @@ joblib>=1.5,<2
 pyarrow>=19,<24
 pypdf==6.1.3
 filelock==3.32.3
+# Kandha Stole Bluetooth link. Brings its platform backend with it: winrt-* 3.x on Windows,
+# dbus-fast on Linux, pyobjc CoreBluetooth on macOS. The PyInstaller spec will not build without it.
+# pip applies bleak's markers to the machine it runs on, so scripts/package_windows_portable.py fetches bleak
+# with --no-deps and requirements-portable.txt lists its winrt-* backend; change all three together.
+bleak==3.0.2

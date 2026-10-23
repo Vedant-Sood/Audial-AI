@@ -54,6 +54,8 @@ jobs:
           python -m pip cache purge
           python -c "from pyannote.audio.core.io import Audio; import torch; x,sr=Audio(sample_rate=16000)({'waveform':torch.zeros(1,16000),'sample_rate':16000}); assert x.shape == (1,16000)"
           if ($LASTEXITCODE -ne 0) { throw 'Community-1 waveform runtime failed' }
+          python -c "import importlib.metadata as m, bleak.backends.winrt.client, bleak.backends.winrt.scanner; print('bleak', m.version('bleak'), 'with WinRT backend')"
+          if ($LASTEXITCODE -ne 0) { throw 'Kandha Stole Bluetooth link (bleak with its WinRT backend) is not installed' }
       - name: Regression and source startup
         id: regression
         shell: pwsh
@@ -80,6 +82,15 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Upgrade fixture build failed' }
           ./scripts/build_kandha_windows.ps1 -Runtime '${{ matrix.runtime }}' 2>&1 | Tee-Object windows-kandha-build.txt
           if ($LASTEXITCODE -ne 0) { throw 'Kandha installer build failed' }
+      - name: Kandha payload carries the Bluetooth link and the HTML guide
+        id: kandha_payload
+        if: ${{ !cancelled() && steps.build_installer.outcome == 'success' }}
+        shell: pwsh
+        run: |
+          # bleak, its WinRT backend (pure modules in Kandha.exe, .pyd files under _internal) and their metadata.
+          python packaging/kandha_bluetooth.py --payload dist/AccessibilityAI --os windows --output windows-kandha-bluetooth.json
+          if ($LASTEXITCODE -ne 0) { throw 'The packaged Kandha is missing bleak or its WinRT backend' }
+          if (-not (Test-Path dist/AccessibilityAI/_internal/docs/kandha/USER_GUIDE.html)) { throw 'The packaged Kandha has no HTML user guide' }
       - name: Actual extension/native capture in Chrome for Testing
         id: chrome_acceptance
         if: ${{ !cancelled() && steps.build_installer.outcome == 'success' && matrix.runtime == 'CPU' }}
@@ -100,6 +111,11 @@ jobs:
           ./scripts/prepare_edge_ci.ps1 -Output windows-browser-edge/edge-runtime.json
           $edge = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
           if (-not (Test-Path $edge)) { throw 'Microsoft Edge is missing from the Windows runner' }
+          # Programs with a window, and every Edge, Python and Audial-AI process, before the check:
+          # a leftover window can take the focus that the extension's toolbar popup needs.
+          Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'msedge|python|AccessibilityAI|Kandha|QtWebEngine|unins' -or (Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue).MainWindowHandle -ne 0 } |
+            Select-Object ProcessId, ParentProcessId, Name, CommandLine, @{ n = 'Window'; e = { (Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue).MainWindowTitle } } |
+            ConvertTo-Json -Depth 3 | Set-Content windows-browser-edge/processes-before.json
           python -m scripts.verify_browser --browser "$edge" --native-host dist/AccessibilityAI/AccessibilityAIWorker.exe --output windows-browser-edge 2>&1 | Tee-Object windows-browser-edge.txt
           if ($LASTEXITCODE -ne 0) {
             python -m scripts.diagnose_browser_discard --browser "$edge" --output windows-browser-edge/minimal-discard.json 2>&1 | Tee-Object windows-browser-edge/minimal-discard.txt
@@ -127,7 +143,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Installed Kandha acceptance failed' }
       - name: Stage Kandha installer and portable build
         id: stage_kandha
-        if: ${{ !cancelled() && steps.regression.outcome == 'success' && steps.kandha_acceptance.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.regression.outcome == 'success' && steps.kandha_payload.outcome == 'success' && steps.kandha_acceptance.outcome == 'success' }}
         shell: pwsh
         run: |
           $version = python -c 'from app import __version__; print(__version__)'
@@ -211,6 +227,7 @@ jobs:
             windows-kandha-build.txt
             windows-kandha-acceptance.txt
             windows-kandha-acceptance/
+            windows-kandha-bluetooth.json
             windows-resolved-dependencies.txt
             windows-acceptance/
             windows-browser-chromium/
@@ -242,6 +259,7 @@ jobs:
           mkdir -p dist/firmware
           cp firmware/kandha/build/esp32.esp32.esp32s3/*.bin dist/firmware/
           cp firmware/kandha/README.md dist/firmware/FLASHING.md
+          (cd dist/firmware && sha256sum *.bin > SHA256SUMS.txt)
           (cd dist/firmware && zip -r "../kandha-stole-firmware-$version.zip" . && cd .. && sha256sum "kandha-stole-firmware-$version.zip" > "kandha-stole-firmware-$version.zip.sha256")
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
@@ -273,15 +291,30 @@ jobs:
         run: |
           # The CPU and NVIDIA jobs build the same Kandha-Setup-<version>.exe name; publish the CPU one
           # (smaller, runs everywhere) and keep the NVIDIA installer under its runtime name.
+          set -euo pipefail
           version=$(python3 -c 'from app import __version__; print(__version__)')
+          cpu=release-assets/Kandha-Windows-x64-CPU
+          nvidia=release-assets/Kandha-Windows-x64-NVIDIA
+          # The build jobs wrote a .sha256 beside each file; the downloads must still match them.
+          (cd "$cpu" && sha256sum -c "Kandha-Setup-$version.exe.sha256" "Kandha-$version-windows.zip.sha256")
+          (cd release-assets/firmware && sha256sum -c kandha-stole-firmware-*.zip.sha256)
           mkdir -p publish
-          cp "release-assets/Kandha-Windows-x64-CPU/Kandha-Setup-$version.exe" publish/
-          cp "release-assets/Kandha-Windows-x64-CPU/Kandha-$version-windows.zip" publish/
-          if [ -f "release-assets/Kandha-Windows-x64-NVIDIA/Kandha-Setup-$version.exe" ]; then
-            cp "release-assets/Kandha-Windows-x64-NVIDIA/Kandha-Setup-$version.exe" "publish/Kandha-Setup-$version-NVIDIA.exe"
+          cp "$cpu/Kandha-Setup-$version.exe" "$cpu/Kandha-$version-windows.zip" publish/
+          if [ -f "$nvidia/Kandha-Setup-$version.exe" ]; then
+            (cd "$nvidia" && sha256sum -c "Kandha-Setup-$version.exe.sha256")
+            cp "$nvidia/Kandha-Setup-$version.exe" "publish/Kandha-Setup-$version-NVIDIA.exe"
           fi
           cp release-assets/firmware/kandha-stole-firmware-*.zip publish/
-          (cd publish && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          cd publish
+          # A <file>.sha256 beside every asset (named as published, so `sha256sum -c` works after a
+          # download), plus one SHA256SUMS.txt covering them all.
+          assets=(*.exe *.zip)
+          for asset in "${assets[@]}"; do sha256sum "$asset" > "$asset.sha256"; done
+          sha256sum "${assets[@]}" > SHA256SUMS.txt
+          sha256sum -c ./*.sha256 SHA256SUMS.txt
+          for asset in "${assets[@]}"; do test -s "$asset.sha256"; done
+          cat SHA256SUMS.txt
+          cd ..
           gh release create "$GITHUB_REF_NAME" publish/* --title "Kandha $GITHUB_REF_NAME" --notes-file docs/kandha/RELEASE_NOTES.md
   release:
     if: startsWith(github.ref, 'refs/tags/v')

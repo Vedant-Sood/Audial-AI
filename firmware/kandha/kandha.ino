@@ -34,6 +34,118 @@ static uint8_t batteryPercent = 100;
 static bool charging = false;
 static uint32_t lastStatusAt = 0, lastBatteryAt = 0, lastTouchAt = 0;
 static bool statusDirty = true;
+static uint8_t publishedFlags = 0;   // the STATUS flags last published; any change is notified
+
+// ---------------------------------------------------------------------------- link mailbox
+// The BLE callbacks run on the Bluetooth stack's task and loop() on its own task. The callbacks
+// only post what arrived here; loop() takes it out in order and applies it, so the pattern
+// engine, the config and the link state are only ever changed by loop() and a disconnect can
+// never interleave with a tick and leave a motor running.
+static portMUX_TYPE linkLock = portMUX_INITIALIZER_UNLOCKED;
+
+struct LinkMailbox {
+  enum { LINK_HAPTIC = 1, LINK_PATTERNS, LINK_CONFIG };
+  enum { FLAG_STOP = 1, FLAG_NEW_SEQ = 2 };   // left by a write that was folded into this one
+  // Connects and disconnects are counted, not queued, so a busy loop() can never miss one.
+  struct Links { uint32_t connects = 0, disconnects = 0; };
+  // Each write carries the counts at its arrival, so loop() acts on the link in the right order.
+  struct Event { uint8_t kind, flags; uint16_t length; Links links; uint8_t data[2 + 5 * KANDHA_MAX_PATTERN_STEPS]; };
+  static const int QUEUE_LENGTH = 16;
+
+  // Whether a write has the length its characteristic needs; loop() rejects any other.
+  static bool wellFormed(const Event& e) {
+    switch (e.kind) {
+      case LINK_HAPTIC: return e.length == 5;
+      case LINK_CONFIG: return e.length == 7;
+      case LINK_PATTERNS: return e.length >= 2 && e.data[1] >= 1 && e.data[1] <= KANDHA_MAX_PATTERN_STEPS && e.length == 2 + 5 * e.data[1];
+    }
+    return false;
+  }
+
+  // From the BLE task.
+  void noteConnect() { portENTER_CRITICAL(&linkLock); links.connects++; portEXIT_CRITICAL(&linkLock); }
+  void noteDisconnect() { portENTER_CRITICAL(&linkLock); links.disconnects++; portEXIT_CRITICAL(&linkLock); }
+
+  void post(uint8_t kind, const uint8_t* data, size_t n) {
+    portENTER_CRITICAL(&linkLock);
+    Event& e = at(count++);
+    e.kind = kind;
+    e.flags = 0;
+    e.links = links;
+    e.length = n > 0xFFFF ? 0xFFFF : (uint16_t)n;   // the real length, so loop() can reject a bad write
+    if (n) memcpy(e.data, data, n < sizeof(e.data) ? n : sizeof(e.data));
+    if (count > QUEUE_LENGTH) makeRoom();
+    portEXIT_CRITICAL(&linkLock);
+  }
+
+  // From loop(): the next write, or false and the link counts once there is none. Both come
+  // from one critical section, so every later write carries these counts or newer ones.
+  bool take(Event& out, Links& now) {
+    portENTER_CRITICAL(&linkLock);
+    bool got = count > 0;
+    if (got) { out = events[head]; head = (head + 1) % SLOTS; count--; }
+    else now = links;
+    portEXIT_CRITICAL(&linkLock);
+    return got;
+  }
+
+  // How many writes were left out since the last call: with nothing lost (malformed, or
+  // folded into a later write), and lost.
+  void takeBacklog(uint32_t& harmlessOut, uint32_t& lostOut) {
+    portENTER_CRITICAL(&linkLock);
+    harmlessOut = harmless; lostOut = lost;
+    harmless = lost = 0;
+    portEXIT_CRITICAL(&linkLock);
+  }
+
+ private:
+  static const int SLOTS = QUEUE_LENGTH + 1;   // room for the write that overflows the queue
+  Event& at(int k) { return events[(head + k) % SLOTS]; }
+
+  // loop() is QUEUE_LENGTH writes behind, so one write has to go. First the oldest that would
+  // change nothing: a malformed write (loop() would reject it), a HAPTIC with another behind it
+  // (a new command replaces the old), or a CONFIG with another CONFIG behind it and no HAPTIC
+  // between (the later one holds every setting; a mute in the earlier one still stops the
+  // motors). Only then the oldest HAPTIC, and last the oldest PATTERNS upload, so the link
+  // state and the settings the app wrote are never lost.
+  void makeRoom() {
+    for (int k = 0; k < count; k++) {
+      Event& e = at(k);
+      if (!wellFormed(e)) { remove(k, true); return; }
+      if (e.kind == LINK_PATTERNS) continue;
+      for (int j = k + 1; j < count; j++) {
+        Event& later = at(j);
+        if (e.kind == LINK_CONFIG && later.kind == LINK_HAPTIC) break;   // that command needs this CONFIG
+        if (later.kind != e.kind || !wellFormed(later)) continue;
+        if (e.kind == LINK_HAPTIC) {
+          // After e the duplicate filter would hold e's seq: tell loop() when that is not later's.
+          if ((e.flags & FLAG_NEW_SEQ) || later.data[0] != e.data[0]) later.flags |= FLAG_NEW_SEQ;
+        } else if ((e.flags & FLAG_STOP) || e.data[4]) {
+          later.flags |= FLAG_STOP;
+        }
+        remove(k, true);
+        return;
+      }
+    }
+    for (int k = 0; k < count; k++) if (at(k).kind == LINK_HAPTIC) { remove(k, false); return; }
+    for (int k = 0; k < count; k++) if (at(k).kind == LINK_PATTERNS) { remove(k, false); return; }
+    remove(0, false);
+  }
+
+  // Removes the k-th oldest write; the others keep their order.
+  void remove(int k, bool nothingLost) {
+    for (; k > 0; k--) at(k) = at(k - 1);
+    head = (head + 1) % SLOTS;
+    count--;
+    if (nothingLost) harmless++; else lost++;
+  }
+
+  Event events[SLOTS];
+  int head = 0, count = 0;
+  Links links;
+  uint32_t harmless = 0, lost = 0;
+};
+static LinkMailbox mailbox;
 
 // ---------------------------------------------------------------------------- battery
 // A simple 3.7 V LiPo open-circuit curve; the TP4056 cuts off at 4.2 V, protection at ~3.0 V.
@@ -68,7 +180,8 @@ static uint8_t statusFlags() {
 }
 
 static void publishStatus(bool notify) {
-  uint8_t payload[5] = {batteryPercent, (uint8_t)(charging ? 1 : 0), KANDHA_FW_MAJOR, KANDHA_FW_MINOR, statusFlags()};
+  publishedFlags = statusFlags();
+  uint8_t payload[5] = {batteryPercent, (uint8_t)(charging ? 1 : 0), KANDHA_FW_MAJOR, KANDHA_FW_MINOR, publishedFlags};
   if (statusChar) {
     statusChar->setValue(payload, 5);
     if (notify && connected) statusChar->notify();
@@ -95,52 +208,86 @@ static void sendInput(uint8_t pad, uint8_t gesture) {
 static void onGesture(uint8_t pad, uint8_t gesture) { sendInput(pad, gesture); }
 
 // ---------------------------------------------------------------------------- BLE callbacks
+// These run on the Bluetooth stack's task: they only post to the mailbox (see serviceLink).
 class ServerCallbacks : public BLEServerCallbacks {
-  void onConnect(BLEServer*) override { connected = true; statusDirty = true; Serial.println("BLE connected"); }
+  void onConnect(BLEServer*) override { mailbox.noteConnect(); }
   void onDisconnect(BLEServer* s) override {
-    connected = false;
-    engine.stop();
-    Serial.println("BLE disconnected; advertising again");
+    mailbox.noteDisconnect();
     s->startAdvertising();
   }
 };
 
 class HapticCallbacks : public BLECharacteristicCallbacks {
-  void onWrite(BLECharacteristic* c) override {
-    const uint8_t* data = c->getData();
-    size_t n = c->getLength();
-    if (n != 5) { Serial.printf("HAPTIC: bad length %u\n", (unsigned)n); return; }
-    bool ok = engine.play(data[0], data[1], data[2], data[3], data[4], config, millis());
-    Serial.printf("HAPTIC seq=%u zones=%u pattern=%u intensity=%u repeat=%u -> %s\n", data[0], data[1], data[2], data[3], data[4], ok ? "play" : "ignored");
-    if (config.testMode) sendInput(0, data[0]);   // bench echo
-    statusDirty = true;
-  }
+  void onWrite(BLECharacteristic* c) override { mailbox.post(LinkMailbox::LINK_HAPTIC, c->getData(), c->getLength()); }
 };
 
 class PatternsCallbacks : public BLECharacteristicCallbacks {
-  void onWrite(BLECharacteristic* c) override {
-    const uint8_t* data = c->getData();
-    size_t n = c->getLength();
-    if (n < 2 || data[1] < 1 || data[1] > KANDHA_MAX_PATTERN_STEPS || n != (size_t)(2 + 5 * data[1])) { Serial.println("PATTERNS: malformed"); return; }
-    bool ok = engine.storeCustom(data[0], data + 2, data[1]);
-    Serial.printf("PATTERNS id=%u steps=%u -> %s\n", data[0], data[1], ok ? "stored" : "rejected");
-  }
+  void onWrite(BLECharacteristic* c) override { mailbox.post(LinkMailbox::LINK_PATTERNS, c->getData(), c->getLength()); }
 };
 
 class ConfigCallbacks : public BLECharacteristicCallbacks {
-  void onWrite(BLECharacteristic* c) override {
-    const uint8_t* data = c->getData();
-    if (c->getLength() != 7) { Serial.println("CONFIG: bad length"); return; }
-    for (int i = 0; i < 4; i++) config.scale[i] = data[i];
-    config.mute = data[4] ? 1 : 0;
-    config.mirror = data[5] ? 1 : 0;
-    config.testMode = data[6] ? 1 : 0;
-    if (config.mute) engine.stop();
-    publishConfig();
-    statusDirty = true;
-    Serial.printf("CONFIG scales=%u,%u,%u,%u mute=%u mirror=%u test=%u\n", data[0], data[1], data[2], data[3], data[4], data[5], data[6]);
-  }
+  void onWrite(BLECharacteristic* c) override { mailbox.post(LinkMailbox::LINK_CONFIG, c->getData(), c->getLength()); }
 };
+
+static LinkMailbox::Links appliedLinks;   // the connects and disconnects loop() has acted on
+
+// A disconnect stops every motor. A new connection starts with a fresh duplicate filter: the
+// app numbers its commands from 1 again after a restart.
+static void applyLinks(const LinkMailbox::Links& links, uint32_t now) {
+  bool connects = links.connects != appliedLinks.connects, disconnects = links.disconnects != appliedLinks.disconnects;
+  appliedLinks = links;
+  connected = links.connects != links.disconnects;
+  if (disconnects) engine.stop(now);
+  if (connects) { engine.resetSeq(); statusDirty = true; }
+  if (connects && !connected) Serial.println("BLE connected");
+  if (disconnects) Serial.println("BLE disconnected; advertising again");
+  if (connects && connected) Serial.println("BLE connected");
+}
+
+// Applies what the BLE callbacks posted, in the order it arrived. Runs on loop()'s task only.
+static void serviceLink(uint32_t now) {
+  LinkMailbox::Event e;
+  LinkMailbox::Links links;
+  while (mailbox.take(e, links)) {
+    applyLinks(e.links, now);
+    const uint8_t* data = e.data;
+    size_t n = e.length;
+    bool ok = LinkMailbox::wellFormed(e);
+    switch (e.kind) {
+      case LinkMailbox::LINK_HAPTIC: {
+        if (!ok) { Serial.printf("HAPTIC: bad length %u\n", (unsigned)n); break; }
+        if (e.flags & LinkMailbox::FLAG_NEW_SEQ) engine.resetSeq();   // see LinkMailbox::makeRoom
+        ok = engine.play(data[0], data[1], data[2], data[3], data[4], config, now);
+        Serial.printf("HAPTIC seq=%u zones=%u pattern=%u intensity=%u repeat=%u -> %s\n", data[0], data[1], data[2], data[3], data[4], ok ? "play" : "ignored");
+        if (config.testMode) sendInput(0, data[0]);   // bench echo
+        break;
+      }
+      case LinkMailbox::LINK_PATTERNS: {
+        if (!ok) { Serial.println("PATTERNS: malformed"); break; }
+        ok = engine.storeCustom(data[0], data + 2, data[1]);
+        Serial.printf("PATTERNS id=%u steps=%u -> %s\n", data[0], data[1], ok ? "stored" : "rejected");
+        break;
+      }
+      case LinkMailbox::LINK_CONFIG:
+        if (!ok) { Serial.println("CONFIG: bad length"); break; }
+        if (e.flags & LinkMailbox::FLAG_STOP) engine.stop(now);   // a mute folded into this CONFIG
+        for (int i = 0; i < 4; i++) config.scale[i] = data[i];
+        config.mute = data[4] ? 1 : 0;
+        config.mirror = data[5] ? 1 : 0;
+        config.testMode = data[6] ? 1 : 0;
+        if (config.mute) engine.stop(now);
+        // No publishConfig(): the characteristic already holds the bytes the app wrote, and
+        // rewriting it here could race the stack storing the app's next write.
+        statusDirty = true;
+        Serial.printf("CONFIG scales=%u,%u,%u,%u mute=%u mirror=%u test=%u\n", data[0], data[1], data[2], data[3], data[4], data[5], data[6]);
+        break;
+    }
+  }
+  applyLinks(links, now);
+  uint32_t harmless, lost;
+  mailbox.takeBacklog(harmless, lost);
+  if (harmless || lost) Serial.printf("BLE: loop() fell behind: %lu writes left out with nothing lost, %lu lost\n", (unsigned long)harmless, (unsigned long)lost);
+}
 
 static String deviceName() {
   uint8_t mac[6] = {0};
@@ -254,13 +401,13 @@ static void handleCommand(String line) {
     if (!intensity) intensity = 200;
     bool ok = engine.play(consoleSeq++, (uint8_t)mask, (uint8_t)id, intensity, repeat, config, millis());
     Serial.printf("play id=%d zones=%d intensity=%u -> %s\n", id, mask, intensity, ok ? "ok" : "unknown pattern");
-  } else if (cmd == "stop") { engine.stop(); Serial.println("stopped"); }
+  } else if (cmd == "stop") { engine.stop(millis()); Serial.println("stopped"); }
   else if (cmd == "test") {
     const uint8_t zones[4] = {KANDHA_ZONE_L, KANDHA_ZONE_R, KANDHA_ZONE_B, KANDHA_ZONE_F};
     for (int i = 0; i < 4; i++) {
       engine.play(consoleSeq++, zones[i], 11, 230, 1, config, millis());
       uint32_t until = millis() + 600;
-      while (millis() < until) { engine.tick(millis()); delay(1); }
+      while (millis() < until) { serviceLink(millis()); engine.tick(millis()); delay(1); }   // the link keeps working
     }
     Serial.println("test done");
   } else if (cmd == "pads") {
@@ -273,7 +420,7 @@ static void handleCommand(String line) {
     uint8_t gesture = g == "double" ? KANDHA_GESTURE_DOUBLE : g == "long" ? KANDHA_GESTURE_LONG : KANDHA_GESTURE_TAP;
     if (pad) sendInput(pad, gesture); else Serial.println("pad L|R|B|Q tap|double|long");
   } else if (cmd == "mirror") { config.mirror = parts[1].toInt() ? 1 : 0; publishConfig(); statusDirty = true; Serial.printf("mirror=%u\n", config.mirror); }
-  else if (cmd == "mute") { config.mute = parts[1].toInt() ? 1 : 0; if (config.mute) engine.stop(); publishConfig(); statusDirty = true; Serial.printf("mute=%u\n", config.mute); }
+  else if (cmd == "mute") { config.mute = parts[1].toInt() ? 1 : 0; if (config.mute) engine.stop(millis()); publishConfig(); statusDirty = true; Serial.printf("mute=%u\n", config.mute); }
   else if (cmd == "testmode") { config.testMode = parts[1].toInt() ? 1 : 0; publishConfig(); statusDirty = true; Serial.printf("testmode=%u\n", config.testMode); }
   else if (cmd == "scale") {
     int mask = zoneMaskFromText(parts[1]); int value = parts[2].toInt();
@@ -309,9 +456,12 @@ void setup() {
 
 void loop() {
   uint32_t now = millis();
+  serviceLink(now);
   engine.tick(now);
   if (now - lastTouchAt >= TOUCH_POLL_MS) { lastTouchAt = now; pads.poll(now); }
   if (now - lastBatteryAt >= BATTERY_SAMPLE_MS) { lastBatteryAt = now; sampleBattery(); }
+  // STATUS is notified on change: also when a pattern ends on its own and bit4 clears.
+  if (statusFlags() != publishedFlags) statusDirty = true;
   if (statusDirty || now - lastStatusAt >= STATUS_PERIOD_MS) publishStatus(true);
   if (PIN_STATUS_LED >= 0) digitalWrite(PIN_STATUS_LED, connected ? (engine.playing() ? HIGH : ((now / 1000) % 2 == 0 ? HIGH : LOW)) : ((now / 250) % 4 == 0 ? HIGH : LOW));
   pollConsole();

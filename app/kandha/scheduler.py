@@ -3,9 +3,12 @@
 Pure code: time is passed in (seconds, monotonic), nothing is threaded, nothing does I/O. The
 rules come from docs/kandha/DESIGN.md section 7 and the constants from the shared pattern table:
 
-- priority: speaker change > queue feedback > tone cue > silence;
+- priority: speaker change > voice starts again > queue feedback > tone cue > silence;
 - a speaker tap pre-empts a cue in progress; a cue arriving during a tap waits for the tap;
-- anything older than `stale_after_s` (1.5 s) is dropped, never played late;
+- a speaker decision pre-empts a "voice starts again" tap, and that tap never follows a speaker
+  tap that is playing or waiting: one start, one seat tap;
+- anything older than `stale_after_s` (1.5 s) is dropped, never played late; a waiting intent
+  that will be that old before the running pattern ends gives way to a newer one;
 - at most one tone cue every `cue_gap_s` (3 s), the same cue kind every `cue_same_kind_gap_s` (8 s);
 - modes decide which intents exist at all; do-not-disturb keeps only queue feedback;
 - a voice without a seat gets one tap at the front; the same voice is never tapped twice in a row.
@@ -18,8 +21,9 @@ from app.kandha.protocol import HapticCommand
 CUES = ("drop", "rise", "hesitation")
 INTENT_KINDS = ("speaker", "new_voice", "voice_resumes", "cue", "silence", "queue_ack", "queue_reminder",
                 "low_battery", "connected", "test", "stop")
-PRIORITY = {"speaker": 4, "new_voice": 4, "voice_resumes": 4, "queue_ack": 3, "queue_reminder": 3, "cue": 2,
+PRIORITY = {"speaker": 5, "new_voice": 5, "voice_resumes": 4, "queue_ack": 3, "queue_reminder": 3, "cue": 2,
             "silence": 1, "low_battery": 0, "connected": 0, "test": 9, "stop": 9}
+SEAT_KINDS = ("speaker", "new_voice", "voice_resumes")
 # intents whose value does not decay in 1.5 s
 NEVER_STALE = {"low_battery", "connected", "test", "stop"}
 
@@ -164,7 +168,7 @@ class HapticScheduler:
             self.last_tapped_voice = None
         if intent.kind == "speaker" and intent.voice is not None and intent.voice == self.last_tapped_voice and not intent.zone:
             return self._drop(intent, "same-voice")
-        if intent.kind in ("speaker", "voice_resumes", "new_voice") and intent.voice is not None and self.seat_lookup(intent.voice) == "me":
+        if self._is_self(intent):
             return self._drop(intent, "self")
         if intent.kind == "cue":
             if now - self.last_cue_at < self.cue_gap:
@@ -175,17 +179,30 @@ class HapticScheduler:
             self.pending = None
             played = self._play(intent, now)
             self.current = None
-            return [played]
+            return self._started(played)
+        if intent.kind == "voice_resumes" and self.pending is not None and self.pending.kind in SEAT_KINDS and not self._doomed(self.pending, now):
+            # a seat tap for this start is already waiting: never a second one
+            return self._drop(intent, "superseded")
         busy = self.current is not None and self.current.until > now
         if busy:
             playing = PRIORITY[self.current.intent.kind]
             mine = PRIORITY[intent.kind]
             if mine > playing or intent.kind == "test":      # a newer test always replaces an older one
-                self.current.preempted = True
-                return [self._play(intent, now, preempted_current=True)]
+                running = self.current
+                played = self._play(intent, now, preempted_current=True)
+                if played is not None:
+                    running.preempted = True
+                return self._started(played)
             if intent.kind == "silence":
                 return self._drop(intent, "busy")
-            # wait for the running pattern, keeping only the best waiting intent
+            if intent.kind == "voice_resumes" and self.current.intent.kind in SEAT_KINDS:
+                # a seat tap for this start is already playing: never a second one
+                return self._drop(intent, "superseded")
+            # wait for the running pattern, keeping only the best waiting intent; one that will be
+            # stale before the stole is free can never play, so it does not keep a fresher one out
+            if self.pending is not None and self._doomed(self.pending, now):
+                self._drop(self.pending, "stale")
+                self.pending = None
             if self.pending is None or mine > PRIORITY[self.pending.kind] or (mine == PRIORITY[self.pending.kind] and intent.created >= self.pending.created):
                 if self.pending is not None:
                     self._drop(self.pending, "superseded")
@@ -193,7 +210,7 @@ class HapticScheduler:
             else:
                 self._drop(intent, "busy")
             return []
-        return [self._play(intent, now)]
+        return self._started(self._play(intent, now))
 
     def tick(self, now):
         """Release a deferred intent once the stole is free. Returns the commands that start now."""
@@ -203,16 +220,42 @@ class HapticScheduler:
         intent, self.pending = self.pending, None
         if intent.kind not in NEVER_STALE and now - intent.created > self.stale_after:
             return self._drop(intent, "stale")
+        # the wearer may have changed the mode or marked the voice "me" while it waited
+        if not self.allowed(intent):
+            return self._drop(intent, "mode")
+        if self._is_self(intent):
+            return self._drop(intent, "self")
         if intent.kind == "cue" and (now - self.last_cue_at < self.cue_gap or now - self.last_cue_by_kind.get(intent.cue, -1e9) < self.cue_same_gap):
             return self._drop(intent, "cue-gap")
-        return [self._play(intent, now, deferred=True)]
+        return self._started(self._play(intent, now, deferred=True))
+
+    def _doomed(self, intent, now):
+        """Whether a waiting intent will be stale by the time the running pattern ends."""
+        free_at = max(now, self.current.until) if self.current is not None else now
+        return intent.kind not in NEVER_STALE and free_at - intent.created > self.stale_after
+
+    def _is_self(self, intent):
+        return intent.kind in SEAT_KINDS and intent.voice is not None and self.seat_lookup(intent.voice) == "me"
+
+    @staticmethod
+    def _started(played):
+        return [played] if played is not None else []
 
     def _expire(self, now):
         if self.current is not None and self.current.until <= now:
             self.current = None
 
     def _play(self, intent, now, preempted_current=False, deferred=False):
-        pattern, mask, zone = self.resolve(intent)
+        resolved = self.resolve(intent)
+        if resolved is None:
+            # nothing to play (the wearer's own voice): record it instead of failing the caller
+            self._drop(intent, "self")
+            return None
+        pattern, mask, zone = resolved
+        if intent.kind in SEAT_KINDS and self.pending is not None and self.pending.kind == "voice_resumes":
+            # a resume still waiting gives way to the seat tap starting now
+            self._drop(self.pending, "superseded")
+            self.pending = None
         command = self.command_for(pattern, mask, intent.repeat)
         played = Played(command, intent, pattern.key, now, now + pattern.duration_ms * max(1, command.repeat) / 1000.0 / max(1, pattern.repeat),
                         deferred=deferred, zone=zone)
@@ -221,7 +264,7 @@ class HapticScheduler:
         if intent.kind == "cue":
             self.last_cue_at = now
             self.last_cue_by_kind[intent.cue] = now
-        if intent.kind in ("speaker", "voice_resumes", "new_voice"):
+        if intent.kind in SEAT_KINDS:
             self.last_tapped_voice = intent.voice
         return played
 

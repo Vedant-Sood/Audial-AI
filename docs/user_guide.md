@@ -108,26 +108,27 @@ fails. The released WavLM head is prepared automatically without replacing an
 explicit existing selection; the original bundled head remains available through
 developer activation tools. See the current model evaluation for limitations.
 
-## Voices, queue and tone cues (Sanket)
+## Voices, queue and tone cues (Kandha's voice engine)
 
-In the browser companion, open **Voices, queue and tone cues · Sanket**.
+In the browser companion, open **Voices, queue and tone cues · Kandha**.
 
 - **Colour and arrow per voice** (on by default). The live panel shows who is speaking, and
   transcript rows carry the same colour. When diarization is off, exports name captions
   *Voice 1*, *Voice 2*… instead of *Unattributed*. Colours last for one session; they are not
   identities.
 - **Tone cues** (off by default). *Voice rose*, *voice softened*, *hesitation* and *long
-  silence* flash on the panel. Tick **Vibrate this device** on Android, or **Connect Sanket
-  Band** to feel them on the wrist.
+  silence* flash on the panel. Tick **Vibrate this device for cues** on Android to feel them.
+  The Sanket wrist band is retired; the full Kandha app taps them on the Kandha Stole.
 - **Compare with their usual voice** (off by default). This is an experimental estimate such
   as *more intense than usual* or *softer, sad-sounding*. An emotion is named, in your
-  vocal-expression colours, only when Sanket is at least 80% sure, and only after it has heard
+  vocal-expression colours, only when the engine is at least 80% sure, and only after it has heard
   that person a few times. It is a hint to look again, not a fact about feelings.
 - **I want to speak** (or **Q**) lights a strip across the top of the live panel. It floats
   with **Float this panel**, so you can hold it up in a seminar.
 
-These preferences also apply when you capture a tab with the extension. **Open Sanket full
-screen** (or the extension's **Open Sanket** button) opens the full Sanket app: lecture,
-seminar and practicum modes, a session review, and English or हिन्दी captions. It uses this
-computer's Whisper model when it is installed. See [sanket.md](sanket.md) for how it works
-and how accurate it is.
+These preferences also apply when you capture a tab with the extension. **Open Kandha full
+screen** (or the extension's **Open Sanket** button, whose `/sanket/` address now opens Kandha)
+opens the full Kandha app: lecture, seminar and practicum modes, seats, the virtual stole, a
+session review, and English or हिन्दी captions from this computer's Whisper model. See
+[sanket.md](sanket.md) for how the voice engine works and how accurate it is, and the
+[Kandha user guide](kandha/USER_GUIDE.md) for the app.

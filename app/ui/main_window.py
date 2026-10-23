@@ -71,6 +71,8 @@ class MainWindow(QMainWindow):
         self.floating_display = None
         self.browser_service = None
         self.kandha_window = None
+        self._reopen_kandha = False
+        self._close_answer = None
         self.setWindowTitle("Audial-AI")
         self.resize(1160, 800)
         self.setMinimumSize(860, 600)
@@ -1071,13 +1073,40 @@ class MainWindow(QMainWindow):
                 return
             from app.ui.kandha_window import KandhaWindow, prepare_chromium_flags
             prepare_chromium_flags()
+            if self.kandha_window is not None and self.kandha_window.closing:
+                # the last Kandha window is still stopping its page: a new one opens once it is gone
+                self._reopen_kandha = True
+                self.statusBar().showMessage("Kandha opens once the last Kandha window has stopped…")
+                return
             if self.kandha_window is None:
-                self.kandha_window = KandhaWindow(self.browser_service.url)
+                # a closed Kandha window is gone (its page stopped); the next Open makes a new one
+                self.kandha_window = KandhaWindow(self.browser_service.url, service=self.browser_service,
+                                                  open_setup=self.show_model_setup, setup=self.model_setup)
+                self.kandha_window.closed.connect(self.kandha_closed)
             self.kandha_window.show()
             self.kandha_window.raise_()
             self.statusBar().showMessage("Kandha: " + self.browser_service.url + "/kandha/")
         except Exception as error:
             self.alert(error)
+
+    def kandha_closed(self):
+        self.kandha_window = None
+        if self.statusBar().currentMessage().startswith("Kandha"):
+            self.statusBar().clearMessage()
+        if self._reopen_kandha:
+            self._reopen_kandha = False
+            if not self._closing:
+                self.open_kandha()
+
+    def show_model_setup(self):
+        """Kandha's "Get the caption model": the same Setup & models, started and brought forward."""
+        self.nav.setCurrentRow(5)
+        self.model_setup.start()
+        if self.isMinimized():
+            self.showNormal()
+        self.show()
+        self.raise_()
+        self.activateWindow()
 
     def open_browser(self):
         try:
@@ -1440,10 +1469,28 @@ class MainWindow(QMainWindow):
         self.cancel_device_discovery()
         if self.training_process and self.training_process.state() != QProcess.NotRunning:
             self.alert("Stop training and wait for its checkpoint before closing the app.")
+            self._close_answer = None
             event.ignore()
             return
         if any(p.state() != QProcess.NotRunning for p in self.processes):
             self.alert("Wait for the current download or diagnostics operation to finish before closing.")
+            self._close_answer = None
+            event.ignore()
+            return
+        if self.session_dirty and self._close_answer is None:
+            # asked before Kandha or the microphone stops, so Cancel leaves both as they were
+            answer = QMessageBox.question(self, "Save transcript", "Save the current transcript before closing?", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+            if answer == QMessageBox.Cancel:
+                event.ignore()
+                return
+            self._close_answer = answer
+        if self.kandha_window is not None:
+            # Kandha closes with Audial-AI: its page first stops listening (a few seconds at most),
+            # so its last words reach the transcript before the companion it talks to stops below
+            self._reopen_kandha = False
+            self.kandha_window.close()
+            self.statusBar().showMessage("Closing Kandha…")
+            QTimer.singleShot(300, self, self.close)
             event.ignore()
             return
         if self.engine.running or (self.camera.thread and self.camera.thread.is_alive()):
@@ -1454,8 +1501,12 @@ class MainWindow(QMainWindow):
             event.ignore()
             return
         if self.session_dirty:
-            answer = QMessageBox.question(self, "Save transcript", "Save the current transcript before closing?", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+            # the answer given above, or asked now if the transcript changed while stopping
+            answer = self._close_answer
+            if answer is None:
+                answer = QMessageBox.question(self, "Save transcript", "Save the current transcript before closing?", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
             if answer == QMessageBox.Cancel or (answer == QMessageBox.Yes and not self.save_session()):
+                self._close_answer = None
                 event.ignore()
                 return
         if self.tts:
@@ -1464,4 +1515,5 @@ class MainWindow(QMainWindow):
             self.browser_service.stop()
         self.model_setup.shutdown()
         self._closing = True
+        self._close_answer = None
         event.accept()

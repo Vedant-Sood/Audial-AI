@@ -4,12 +4,14 @@
 notifications, the paired-address allowlist). `StoleBridge` runs it on its own thread and offers
 blocking calls to the rest of the app. `MockBackend` and `MockStole` stand in for `bleak` and a
 real stole: they apply the same bytes to a PatternPlayer, so tests and the end-to-end check can
-read back exactly what the motors would have done and when.
+read back what the motors would have done and when (without the firmware's motor floor and
+spin-up kick, see MockStole).
 
 Captions never depend on anything here: every call is bounded and every failure becomes an
 event, not an exception, for the caller.
 """
 import asyncio
+import concurrent.futures
 import json
 from pathlib import Path
 import threading
@@ -54,13 +56,14 @@ class BleakBackend:
 
 # ---------------------------------------------------------------------------- mock backend
 class MockStole:
-    """A pretend Kandha Stole: GATT characteristics backed by the firmware-parity PatternPlayer."""
+    """A pretend Kandha Stole: GATT characteristics backed by the Python PatternPlayer (the firmware's formula
+    and timing; the firmware's 60/255 motor floor and 15 ms spin-up kick are not modelled)."""
 
     def __init__(self, address="AA:BB:CC:DD:EE:01", name=None, battery=87, charging=False, firmware=(1, 0), table=None,
                  clock=time.monotonic, advertises_service=True):
         self.table = table or shared_table()
         self.address = address
-        self.name = name or f"KandhaStole-{address.replace(':', '')[-4:]}"
+        self.name = name or f"{name_prefix()}{address.replace(':', '')[-4:]}"      # Kandha-XXXX, like the firmware
         self.advertises_service = advertises_service
         self.clock = clock
         self.battery = battery
@@ -145,6 +148,9 @@ class MockBleakClient:
             self.stole.connect_failures -= 1
             raise OSError("Connection failed.")
         self.is_connected = True
+        # like the firmware (C50): a new connection forgets the last seq, so the app's counter,
+        # which starts again with every launch, is never taken for a duplicate
+        self.stole.last_seq = None
         self.stole.clients.append(self)
         return True
 
@@ -211,6 +217,11 @@ class MockBackend:
     def client(self, address, disconnected_callback):
         return MockBleakClient(self.stoles.get(address), disconnected_callback, lambda: self.loop)
 
+    def name_of(self, address):
+        """The name a pretend stole has now (bleak cannot know this until a scan hears the stole)."""
+        stole = self.stoles.get(address)
+        return stole.name if stole else None
+
 
 class SimulatedStole(MockStole):
     """The prototype's built-in stole: pairs like a real one, drains a little battery, can be told to
@@ -220,7 +231,7 @@ class SimulatedStole(MockStole):
     ADDRESS = "SIM:KA:ND:HA:00:01"
 
     def __init__(self, table=None, clock=time.monotonic):
-        super().__init__(self.ADDRESS, name="KandhaStole-SIM1", battery=92, charging=False, firmware=(0, 9), table=table, clock=clock)
+        super().__init__(self.ADDRESS, name=f"{name_prefix()}SIM1", battery=92, charging=False, firmware=(0, 9), table=table, clock=clock)
         self.started = clock()
         self.drain_per_hour = 4            # percent; a slow, visible change during a demo day
 
@@ -255,6 +266,10 @@ def simulated_backend(table=None):
 
 
 # ---------------------------------------------------------------------------- asyncio core
+class _Abandoned(Exception):
+    """A connection attempt that forget(), another pair() or stop() has replaced."""
+
+
 class StoleLink:
     """Scan, pair, remember, connect, reconnect, write, listen. One paired address at a time."""
 
@@ -279,7 +294,8 @@ class StoleLink:
         self.latencies = []        # last write round trips, ms
         self.stopping = False
         self._wake = None
-        self._disconnected = None
+        self._attempt = None       # the one connection attempt in flight (an asyncio task), shared by pair() and run()
+        self._epoch = 0            # disconnect() counts up, so an attempt that outlives its cancel knows it is not wanted
         self._load()
 
     # ----------------------------------------------------------------- persistence
@@ -291,6 +307,9 @@ class StoleLink:
                 self.paired_name = str(data.get("name") or "")
         except (OSError, ValueError):
             pass
+        name_of = getattr(self.backend, "name_of", None)
+        if self.paired and name_of:              # the stole's own name beats one an earlier build saved
+            self.paired_name = name_of(self.paired) or self.paired_name
 
     def _save(self):
         if self.paired:
@@ -326,97 +345,169 @@ class StoleLink:
         except Exception as error:  # a Bluetooth stack failure is a message, not a crash
             self.last_error = f"Scan failed: {error}"
             found = []
-        if not self.connected:
+        heard = next((d.get("name") for d in found or [] if isinstance(d, dict) and d.get("address") == self.paired), None)
+        renamed = bool(heard) and heard not in (self.paired, self.paired_name)
+        if renamed:                                 # the paired stole now has another name (new firmware): show that
+            self.paired_name = str(heard)
+            self._save()
+        if self.state == "scanning":                # nothing else changed the state meanwhile: put it back
             self._set_state("disconnected" if was in ("scanning", "disconnected") else was)
+        elif renamed:
+            self._set_state(self.state)
         self.on_event("stole_scan", {"devices": found})
         return found
 
     async def pair(self, address, name=None):
-        if self.paired and self.paired != address:
-            await self.disconnect()
+        changed = self.paired != address
+        # set the new address first, so nothing that wakes while the old link closes reconnects to it
         self.paired, self.paired_name = address, name or ""
-        self.low_battery_sent = False
         self._save()
+        if changed:
+            self.status = None
+            await self.disconnect()
+        if self.connected:
+            self._set_state("connected")                      # this stole is already connected: keep its one client
+            return self.paired == address
+        self.low_battery_sent = False
         self.attempt = 0
         self._kick()
-        return await self.connect_once()
+        return await self.connect_once() and self.paired == address
 
     async def forget(self):
-        await self.disconnect()
-        self.paired = self.paired_name = None
+        self.paired = self.paired_name = None                 # first, so run() does not reconnect while we close
         self.status = None
         self._save()
-        self._set_state("disconnected")
+        await self.disconnect()
+        if self.paired is None:                               # unless Pair came while we closed and is connecting
+            self._set_state("disconnected")
 
     async def disconnect(self):
+        """Close the live client and abandon any attempt in flight, then let run() look again."""
         client, self.client = self.client, None
-        if client is not None:
-            try:
-                await client.disconnect()
-            except Exception:
-                pass
+        attempt, self._attempt = self._attempt, None
+        self._epoch += 1                                      # whatever was connecting is no longer wanted
+        if attempt is not None and not attempt.done():
+            attempt.cancel()
         if self.state != "disconnected":
             self._set_state("disconnected")
+        await self._close(client)
+        if attempt is not None and not attempt.done():
+            await asyncio.wait({attempt})
+        self._kick()
+
+    async def _close(self, client):
+        if client is None:
+            return
+        try:
+            await asyncio.wait_for(client.disconnect(), 5)
+        except Exception:
+            pass
 
     # ----------------------------------------------------------------- connection
     async def connect_once(self):
+        """One attempt to connect to the paired stole. pair() and run() share the attempt in flight,
+        so there is never a second client for the same stole."""
         if not self.paired or self.stopping:
             return False
+        if self.connected:
+            return True
+        if self._attempt is None or self._attempt.done():
+            self._attempt = asyncio.ensure_future(self._connect(self.paired))
+        attempt = self._attempt
+        await asyncio.wait({attempt})                         # waiting here never cancels the shared attempt
+        return not attempt.cancelled() and attempt.result()
+
+    async def _connect(self, address):
         self._set_state("connecting" if self.attempt == 0 else "reconnecting")
-        client = self.backend.client(self.paired, self._on_disconnect)
+        epoch = self._epoch
+        client = None
+
+        def still_wanted():
+            # asyncio.wait_for (Python 3.11) can lose a cancel that lands as connect() finishes,
+            # so check by hand that no forget(), other pair() or stop() came meanwhile
+            if epoch != self._epoch or self.stopping or address != self.paired:
+                raise _Abandoned()
+
         try:
+            # inside the try: a backend that cannot even build a client (bleak missing) is a message too
+            client = self.backend.client(address, self._on_disconnect)
             await asyncio.wait_for(client.connect(), CONNECT_TIMEOUT_S + 2)
-            if getattr(client, "address", self.paired) != self.paired:
+            still_wanted()
+            if getattr(client, "address", address) != address:
                 raise OSError("Connected to an unexpected device.")
-            self.client = client
+            old, self.client = self.client, client
+            if old is not None and old is not client:         # never leave an earlier client open behind this one
+                await self._close(old)
             await client.write_gatt_char(self.ids["config"], self.config.encode(), response=True)
             raw = await client.read_gatt_char(self.ids["status"])
+            still_wanted()
             self._on_status(None, raw)
-            await client.start_notify(self.ids["input"], self._on_input)
-            await client.start_notify(self.ids["status"], self._on_status)
+            await client.start_notify(self.ids["input"], self._only_from(client, self._on_input))
+            await client.start_notify(self.ids["status"], self._only_from(client, self._on_status))
+            still_wanted()
+            if self.client is not client or not client.is_connected:
+                raise OSError("The stole disconnected while connecting.")
+        except (asyncio.CancelledError, _Abandoned) as error:  # pair() of another stole, forget() or stop()
+            if self.client is client:
+                self.client = None
+            await self._close(client)
+            if isinstance(error, asyncio.CancelledError):
+                raise
+            return False
         except Exception as error:
             self.last_error = str(error) or error.__class__.__name__
-            self.client = None
-            try:
-                await client.disconnect()
-            except Exception:
-                pass
+            if self.client is client:
+                self.client = None
+            await self._close(client)
             self._set_state("disconnected" if self.stopping else "reconnecting")
             return False
         self.attempt = 0
         self.last_error = None
-        self._disconnected = asyncio.Event()
         self._set_state("connected")
         self.on_event("stole_connected", {"address": self.paired, "name": self.paired_name})
         return True
 
-    def _on_disconnect(self, _client):
-        if self._disconnected is not None:
-            self._disconnected.set()
-        if self.client is not None and self.state == "connected":
-            self.client = None
+    def _only_from(self, client, handler):
+        """A notification callback that is ignored once `client` is no longer the live link."""
+        def callback(characteristic, data):
+            if client is self.client:
+                handler(characteristic, data)
+        return callback
+
+    def _on_disconnect(self, client):
+        if client is not self.client:
+            return                                            # an old or half-made client closing, not the live link
+        self.client = None
+        if self.state == "connected":
             self.last_error = "The stole disconnected."
             self._set_state("reconnecting")
-            self._kick()
+        self._kick()
 
     def _kick(self):
         if self._wake is not None:
             self._wake.set()
 
     async def run(self):
-        """Keep the paired stole connected until stop(). Backoff 1, 2, 4, 8, 16, 30 s between attempts."""
+        """Keep the paired stole connected until stop(). Backoff 1, 2, 4, 8, 16, 30 s between attempts.
+
+        pair(), forget(), a drop and stop() all kick _wake and every pass re-reads the link's state, so
+        the loop never waits on a connection that has already gone."""
         self._wake = asyncio.Event()
         while not self.stopping:
-            if not self.paired:
+            if not self.paired or self.connected:
                 self._wake.clear()
                 await self._wake.wait()
                 continue
-            if self.connected:
-                await self._disconnected.wait()
-                continue
-            ok = await self.connect_once()
-            if ok:
-                continue
+            target = self.paired
+            try:
+                ok = await self.connect_once()
+            except Exception as error:                        # one bad attempt never ends the loop (or the thread)
+                self.last_error = str(error) or error.__class__.__name__
+                ok = False
+            if ok or self.stopping or self.connected or self.paired != target:
+                continue                                      # connected, stopping, or another stole was chosen
+            if self._attempt is not None and not self._attempt.done():
+                continue                                      # pair() started a fresh attempt meanwhile: wait on that one
             delay = backoff(self.attempt)
             self.attempt += 1
             self._set_state("reconnecting", next_try_s=delay)
@@ -433,8 +524,6 @@ class StoleLink:
     async def stop(self):
         self.stopping = True
         self._kick()
-        if self._disconnected is not None:
-            self._disconnected.set()
         await self.disconnect()
 
     # ----------------------------------------------------------------- traffic
@@ -514,6 +603,7 @@ class StoleBridge:
         if self.thread is not None:
             return
         self.loop = asyncio.new_event_loop()
+        self._stopped = asyncio.Event()
         if hasattr(self.backend, "loop"):
             self.backend.loop = self.loop
         self.thread = threading.Thread(target=self._run, name="kandha-stole", daemon=True)
@@ -523,21 +613,68 @@ class StoleBridge:
     def _run(self):
         asyncio.set_event_loop(self.loop)
         self._ready.set()
-        self.loop.run_until_complete(self.link.run())
-        self.loop.close()
+        try:
+            self.loop.run_until_complete(self.link.run())
+        except Exception as error:      # the reconnect loop failed: say so, and keep serving calls until stop()
+            self.link.last_error = f"The stole link stopped: {error}"
+            try:
+                self.link.on_event("stole_error", {"error": self.link.last_error})
+            except Exception:
+                pass
+        try:
+            # run() ends as soon as stop() begins; keep the loop until stop() has closed the link
+            self.loop.run_until_complete(self._stopped.wait())
+        finally:
+            pending = asyncio.all_tasks(self.loop)
+            for task in pending:
+                task.cancel()
+            if pending:
+                self.loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+            self.loop.close()
+
+    async def _stop(self):
+        try:
+            await self.link.stop()
+        finally:
+            self._stopped.set()
+
+    @property
+    def running(self):
+        return self.loop is not None and self.thread is not None and self.thread.is_alive()
 
     def call(self, coro, timeout=None):
-        if self.loop is None:
+        loop, thread = self.loop, self.thread
+        if loop is None or thread is None or not thread.is_alive():   # never wait out a timeout on a loop nobody runs
             coro.close()
             raise RuntimeError("The stole bridge is not running.")
-        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
-        return future.result(timeout)
+        try:
+            future = asyncio.run_coroutine_threadsafe(coro, loop)
+        except RuntimeError:                # the loop closed a moment ago
+            coro.close()
+            raise RuntimeError("The stole bridge is not running.") from None
+        deadline = None if timeout is None else time.monotonic() + timeout
+        while not future.done():
+            if not thread.is_alive():       # the loop has gone, so this call can never finish
+                future.cancel()
+                raise RuntimeError("The stole bridge stopped.")
+            left = None if deadline is None else deadline - time.monotonic()
+            if left is not None and left <= 0:
+                raise TimeoutError("The stole did not answer in time.")
+            concurrent.futures.wait([future], timeout=0.25 if left is None else min(0.25, left))
+        try:
+            return future.result()
+        except concurrent.futures.CancelledError:   # stop() ended this call (a scan or pair) part way
+            raise RuntimeError("The stole bridge stopped.") from None
 
     def post(self, coro):
-        if self.loop is None:
+        if not self.running:
             coro.close()
             return None
-        return asyncio.run_coroutine_threadsafe(coro, self.loop)
+        try:
+            return asyncio.run_coroutine_threadsafe(coro, self.loop)
+        except RuntimeError:                # the loop closed a moment ago: a lost tap, never an exception
+            coro.close()
+            return None
 
     def scan(self, timeout=SCAN_TIMEOUT_S):
         return self.call(self.link.scan(timeout), timeout + 10)
@@ -565,9 +702,12 @@ class StoleBridge:
         if self.loop is None:
             return
         try:
-            self.call(self.link.stop(), 10)
+            self.call(self._stop(), 10)
         except Exception:
-            pass
+            try:
+                self.loop.call_soon_threadsafe(self._stopped.set)
+            except RuntimeError:
+                pass                        # the loop has already closed
         self.thread.join(5)
         self.loop = None
         self.thread = None

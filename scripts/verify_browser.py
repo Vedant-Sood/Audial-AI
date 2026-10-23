@@ -119,6 +119,40 @@ class ToolbarPopup:
             self.cdp.detach()
 
 
+def visible_windows():
+    """Windows only: the foreground window and every visible top-level window (title and process)."""
+    import ctypes
+    from ctypes import wintypes
+    user32, kernel32 = ctypes.windll.user32, ctypes.windll.kernel32
+
+    def describe(handle):
+        text = ctypes.create_unicode_buffer(user32.GetWindowTextLengthW(handle) + 1)
+        user32.GetWindowTextW(handle, text, len(text))
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(handle, ctypes.byref(pid))
+        name = ""
+        process = kernel32.OpenProcess(0x1000, False, pid.value)   # PROCESS_QUERY_LIMITED_INFORMATION
+        if process:
+            buffer, size = ctypes.create_unicode_buffer(1024), wintypes.DWORD(1024)
+            if kernel32.QueryFullProcessImageNameW(process, 0, buffer, ctypes.byref(size)):
+                name = buffer.value
+            kernel32.CloseHandle(process)
+        return {"title": text.value, "pid": pid.value, "process": name}
+
+    found = []
+    callback = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+    @callback
+    def visit(handle, _):
+        if user32.IsWindowVisible(handle):
+            found.append(describe(handle))
+        return True
+
+    user32.EnumWindows.argtypes = [callback, wintypes.LPARAM]
+    user32.EnumWindows(visit, 0)
+    return {"foreground": describe(user32.GetForegroundWindow()), "visible": found[:40]}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--browser", default="/usr/bin/chromium")
@@ -630,6 +664,13 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     raise AssertionError("; ".join(failures))
         except Exception as error:
             report["failure"] = str(error)
+            if sys.platform == "win32":
+                # What had the foreground when it failed: a toolbar popup closes as soon as its
+                # browser window loses focus, so another program's window is the usual suspect.
+                try:
+                    report["windows_at_failure"] = visible_windows()
+                except Exception as diagnostic_error:
+                    report["windows_at_failure"] = f"unavailable: {diagnostic_error}"
             raise
         finally:
             service.stop()

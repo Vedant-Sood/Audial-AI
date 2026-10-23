@@ -181,3 +181,64 @@ def test_the_wearers_own_voice_never_taps():
     assert played(s, Intent("speaker", created=1.0, voice=2), 1.0) is None
     assert played(s, Intent("voice_resumes", created=2.0, voice=2), 2.0) is None
     assert played(s, Intent("speaker", created=3.0, voice=1), 3.0)["zones"] == "L"
+
+
+def test_a_speaker_decision_preempts_a_resume_tap_and_a_resume_never_follows_a_seat_tap():
+    s = make()
+    assert played(s, Intent("voice_resumes", created=0.0, voice=2), 0.0)["zones"] == "R"
+    correction = played(s, Intent("speaker", created=0.05, voice=1), 0.05)
+    assert correction["zones"] == "L" and s.history[0].preempted, "a late correction replaces the resume tap"
+    # a resume arriving while a seat tap plays is dropped, never queued behind it
+    assert s.submit(Intent("voice_resumes", created=0.1, voice=3), 0.1) == [] and s.dropped[-1][1] == "superseded"
+    assert s.pending is None and s.tick(0.5) == []
+    # a speaker decision during a speaker tap still waits for it (equal priority)
+    assert played(s, Intent("speaker", created=1.0, voice=2), 1.0)["zones"] == "R"
+    assert s.submit(Intent("new_voice", created=1.02, voice=5, new=True), 1.02) == [] and s.pending.kind == "new_voice"
+    # a waiting resume gives way to a speaker decision, and cannot join a waiting one
+    s2 = make()
+    s2.submit(Intent("test", created=0.0, zone="B"), 0.0)
+    assert s2.submit(Intent("voice_resumes", created=0.01, voice=2), 0.01) == [] and s2.pending.kind == "voice_resumes"
+    assert s2.submit(Intent("speaker", created=0.02, voice=1), 0.02) == [] and s2.pending.kind == "speaker"
+    assert (s2.dropped[-1][0].kind, s2.dropped[-1][1]) == ("voice_resumes", "superseded")
+    assert s2.submit(Intent("voice_resumes", created=0.03, voice=1), 0.03) == [] and s2.dropped[-1][1] == "superseded"
+    released = s2.tick(0.5)
+    assert [(p.intent.kind, p.zone) for p in released] == [("speaker", "L")] and s2.tick(0.7) == []
+    # the stole is free but the ticker has not run yet: a speaker tap starting now drops the waiting resume
+    s3 = make()
+    s3.submit(Intent("test", created=0.0, zone="B"), 0.0)
+    s3.submit(Intent("voice_resumes", created=0.3, voice=2), 0.3)
+    assert played(s3, Intent("speaker", created=0.45, voice=1), 0.45)["zones"] == "L" and s3.pending is None
+    assert s3.tick(0.6) == [] and (s3.dropped[-1][0].kind, s3.dropped[-1][1]) == ("voice_resumes", "superseded")
+
+
+def test_a_waiting_tap_whose_voice_became_me_or_whose_mode_changed_is_dropped_on_release():
+    zones = {1: "L", 2: "R", 3: "B"}
+    s = HapticScheduler(lambda v: zones.get(v), SchedulerSettings(mode="seminar"))
+    s.submit(Intent("speaker", created=0.0, voice=1), 0.0)
+    assert s.submit(Intent("speaker", created=0.05, voice=2), 0.05) == [] and s.pending.voice == 2
+    zones[2] = "me"                                      # "This is me" while the tap waits
+    assert s.tick(0.2) == [] and s.dropped[-1][1] == "self" and s.pending is None
+    s.submit(Intent("test", created=1.0, zone="F"), 1.0)
+    s.submit(Intent("speaker", created=1.1, voice=3), 1.1)
+    s.settings.dnd = True                                # do-not-disturb while it waits
+    assert s.tick(1.5) == [] and s.dropped[-1][1] == "mode"
+    # resolve() returning nothing never reaches the unpacking in _play
+    s.settings.dnd = False
+    assert s.submit(Intent("speaker", created=2.0, voice=1, zone="me"), 2.0) == [] and s.dropped[-1][1] == "self"
+
+
+def test_a_waiting_tap_that_will_be_stale_before_the_stole_is_free_does_not_block_a_fresh_one():
+    s = make(mode="seminar")
+    test = s.submit(Intent("test", created=0.0, zone="B", repeat=5), 0.0)[0]   # the tutorial's "feel each zone"
+    assert test.until > 2.0
+    assert s.submit(Intent("speaker", created=0.3, voice=1), 0.3) == [] and s.pending.voice == 1
+    # 1.3 s later voice 2 starts after a silence: the waiting tap would be 1.8 s old when the test ends
+    assert s.submit(Intent("voice_resumes", created=1.6, voice=2), 1.6) == []
+    assert s.pending.kind == "voice_resumes" and (s.dropped[-1][0].voice, s.dropped[-1][1]) == (1, "stale")
+    assert [(p.intent.kind, p.zone) for p in s.tick(test.until + 0.01)] == [("voice_resumes", "R")]
+    # a waiting seat tap that can still play keeps the resume out, as before
+    s2 = make(mode="seminar")
+    s2.submit(Intent("test", created=0.0, zone="B"), 0.0)
+    s2.submit(Intent("speaker", created=0.1, voice=1), 0.1)
+    assert s2.submit(Intent("voice_resumes", created=0.2, voice=2), 0.2) == [] and s2.dropped[-1][1] == "superseded"
+    assert [(p.intent.kind, p.zone) for p in s2.tick(1.0)] == [("speaker", "L")]
