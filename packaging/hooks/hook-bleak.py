@@ -1,15 +1,10 @@
-# PyInstaller hook: bleak and its platform backends (WinRT on Windows, CoreBluetooth on macOS, BlueZ/dbus on Linux).
-from PyInstaller.compat import is_darwin, is_win
-from PyInstaller.utils.hooks import collect_all, collect_submodules
+# PyInstaller hook: bleak and its platform backend (WinRT on Windows, CoreBluetooth on macOS, BlueZ/dbus-fast on Linux).
+# The module lists live in packaging/kandha_bluetooth.py, shared with AccessibilityAI.spec; a missing backend stops
+# the build with a message instead of being skipped.
+from importlib.util import module_from_spec, spec_from_file_location
+from pathlib import Path
 
-datas, binaries, hiddenimports = collect_all('bleak')
-if is_win:
-    for name in ('winrt', 'bleak_winrt'):
-        try:
-            hiddenimports += collect_submodules(name)
-        except Exception:
-            pass
-elif is_darwin:
-    hiddenimports += ['objc', 'CoreBluetooth', 'Foundation', 'libdispatch']
-else:
-    hiddenimports += ['dbus_fast', 'dbus_fast.aio', 'dbus_fast.auth']
+_found = spec_from_file_location('kandha_bluetooth', Path(__file__).resolve().parents[1] / 'kandha_bluetooth.py')
+_helper = module_from_spec(_found)
+_found.loader.exec_module(_helper)
+datas, binaries, hiddenimports = _helper.collect()
