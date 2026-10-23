@@ -2,9 +2,11 @@
 
     python scripts/package_kandha_portable.py --payload dist/AccessibilityAI --output dist/installers
 
-Windows: Kandha-<version>-windows.zip (contains Kandha.exe). Linux: Kandha-<version>-linux.tar.gz
-(contains a `Kandha` launcher). macOS: Kandha-<version>-macos.zip. A README-KANDHA.txt and the
-checksums are written next to the archive. Packaging never implies a test on the user's hardware.
+Windows: Kandha-<version>-windows.zip (contains Kandha.exe); this is the one CI builds and a
+kandha-v release publishes. Run by hand on Linux or macOS it writes Kandha-<version>-linux.tar.gz
+(with a `Kandha` launcher) or Kandha-<version>-macos.zip, which no CI job builds or publishes. A
+README-KANDHA.txt goes into the payload and the checksum is written next to the archive.
+Packaging never implies a test on the user's hardware.
 """
 import argparse
 import hashlib
@@ -25,14 +27,17 @@ Kandha Stole on the speaker's side. This prototype needs no hardware: the virtua
 stole on screen shows every tap and a simulated stole demonstrates pairing.
 
 Start: {start}
-First run opens Audial-AI's Setup & models to download the Whisper caption model
-(about 3.6 GB for the full catalogue; the FAST preset needs only whisper-tiny).
+Captions need the Whisper caption model, downloaded once. Until it is installed, a
+bar at the top of the Kandha window offers "Get the caption model": it runs
+Audial-AI's Setup & models with its progress on screen (the full model catalogue,
+about 3.6 GB, the caption model first). Voices and stole taps work meanwhile.
 After that everything runs offline. Audio never leaves this computer.
 
 Let people in the room know live captions are on. Saving a practicum transcript
 with a real client needs supervisor and ethics approval.
 
-Docs: _internal/docs/kandha/USER_GUIDE.md (or docs/kandha in the source tree).
+Guide: _internal/docs/kandha/USER_GUIDE.html (opens in a web browser; the source is
+docs/kandha/USER_GUIDE.md in the source tree).
 Firmware for a future physical stole: _internal/firmware/kandha (untested on hardware).
 This build is unsigned. Check the .sha256 file before running it.
 """

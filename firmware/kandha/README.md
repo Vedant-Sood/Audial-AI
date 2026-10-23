@@ -5,7 +5,9 @@ It plays the shared tap language (`patterns.h`, generated from
 `browser/sanket/kandha-patterns.json`), reads the four textile touch pads, reports the battery,
 and offers a serial console for bench tests.
 
-**Status: prototype.** This firmware compiles in CI (`.github/workflows/firmware.yml`) and has
+**Status: prototype.** This firmware compiles for the ESP32-S3 in CI
+(`.github/workflows/firmware.yml`), and `tests/test_kandha_firmware_host.py` builds and runs it
+on an ordinary computer against Arduino and BLE stand-ins (`tests/firmware_host/`). It has
 **not yet been run on hardware**. The Kandha app does not need it: the app ships with a virtual
 stole and a simulated stole, and real Bluetooth is an opt-in setting marked untested.
 
@@ -13,9 +15,9 @@ stole and a simulated stole, and real Bluetooth is an opt-in setting marked unte
 
 | File | What |
 |---|---|
-| `kandha.ino` | main sketch: BLE service, battery, status, serial console |
-| `pattern_engine.h` | the pattern player (same steps and arithmetic as `app/kandha/patterns.py`), MOSFET PWM with a spin-up kick |
-| `touch_pads.h` | pads with tap / double / long gestures |
+| `kandha.ino` | main sketch: BLE service, battery, status, serial console; the BLE callbacks only queue writes for `loop()` |
+| `pattern_engine.h` | the pattern player (same steps, timing and arithmetic as `app/kandha/patterns.py`), MOSFET PWM with a 60/255 floor and a 15 ms spin-up kick from rest |
+| `touch_pads.h` | pads with tap / double / long gestures (timing in `PROTOCOL.md`) |
 | `config.h` | pin map, timings, firmware version |
 | `patterns.h` | **generated**: run `python scripts/generate_kandha_patterns.py` after editing the JSON |
 
@@ -54,8 +56,26 @@ arduino-cli compile --fqbn esp32:esp32:esp32s3 --export-binaries firmware/kandha
 arduino-cli upload  --fqbn esp32:esp32:esp32s3 -p /dev/ttyACM0 firmware/kandha
 ```
 
-The CI workflow produces `kandha-stole-firmware.zip` with the `.bin` files and a `.sha256` file;
-`esptool.py write_flash 0x0 kandha.ino.merged.bin` flashes a board without the IDE.
+The firmware workflow uploads the `.bin` files with a `kandha-stole-firmware.sha256` list as the
+`kandha-stole-firmware` artifact. A `kandha-v<version>` release publishes them as
+`kandha-stole-firmware-<version>.zip` (with `SHA256SUMS.txt` inside and a `.sha256` beside
+it); they are not in the Kandha installer. `esptool.py write_flash 0x0 kandha.ino.merged.bin`
+flashes a board without the IDE.
+
+## How it behaves
+
+- **Motors.** A zone's duty is `level × intensity × zone scale / (255 × 255)`, as in the app.
+  Any non-zero duty below 60 is raised to 60 (`MOTOR_MIN_DUTY`; a coin ERM does not start below
+  it), and a motor starting from rest runs at full duty for its first 15 ms (`MOTOR_KICK_MS`),
+  kept through a step or command that takes over within those 15 ms. A motor already spinning
+  gets no kick. A new command takes over at once, with no stop in between.
+- **The link.** The BLE callbacks only queue each write (16 at most) for `loop()`, which applies
+  them in order; connects and disconnects are counted, so none is lost. A disconnect stops every
+  motor. A new connection resets the duplicate-`seq` filter, so the first command after a
+  reconnect always plays. If `loop()` falls behind, writes that change nothing are left out
+  first, then the oldest HAPTIC, then the oldest PATTERNS upload, and the console prints
+  `BLE: loop() fell behind: N writes left out with nothing lost, M lost`.
+- **STATUS** is notified as soon as any flag changes and at least every 30 s.
 
 ## Bench checks with the serial console
 
@@ -64,7 +84,7 @@ status            battery, connection, config, flags
 patterns          the built-in tap language with durations
 play seat_tap L   one firm tap on the left shoulder
 play rise         three quick taps at the front
-test              two taps on every zone in turn
+test              two taps on every zone in turn (an app command during it replaces the test tap)
 pads              raw touch values; touch a pad and watch the number rise
 cal               recalibrate the pads (keep hands away)
 pad Q tap         send an INPUT as if the queue pad were tapped

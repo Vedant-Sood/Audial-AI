@@ -1,10 +1,12 @@
 # 0006 · Saved rooms store zone slot order, never voice identities
 
-**Decision.** A saved room is `{name, slots: ["L", "R", "B", "F", ...]}`: the zone for the
-first voice to appear, the second, and so on. Loading a room pre-assigns voice slots in order of
-appearance; anything can still be changed by pad, key or drag. Practicum rooms default to
-`["F", null]` with the wearer as the first voice only if they speak first; the mode default
-("the other voice is in front") is applied by `SeatMap.default_for_mode()`.
+**Decision.** A saved room is `{name, slots: ["L", "R", "B", "F", ...], mode, updated}`: the
+zone for the first voice to appear, the second, and so on (`null` for a voice without a seat).
+Loading a room pre-assigns voice slots in order of appearance; anything can still be changed by
+pad, key or drag. In Practicum with no room loaded, `SeatMap.default_for_mode()` seats the
+*second* voice to appear in front (`F`) and leaves the first unmapped, because the wearer often
+speaks first (and can mark that voice "This is me", decision 0012). A practicum room saved after
+that has slots `[null, "F"]`.
 
 **Why.** Voices are session-only clusters, not people (`docs/sanket.md`). Storing anything that
 looked like "Priya sits on the left" would promise cross-session recognition that the engine

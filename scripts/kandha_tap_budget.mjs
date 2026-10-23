@@ -4,8 +4,9 @@
 //   node scripts/kandha_tap_budget.mjs docs/kandha/validation/tap_budget_intents.json
 //
 // Fixtures: the three LibriSpeech readers (tests/fixtures/sanket), each played at five gains
-// (0, -2, +2, -1, +1 dB) as in tests/sanket.test.js: about 3.8 minutes per reader of calm
-// reading, and a stitched "seminar" where the three readers take turns.
+// (0, -2, +2, -1, +1 dB) as in tests/sanket.test.js, as calm reading (each case's minutes are
+// in docs/kandha/validation/tap_budget.json), and a stitched "seminar" where the three readers
+// take turns.
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname } from "node:path";

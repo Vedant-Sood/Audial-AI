@@ -132,7 +132,8 @@ def mask_zones(mask):
 
 
 def effective_level(level, intensity, scale=255):
-    """The duty the motor sees: level x intensity / 255 x zone scale / 255 (firmware arithmetic)."""
+    """The duty from level x intensity / 255 x zone scale / 255 (the firmware's arithmetic, before its
+    60/255 floor and 15 ms spin-up kick)."""
     return (level * intensity * scale) // (255 * 255)
 
 
