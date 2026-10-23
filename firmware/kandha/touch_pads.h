@@ -1,6 +1,10 @@
 // Kandha Stole firmware: four textile touch pads with tap, double-tap and long-press gestures.
 // Timing matches docs/kandha/PROTOCOL.md: a touch shorter than 400 ms is a tap unless another
-// touch starts within 300 ms (double); a touch held 700 ms is a long press (reported once).
+// touch starts within 300 ms of its end (double); a touch held 700 ms is a long press (reported
+// once, on the 700 ms mark). A change counts once it has held for 40 ms (debounce), and the
+// gesture times run from when the change was first seen, so the debounce does not stretch them.
+// Every time is as precise as the TOUCH_POLL_MS polling. tests/test_kandha_firmware_host.py
+// checks these rules on the host.
 #pragma once
 #include <Arduino.h>
 #include "config.h"
@@ -46,29 +50,36 @@ class TouchPads {
       if (pressed != p.pressed && now - p.changedAt >= TOUCH_DEBOUNCE_MS) {
         p.pressed = pressed;
         if (pressed) {
-          p.pressedAt = now; p.longSent = false;
+          // A touch that starts within the gap after a tap is the second half of a double.
+          p.second = p.tapPending && p.changedAt - p.lastTapAt <= GESTURE_DOUBLE_GAP_MS;
+          p.pressedAt = p.changedAt; p.longSent = false;
         } else {
-          uint32_t held = now - p.pressedAt;
+          uint32_t held = p.changedAt - p.pressedAt;
           if (!p.longSent && held < GESTURE_TAP_MAX_MS) {
-            if (p.tapPending && now - p.lastTapAt <= GESTURE_DOUBLE_GAP_MS + GESTURE_TAP_MAX_MS) {
+            if (p.second) {
               p.tapPending = false; emit(i, KANDHA_GESTURE_DOUBLE);
             } else {
-              p.tapPending = true; p.lastTapAt = now;
+              p.tapPending = true; p.lastTapAt = p.changedAt;
             }
           }
+          p.second = false;
         }
       }
-      if (p.pressed && !p.longSent && now - p.pressedAt >= GESTURE_LONG_MS) {
+      // rawPressed too: a touch already lifted (its release still debouncing) is not a long press.
+      if (p.pressed && p.rawPressed && !p.longSent && now - p.pressedAt >= GESTURE_LONG_MS) {
         p.longSent = true; p.tapPending = false; emit(i, KANDHA_GESTURE_LONG);
       }
-      if (p.tapPending && !p.pressed && now - p.lastTapAt > GESTURE_DOUBLE_GAP_MS) {
+      // The tap is reported once no second touch can start in time, unless one already has
+      // (debounced, or still being debounced).
+      bool secondStarting = p.rawPressed && !p.pressed && p.changedAt - p.lastTapAt <= GESTURE_DOUBLE_GAP_MS;
+      if (p.tapPending && !p.second && !secondStarting && now - p.lastTapAt > GESTURE_DOUBLE_GAP_MS) {
         p.tapPending = false; emit(i, KANDHA_GESTURE_TAP);
       }
     }
   }
 
  private:
-  struct Pad { bool rawPressed = false, pressed = false, longSent = false, tapPending = false; uint32_t changedAt = 0, pressedAt = 0, lastTapAt = 0; };
+  struct Pad { bool rawPressed = false, pressed = false, longSent = false, tapPending = false, second = false; uint32_t changedAt = 0, pressedAt = 0, lastTapAt = 0; };
   void emit(int pad, uint8_t gesture) { if (handler_) handler_(pad + 1, gesture); }
 
   GestureHandler handler_ = nullptr;
