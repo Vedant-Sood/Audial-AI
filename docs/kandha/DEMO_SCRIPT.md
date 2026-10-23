@@ -18,7 +18,10 @@ tone estimates are labelled "scripted" on screen; say so in the voice-over.
 
 Notes for filming: tick **Play the demo voices aloud** (in the Demos dialog) only if the room
 is quiet; switching demos carries nothing over from the one that was playing; the demos run
-about 38 s (seminar) and 32 s (practicum), so trim. The tap sequences above are the ones the
-demos produce (recorded through the real scheduler in
-[validation/demo-taps.json](validation/demo-taps.json) by `python -m scripts.record_kandha_demos`,
-which fails if they differ), so the voice-over matches what the screen does.
+about 38 s (seminar) and 32 s (practicum), so trim. The seminar rows narrate every tap that
+demo plays. The practicum row narrates only its three tone cues; before and between them the
+stole also taps the front twice for each of the two new voices (the client and Vikram), once
+for each of the client's two later turns, and ticks both shoulders for a silence. Both are
+recorded through the real scheduler in [validation/demo-taps.json](validation/demo-taps.json) by
+`python -m scripts.record_kandha_demos`, which fails if a demo's taps change or the narrated taps
+stop coming in this order, so the voice-over matches what the screen does.

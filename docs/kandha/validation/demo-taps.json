@@ -27,7 +27,7 @@
      "zones": "F"
     },
     {
-     "at": 5.72,
+     "at": 5.71,
      "pattern": "new_voice",
      "zones": "F"
     },
@@ -37,32 +37,32 @@
      "zones": "F"
     },
     {
-     "at": 16.81,
+     "at": 16.76,
      "pattern": "queue_ack",
      "zones": "LR"
     },
     {
-     "at": 17.42,
+     "at": 17.37,
      "pattern": "seat_tap",
      "zones": "L"
     },
     {
-     "at": 22.44,
+     "at": 22.39,
      "pattern": "seat_tap",
      "zones": "F"
     },
     {
-     "at": 26.14,
+     "at": 26.09,
      "pattern": "queue_ack",
      "zones": "LR"
     },
     {
-     "at": 31.35,
+     "at": 31.29,
      "pattern": "silence",
      "zones": "LR"
     },
     {
-     "at": 31.75,
+     "at": 31.69,
      "pattern": "seat_tap",
      "zones": "R"
     }
@@ -170,12 +170,51 @@
      "R"
     ]
    ],
-   "matches_demo_script": true,
+   "matches_expected": true,
+   "narrated_by_demo_script": [
+    [
+     "new_voice",
+     "F"
+    ],
+    [
+     "new_voice",
+     "F"
+    ],
+    [
+     "new_voice",
+     "F"
+    ],
+    [
+     "queue_ack",
+     "LR"
+    ],
+    [
+     "seat_tap",
+     "L"
+    ],
+    [
+     "seat_tap",
+     "F"
+    ],
+    [
+     "queue_ack",
+     "LR"
+    ],
+    [
+     "silence",
+     "LR"
+    ],
+    [
+     "seat_tap",
+     "R"
+    ]
+   ],
+   "demo_script_taps_in_order": true,
    "page_matches_stole": true
   },
   "roleplay": {
    "mode": "practicum",
-   "seconds": 31.8,
+   "seconds": 31.9,
    "voices": {
     "1": "Client",
     "2": "Vikram"
@@ -186,42 +225,42 @@
    },
    "stole_received": [
     {
-     "at": 0.02,
+     "at": 0.04,
      "pattern": "new_voice",
      "zones": "F"
     },
     {
-     "at": 5.04,
+     "at": 5.06,
      "pattern": "new_voice",
      "zones": "F"
     },
     {
-     "at": 8.75,
+     "at": 8.76,
      "pattern": "seat_tap",
      "zones": "F"
     },
     {
-     "at": 9.76,
+     "at": 9.77,
      "pattern": "drop",
      "zones": "F"
     },
     {
-     "at": 17.77,
+     "at": 17.79,
      "pattern": "silence",
      "zones": "LR"
     },
     {
-     "at": 18.18,
+     "at": 18.19,
      "pattern": "seat_tap",
      "zones": "F"
     },
     {
-     "at": 19.94,
+     "at": 19.96,
      "pattern": "hesitation",
      "zones": "F"
     },
     {
-     "at": 27.36,
+     "at": 27.38,
      "pattern": "rise",
      "zones": "F"
     }
@@ -318,7 +357,22 @@
      "F"
     ]
    ],
-   "matches_demo_script": true,
+   "matches_expected": true,
+   "narrated_by_demo_script": [
+    [
+     "drop",
+     "F"
+    ],
+    [
+     "hesitation",
+     "F"
+    ],
+    [
+     "rise",
+     "F"
+    ]
+   ],
+   "demo_script_taps_in_order": true,
    "page_matches_stole": true
   }
  },

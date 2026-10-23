@@ -39,23 +39,25 @@ opt-in setting marked untested.
 
 ## Measured (see docs/kandha/VALIDATION.md)
 
-Re-run on 2026-10-23 on the working tree of the review fix run (on top of `2281216`) in a Linux
-container, except the Windows CI line.
+Re-run on 2026-10-23 in a Linux container on the tree VALIDATION.md names (the review fix run's
+final fix-up, on top of `dedd2df` and `2281216`), except the Windows CI line.
 
 - In-app tap latency in the end-to-end check (real Chromium, fake microphone, Whisper stubbed,
-  mock stole): p50 2.4 ms, p95 4.5 ms (budget 150 ms). Bluetooth was not involved, so the
+  mock stole): p50 2.5 ms, p95 4.6 ms (budget 150 ms). Bluetooth was not involved, so the
   300 ms budget with Bluetooth is not measured.
 - After 5 s of silence a different voice got exactly one tap, its own (a returning reader on
   its seat, a new reader at the front), never the previous speaker's seat first. In the
   back-channel study's 16 long-silence cases (LibriSpeech readers with spliced silences and
-  noise) the first turn after the silence always sent exactly one seat tap.
-- The two demos' taps, recorded through the real scheduler with the mock stole, match the
-  demo video script.
+  noise) the intent layer sent exactly one seat intent for the first turn after the silence
+  (the study does not run the scheduler; the end-to-end check above does).
+- The two demos' taps, recorded through the real scheduler with the mock stole, match what
+  `demo.js` scripts, and the taps the demo video script narrates (all of the seminar's, the
+  practicum's three tone cues) come in its order.
 - Tap budget on the natural-speech fixtures: Seminar default 0 cue taps per minute; with cues
   on, 1.0 per minute; Practicum 1.0 per minute (target ≤ 6).
 - Accessibility audit: every control reachable by keyboard with visible focus, no contrast
   failure, no overflow at 1280 × 720, both themes.
-- Tests: pytest 359 passed and 1 skipped (a Windows-only test), npm 58 passed (baseline before
+- Tests: pytest 362 passed and 1 skipped (a Windows-only test), npm 58 passed (baseline before
   Kandha: pytest 132 passed and 1 skipped, npm 31).
 - Windows CI, on the earlier commit `305b77c`: `Kandha-Setup-0.6.0.exe` built, installed on a
   disposable Windows account, the packaged page ready in 0.8 s, uninstalled cleanly

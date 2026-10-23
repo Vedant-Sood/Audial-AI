@@ -1,11 +1,13 @@
 """Actual Chromium: Kandha on a fake microphone, Whisper stubbed, the mock stole paired.
 
-Two LibriSpeech readers take turns (A B A B, tests/fixtures/sanket). Whisper is replaced by a stub
-that captions each received stretch with its own time span, and the stole is the in-process mock
-(the same bytes, played by the Python PatternPlayer that the virtual stole uses). This verifies
-the integration, not speech or emotion accuracy:
+Three LibriSpeech readers (tests/fixtures/sanket) in a 54 s clip: A and B take turns (A B A B)
+with short pauses, then after 5 s of silence A comes back, and after another 5 s a third reader,
+C, speaks. Whisper is replaced by a stub that captions each received stretch with its own time
+span, and the stole is the in-process mock (the same bytes, played by the Python PatternPlayer
+that the virtual stole uses). This verifies the integration, not speech or emotion accuracy:
 
-- the correct zones fire in the correct order (new voice, new voice, then the seats);
+- the correct zones fire in the correct order (new voice, new voice, the seats, then A's seat
+  and C's new voice after the silences);
 - the in-app latency budget (page intent -> stole write) holds;
 - no cue storms: outside speaker changes at most one tap in any 1.5 s window;
 - queue presses (key and stole pad) light the strip and are saved with the session;

@@ -1,8 +1,11 @@
 # Kandha validation summary
 
-Every number here comes from a script in this repository. The checks in the table were last run
-on 2026-10-23 on the working tree of the review fix run (commit `822d818`, the fix run's
-checkpoints on top of `2281216`, plus its uncommitted fixes), in a Linux x86_64 cloud container
+Every number here comes from a script in this repository. The checks in the table (all but the
+baseline before Kandha) were last run on 2026-10-23 on the tree of the commit that last changed
+this file (`git log -1 -- docs/kandha/VALIDATION.md`): the review fix run's final fix-up on top
+of `dedd2df` (the run's commits `822d818`, `607d41e`, `a4937d0` and `dedd2df` follow
+`2281216`). The back-channel study, the tap budget and the accessibility audit wrote records
+identical to those of `dedd2df`. They ran in a Linux x86_64 cloud container
 (Python 3.12.3, Node 22.22.0, Chromium 141.0.7390.37, QtWebEngine 6.8.3 / Chromium 122,
 g++ 13.3). The Windows and Linux build sections further down are older records and say so. What
 was simulated is marked. Nothing has been measured on a physical stole, over Bluetooth, or with
@@ -11,7 +14,7 @@ Indian English or Hindi speakers; on Windows only the CI install check below has
 | Check | Script | Record |
 |---|---|---|
 | Test baseline before Kandha | `npm test`, `pytest` | [baseline.json](validation/baseline.json): npm 31/31, pytest 132 passed, 1 skipped |
-| Tests now | `npm test`, `QT_QPA_PLATFORM=offscreen python -m pytest -q` | npm 58/58 (19 in `tests/kandha.test.js`); pytest 359 passed, 1 skipped (the Windows Credential Manager test). 213 of the pytest tests are in `tests/test_kandha_*.py`, and none of them was skipped: the page in real Chromium (13), the Kandha window in QtWebEngine (12) and the firmware built and run on the host with g++ (58) all ran |
+| Tests now | `npm test`, `QT_QPA_PLATFORM=offscreen python -m pytest -q` | npm 58/58 (19 in `tests/kandha.test.js`); pytest 362 passed, 1 skipped (the Windows Credential Manager test). 216 of the pytest tests are in `tests/test_kandha_*.py`, and none of them was skipped: the page in real Chromium (13), the Kandha window in QtWebEngine (12) and the firmware built and run on the host with g++ (59) all ran |
 | Firmware pattern header | `python scripts/generate_kandha_patterns.py --check` | `firmware/kandha/patterns.h` is up to date with the pattern table |
 | Back-channel hold and the first turn after a long silence | `node scripts/kandha_backchannel_study.mjs` | [backchannel.json](validation/backchannel.json) |
 | End to end in Chromium | `python -m scripts.verify_kandha` | [e2e-chromium.json](validation/e2e-chromium.json) |
@@ -56,9 +59,9 @@ the same taps in the same order.
   never tapped first, and nothing came between the silence ticks and those taps. The same check,
   run against the intent layer and scheduler of `2281216` (before the fix), fails: there the
   stole tapped R (B's seat) and then B for A's return, and B (A's seat) and then F for C.
-- In-app latency from the page's intent to the stole write (n=9): p50 2.4 ms, p95 4.5 ms,
-  max 4.5 ms, against a 150 ms budget (the repeat: p50 2.9 ms, p95 4.1 ms). The mock stole's
-  write round trip was at most 0.09 ms. **Simulated:** Bluetooth is not involved, so the 300 ms
+- In-app latency from the page's intent to the stole write (n=9): p50 2.5 ms, p95 4.6 ms,
+  max 4.6 ms, against a 150 ms budget (the repeat: p50 2.3 ms, p95 3.6 ms). The mock stole's
+  write round trip was at most 0.11 ms. **Simulated:** Bluetooth is not involved, so the 300 ms
   end-to-end budget remains a budget.
 - Cue storms: at most 1 cue-like tap in any 1.5 s window.
 - Queue: the strip followed the `Q` key and the stole's queue pad. The session record held
@@ -72,17 +75,21 @@ the same taps in the same order.
 ## The two demos (Chromium, mock stole)
 
 Both built-in demos played through the page, the service's scheduler and the paired mock stole.
-The stole received, in order (two runs, the same order, times within 0.04 s):
+The stole received, in order (two runs, the same order, times within 0.07 s):
 
 - Seminar (37.6 s): new_voice F three times (Dr Rao, Priya, Arjun), queue_ack LR, seat_tap L
   (Priya), seat_tap F (Dr Rao), queue_ack LR (the queue clears), silence LR, seat_tap R (Arjun).
-- Practicum (31.8 s): new_voice F (the client), new_voice F (Vikram, whom the demo marks "This
+- Practicum (31.9 s): new_voice F (the client), new_voice F (Vikram, whom the demo marks "This
   is me" just after, as a wearer would), seat_tap F (the client), drop F, silence LR, seat_tap F
   (the client), hesitation F, rise F.
 
-These are the sequences [DEMO_SCRIPT.md](DEMO_SCRIPT.md) narrates; the script fails when they
-differ. The page's own tap list matched the stole's in both. **Simulated:** the demos are
-scripted (no microphone, scripted tone estimates) and the stole is the mock.
+These are the sequences `browser/kandha/demo.js` scripts; `record_kandha_demos` fails when they
+change. [DEMO_SCRIPT.md](DEMO_SCRIPT.md) narrates all of the seminar's taps but only the
+practicum's three tone cues (drop, hesitation, rise), and the recorder also fails when those
+stop coming in that order. The practicum's two new voices, the client's seat taps and the
+silence ticks come from `demo.js`, not from the video script. The page's own tap list matched
+the stole's in both. **Simulated:** the demos are scripted (no microphone, scripted tone
+estimates) and the stole is the mock.
 
 ## Tap budget (natural-speech fixtures, real scheduler)
 

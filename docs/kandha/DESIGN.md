@@ -382,15 +382,20 @@ scheduler rules are pure code in `app/kandha/scheduler.py` with unit tests.
   trip comes from the batch's clock gap (the service clock at arrival minus the page's `sent`),
   compared only with the same page's last `CLOCK_SAMPLES` = 8 batches (kept for the
   `CLOCK_PAGES` = 8 pages heard from most recently; pages that send no tag share one history).
-  The smallest of those gaps that another gap agrees with within `CLOCK_AGREE_MS` = 500 ms
-  (the smallest gap while no two agree yet) is taken as the difference between the two clocks,
-  and only delay beyond it counts. So a steady difference between the page's and the service's
-  clocks never drops a tap, one odd `sent` or another page whose clock runs ahead cannot make
-  this page's taps look late, and a batch held up on the way is still dropped. The first batch
-  from a page has no trip measured; a page clock that falls behind mid-session can cost at most
-  8 batches, one that jumps ahead none. The service clock is `time.time()` at start plus
-  `time.monotonic()`, so it never steps. `app_latency_ms` in a haptic record is the intent's
-  whole age when it was dispatched: page age, estimated trip and time in the scheduler.
+  The smallest of those gaps is taken as the difference between the two clocks, and only delay
+  beyond it counts, unless it lies further below every other gap than the stale window (1.5 s):
+  then it is outvoted as one odd `sent`, and the smallest gap with another within 1.5 s of it is
+  used (the smallest gap while no two are that close yet). So a steady difference between the
+  page's and the service's clocks never drops a tap, one odd `sent` or another page whose clock
+  runs ahead cannot make this page's taps look late, and a batch held up on the way is still
+  dropped, also when one fast batch sits among slower ones. Batches that all take longer than
+  1.5 s after a single fast one look the same as an odd `sent`, so their trip is undercounted
+  until that fast batch leaves the history (a computer too busy to pass a batch on within
+  1.5 s, again and again). The first batch from a page has no trip measured; a page clock that
+  falls behind mid-session can cost at most 8 batches, one that jumps ahead none. The service
+  clock is `time.time()` at start plus `time.monotonic()`, so it never steps. `app_latency_ms`
+  in a haptic record is the intent's whole age when it was dispatched: page age, estimated trip
+  and time in the scheduler.
 - **Checked again on release**: a deferred intent is dropped as `mode` when its mode or
   do-not-disturb no longer allows it, and as `self` when its voice was marked "This is me" while
   it waited.
@@ -456,7 +461,8 @@ it changes, so without this rule the same voice speaking again after a pause wou
 
 `scripts/kandha_backchannel_study.mjs` runs these cases over the LibriSpeech fixtures (a new
 voice, a known other voice, the same voice, and short noise before the real turn) and checks
-that each resume turn gets exactly one seat tap; its record is
+that the intent layer sends exactly one seat intent for each resume turn (it does not run the
+scheduler; `scripts/verify_kandha.py` checks the stole's taps end to end); its record is
 [validation/backchannel.json](validation/backchannel.json).
 
 ## 8. The seat map
@@ -513,13 +519,13 @@ that each resume turn gets exactly one seat tap; its record is
 | Seat map | window, double-tap reassign, join voices, rooms persistence, practicum default, angle → zone | `tests/test_kandha_seatmap.py` |
 | Bridge | mock bleak: scan filter, pair, one connection on re-pair, reconnect after Forget, remembered device, reconnect backoff, ignored INPUT from strangers, STATUS, low battery, the mock stole's seq filter forgotten on a new connection | `tests/test_kandha_bridge.py` |
 | Virtual stole parity | the same bytes produce the same zone timeline on the virtual stole and the mock stole (both run the Python `PatternPlayer`) | `tests/test_kandha_virtual.py` |
-| Firmware on the host | `pattern_engine.h`, `touch_pads.h` and the whole `kandha.ino` built with the host C++ compiler against Arduino and BLE stand-ins (`tests/firmware_host/`): every built-in pattern, played once and twice, and CONFIG scaling, mirror, mute, a command replacing another, stop and late `loop()` ticks equal `PatternPlayer` millisecond by millisecond, with the 60/255 floor and the 15 ms kick on top; pad gestures (tap, double, long, debounce); the BLE-to-`loop()` mailbox and its backlog; the seq filter forgotten on each connection; STATUS on every flag change; a ThreadSanitizer run. Skipped without a C++ compiler and on Windows | `tests/test_kandha_firmware_host.py` |
-| Intents | back-channel hold on LibriSpeech turns, the first turn after a long silence (one tap, short sounds, the page's silence setting), page controls, no double taps; the on-screen pads' gesture timing | `tests/kandha.test.js` |
-| Service and HTTP | `/api/kandha/*` ownership, SSE, consent gate, settings, the session record (`session/new`, `session/events`, `session/save`, export by session id), the stale rule with page clocks ahead, behind or stepping, the seat window closing | `tests/test_kandha_service.py` |
+| Firmware on the host | `pattern_engine.h`, `touch_pads.h` and the whole `kandha.ino` built with the host C++ compiler against Arduino and BLE stand-ins (`tests/firmware_host/`): every built-in pattern, played once and twice, and CONFIG scaling, mirror, mute, a command replacing another, stop and late `loop()` ticks equal `PatternPlayer` millisecond by millisecond, with the 60/255 floor and the 15 ms kick on top; pad gestures (tap, double, long, debounce); the BLE-to-`loop()` mailbox and its backlog; the seq filter forgotten on each connection; STATUS notified on every flag, battery and charging change (CONFIG, console, battery sample, a pattern ending); a ThreadSanitizer run. Skipped without a C++ compiler and on Windows | `tests/test_kandha_firmware_host.py` |
+| Intents | back-channel hold on LibriSpeech turns, the first turn after a long silence (one seat intent, short sounds, the page's silence setting), page controls, no double taps; the on-screen pads' gesture timing | `tests/kandha.test.js` |
+| Service and HTTP | `/api/kandha/*` ownership, SSE, consent gate, settings, the session record (`session/new`, `session/events`, `session/save`, export by session id), the stale rule with page clocks ahead, behind or stepping and with one fast batch among slow ones, the seat window closing | `tests/test_kandha_service.py` |
 | Page in Chromium | real `BrowserService` with the mock stole, Chromium's fake microphone: seat chips and keys, the voice dialog, the seat highlight, the queue after a reload, browser captions only as an opt-in, Demos and the session clock, the silence setting reaching the intents, the unreachable-service flash and status, the page tag on intents, the pads' gestures, the microphone remembered by name. Skipped without Playwright or Chromium | `tests/test_kandha_page.py` |
 | Kandha window | QtWebEngine in a subprocess: the microphone only for the exact companion origin, exports saved to Downloads with unique names (also when the window closes right after one), the caption-model bar, opening from Audial-AI, quitting with Kandha open, the microphone across a relaunch, an explicit `--port` | `tests/test_kandha_window.py` |
 | Packaging | `bleak` pinned and collected with its backend, the portable Windows wheel set, the HTML user guide, a `.sha256` beside every release asset | `tests/test_kandha_packaging.py` |
-| End to end | real Chromium, fake microphone A B A B, Whisper stubbed, mock stole: zones in order, latency, no cue storms, queue saved, a consented save of this session | `scripts/verify_kandha.py` |
+| End to end | real Chromium, fake microphone A B A B then A and a new reader C after 5 s silences, Whisper stubbed, mock stole: zones in order, latency, no cue storms, queue saved, a consented save of this session | `scripts/verify_kandha.py` |
 | Tap budget | taps per minute per mode over the natural-speech fixtures | `scripts/kandha_tap_budget.py` |
 | Accessibility | keyboard reach, visible focus, contrast, names, 1280 × 720 | `scripts/audit_kandha_a11y.py` |
 | Firmware build | compiles for the ESP32-S3 in CI with arduino-cli (core 3.1.1) | `.github/workflows/firmware.yml` |

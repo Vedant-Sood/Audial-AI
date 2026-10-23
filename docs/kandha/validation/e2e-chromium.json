@@ -1,6 +1,6 @@
 {
   "platform": "Linux-6.18.44-fc-v153-x86_64-with-glibc2.39",
-  "scope": "Two LibriSpeech readers take turns (A B A B, tests/fixtures/sanket). Whisper is replaced by a stub that captions each received stretch with its own time span, and the stole is the in-process mock (the same bytes, played by the Python PatternPlayer that the virtual stole uses). This verifies the integration, not speech or emotion accuracy:",
+  "scope": "Three LibriSpeech readers (tests/fixtures/sanket) in a 54 s clip: A and B take turns (A B A B) with short pauses, then after 5 s of silence A comes back, and after another 5 s a third reader, C, speaks. Whisper is replaced by a stub that captions each received stretch with its own time span, and the stole is the in-process mock (the same bytes, played by the Python PatternPlayer that the virtual stole uses). This verifies the integration, not speech or emotion accuracy:",
   "simulated": [
     "Whisper is a stub (captions are time spans, not words)",
     "the stole is the in-process mock, so Bluetooth latency is not measured",
@@ -17,85 +17,85 @@
   },
   "stole_received": [
     {
-      "at": -0.729,
+      "at": -0.865,
       "pattern": "connected",
       "zones": "LR",
       "seq": 1
     },
     {
-      "at": 1.508,
+      "at": 1.509,
       "pattern": "queue_ack",
       "zones": "LR",
       "seq": 2
     },
     {
-      "at": 1.535,
+      "at": 1.583,
       "pattern": "new_voice",
       "zones": "F",
       "seq": 3
     },
     {
-      "at": 3.135,
+      "at": 3.139,
       "pattern": "queue_ack",
       "zones": "LR",
       "seq": 4
     },
     {
-      "at": 4.751,
+      "at": 4.757,
       "pattern": "queue_ack",
       "zones": "LR",
       "seq": 5
     },
     {
-      "at": 6.468,
+      "at": 6.471,
       "pattern": "queue_ack",
       "zones": "LR",
       "seq": 6
     },
     {
-      "at": 10.488,
+      "at": 10.651,
       "pattern": "new_voice",
       "zones": "F",
       "seq": 7
     },
     {
-      "at": 20.108,
+      "at": 20.131,
       "pattern": "seat_tap",
       "zones": "L",
       "seq": 8
     },
     {
-      "at": 25.877,
+      "at": 25.862,
       "pattern": "seat_tap",
       "zones": "R",
       "seq": 9
     },
     {
-      "at": 34.72,
+      "at": 34.751,
       "pattern": "silence",
       "zones": "LR",
       "seq": 10
     },
     {
-      "at": 36.32,
+      "at": 36.281,
       "pattern": "seat_tap",
       "zones": "B",
       "seq": 11
     },
     {
-      "at": 45.731,
+      "at": 45.712,
       "pattern": "silence",
       "zones": "LR",
       "seq": 12
     },
     {
-      "at": 47.652,
+      "at": 47.631,
       "pattern": "new_voice",
       "zones": "F",
       "seq": 13
     },
     {
-      "at": 56.841,
+      "at": 56.893,
       "pattern": "silence",
       "zones": "LR",
       "seq": 14
@@ -130,13 +130,13 @@
   "latency_ms": {
     "page_to_dispatch": {
       "n": 9,
-      "p50": 2.4,
-      "p95": 4.5,
-      "max": 4.5
+      "p50": 2.5,
+      "p95": 4.6,
+      "max": 4.6
     },
     "bridge_write_rtt": {
       "n": 14,
-      "max": 0.09
+      "max": 0.11
     },
     "budget_in_app_ms": 150,
     "budget_with_bluetooth_ms": 300,
@@ -152,9 +152,9 @@
     "seat": 1
   },
   "saved_session": {
-    "toast": "Saved to Audial-AI sessions: Kandha seminar 10/23/2026, 8:43:48 AM (27 captions, 41 events).",
+    "toast": "Saved to Audial-AI sessions: Kandha seminar 10/23/2026, 9:25:29 AM (27 captions, 41 events).",
     "files": 1,
-    "title": "Kandha seminar 10/23/2026, 8:43:48 AM",
+    "title": "Kandha seminar 10/23/2026, 9:25:29 AM",
     "captions": 27,
     "with_word_confidence": 27,
     "events": 41
@@ -185,15 +185,15 @@
         35.0,
         41.0
       ],
-      "silence_tap_at": 34.72,
+      "silence_tap_at": 34.75,
       "seat_taps": [
         {
           "intent": "voice_resumes",
           "pattern": "seat_tap",
           "zones": "B",
           "voice": 1,
-          "t": 35.02,
-          "at": 36.32
+          "t": 35.07,
+          "at": 36.28
         }
       ],
       "seat_taps_between_silence_and_first": 0
@@ -203,15 +203,15 @@
         46.0,
         52.0
       ],
-      "silence_tap_at": 45.73,
+      "silence_tap_at": 45.71,
       "seat_taps": [
         {
           "intent": "new_voice",
           "pattern": "new_voice",
           "zones": "F",
           "voice": 3,
-          "t": 46.34,
-          "at": 47.65
+          "t": 46.38,
+          "at": 47.63
         }
       ],
       "seat_taps_between_silence_and_first": 0
@@ -238,7 +238,7 @@
         "pattern": "new_voice",
         "voice": 1,
         "device": "stole",
-        "latency": 2.4,
+        "latency": 2.7,
         "intent": "new_voice"
       },
       {
@@ -270,7 +270,7 @@
         "pattern": "new_voice",
         "voice": 2,
         "device": "stole",
-        "latency": 1.4,
+        "latency": 1.3,
         "intent": "new_voice"
       },
       {
@@ -278,7 +278,7 @@
         "pattern": "seat_tap",
         "voice": 1,
         "device": "stole",
-        "latency": 2.3,
+        "latency": 2.2,
         "intent": "speaker"
       },
       {
@@ -286,7 +286,7 @@
         "pattern": "seat_tap",
         "voice": 2,
         "device": "stole",
-        "latency": 2,
+        "latency": 3.6,
         "intent": "speaker"
       },
       {
@@ -294,7 +294,7 @@
         "pattern": "silence",
         "voice": null,
         "device": "stole",
-        "latency": 2.7,
+        "latency": 2.5,
         "intent": "silence"
       },
       {
@@ -310,7 +310,7 @@
         "pattern": "silence",
         "voice": null,
         "device": "stole",
-        "latency": 4,
+        "latency": 3.5,
         "intent": "silence"
       },
       {
@@ -318,7 +318,7 @@
         "pattern": "new_voice",
         "voice": 3,
         "device": "stole",
-        "latency": 3.4,
+        "latency": 1.5,
         "intent": "new_voice"
       },
       {
@@ -326,7 +326,7 @@
         "pattern": "silence",
         "voice": null,
         "device": "stole",
-        "latency": 4.5,
+        "latency": 4.6,
         "intent": "silence"
       }
     ],
@@ -349,7 +349,7 @@
       "LR",
       null,
       null,
-      -0.73
+      -0.87
     ],
     [
       "queue_ack",
@@ -365,7 +365,7 @@
       "F",
       1,
       0.74,
-      1.53
+      1.58
     ],
     [
       "queue_ack",
@@ -373,7 +373,7 @@
       "LR",
       null,
       null,
-      3.13
+      3.14
     ],
     [
       "queue_ack",
@@ -381,7 +381,7 @@
       "LR",
       null,
       null,
-      4.75
+      4.76
     ],
     [
       "queue_ack",
@@ -396,64 +396,64 @@
       "new_voice",
       "F",
       2,
-      9.7,
-      10.49
+      9.68,
+      10.65
     ],
     [
       "speaker",
       "seat_tap",
       "L",
       1,
-      18.29,
-      20.11
+      18.27,
+      20.13
     ],
     [
       "speaker",
       "seat_tap",
       "R",
       2,
-      24.1,
-      25.88
+      24.06,
+      25.86
     ],
     [
       "silence",
       "silence",
       "LR",
       null,
-      34.13,
-      34.72
+      34.11,
+      34.75
     ],
     [
       "voice_resumes",
       "seat_tap",
       "B",
       1,
-      35.02,
-      36.32
+      35.07,
+      36.28
     ],
     [
       "silence",
       "silence",
       "LR",
       null,
-      45.02,
-      45.73
+      45.07,
+      45.71
     ],
     [
       "new_voice",
       "new_voice",
       "F",
       3,
-      46.34,
-      47.65
+      46.38,
+      47.63
     ],
     [
       "silence",
       "silence",
       "LR",
       null,
-      56.05,
-      56.84
+      56.08,
+      56.89
     ]
   ],
   "result": "PASS"

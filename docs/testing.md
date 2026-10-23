@@ -47,9 +47,11 @@ runs pytest before it installs Chromium, so this test skips there); and
 `python -m app.main --kandha-check` loads the page in QtWebEngine headlessly.
 `python -m scripts.verify_kandha` is the Chromium end-to-end check with the mock stole (it also
 checks that a different voice after a 5 s silence gets only its own tap);
-`python -m scripts.record_kandha_demos` records the two demos' taps and checks them against the
-demo video script; `scripts/kandha_backchannel_study.mjs` measures the back-channel hold and the
-first turn after a long silence; `scripts/kandha_tap_budget.{mjs,py}` measure taps per minute;
+`python -m scripts.record_kandha_demos` records the two demos' taps, checks each whole sequence
+against the one `demo.js` scripts and that the taps the demo video script narrates (all of the
+seminar's, the practicum's three tone cues) come in order;
+`scripts/kandha_backchannel_study.mjs` measures the back-channel hold and the seat intents for
+the first turn after a long silence; `scripts/kandha_tap_budget.{mjs,py}` measure taps per minute;
 `scripts/audit_kandha_a11y.py` audits keyboard, focus, names and contrast. Records and the
 latest counts: [kandha/VALIDATION.md](kandha/VALIDATION.md).
 The Windows workflow installs `Kandha-Setup-<version>.exe` on the CI account and loads the

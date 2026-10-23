@@ -5,8 +5,11 @@ the page's real path: /api/kandha/intents, the HapticScheduler in the service, a
 mock stole, which receives the same HAPTIC bytes a real stole would. This script plays the
 seminar and the practicum demo one after the other and writes, for each, the decoded commands
 the mock stole received (in order, with seconds since the demo started), the page's own tap list
-and the seats. It checks the order against the tap sequences that docs/kandha/DEMO_SCRIPT.md
-narrates, so the film script and the demos cannot drift apart.
+and the seats. It checks each demo's whole sequence against EXPECTED below (what demo.js
+scripts), and that the taps docs/kandha/DEMO_SCRIPT.md narrates come in that order. The script
+narrates the seminar's whole sequence, but only the practicum's three tone cues (the swell, the
+flutter and the three quick taps); the practicum's two new voices, seat taps and silence ticks
+are in EXPECTED only.
 
     python -m scripts.record_kandha_demos --browser /opt/pw-browsers/chromium --output docs/kandha/validation/demo-taps.json
 """
@@ -18,7 +21,7 @@ import platform
 import tempfile
 import time
 
-# (pattern, zones) the stole receives, in order, as DEMO_SCRIPT.md tells them
+# (pattern, zones) the stole receives, in order, as browser/kandha/demo.js scripts them
 EXPECTED = {
     # three new voices at the front; the queue squeeze; Priya (left) and Dr Rao (front) again; the
     # queue clears with one squeeze; the silence ticks; Arjun (right)
@@ -31,6 +34,15 @@ EXPECTED = {
     "roleplay": [("new_voice", "F"), ("new_voice", "F"), ("seat_tap", "F"), ("drop", "F"), ("silence", "LR"),
                  ("seat_tap", "F"), ("hesitation", "F"), ("rise", "F")],
 }
+# the taps DEMO_SCRIPT.md narrates, in its order: all of the seminar's; in the practicum only the
+# voice softened (drop), hesitation and the voice rose
+NARRATED = {"seminar": EXPECTED["seminar"], "roleplay": [("drop", "F"), ("hesitation", "F"), ("rise", "F")]}
+
+
+def in_order(wanted, sequence):
+    """True when every item of `wanted` appears in `sequence`, in the same order."""
+    rest = iter(sequence)
+    return all(item in rest for item in wanted)
 
 
 def main():
@@ -92,15 +104,20 @@ def main():
             service.stop()
     for key, want in EXPECTED.items():
         demo = report["demos"].get(key, {})
-        demo["matches_demo_script"] = [tuple(x) for x in demo.get("sequence", [])] == want
+        sequence = [tuple(x) for x in demo.get("sequence", [])]
+        demo["matches_expected"] = sequence == want
+        demo["narrated_by_demo_script"] = [list(x) for x in NARRATED[key]]
+        demo["demo_script_taps_in_order"] = in_order(NARRATED[key], sequence)
         # the page shows every tap the stole played, in the same order
         demo["page_matches_stole"] = [(t["pattern"], t["zones"]) for t in demo.get("page_taps", [])] == [tuple(x) for x in demo.get("sequence", [])]
-    report["result"] = "PASS" if not report["page_errors"] and all(d["matches_demo_script"] and d["page_matches_stole"] for d in report["demos"].values()) else "FAIL"
+    report["result"] = "PASS" if not report["page_errors"] and all(
+        d["matches_expected"] and d["demo_script_taps_in_order"] and d["page_matches_stole"] for d in report["demos"].values()) else "FAIL"
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     for key, demo in report["demos"].items():
         print(key, demo["mode"], f"{demo['seconds']} s", " ".join(f"{p}:{z}" for p, z in demo["sequence"]),
-              "matches DEMO_SCRIPT.md" if demo["matches_demo_script"] else f"DIFFERS from DEMO_SCRIPT.md {EXPECTED[key]}")
+              "as expected" if demo["matches_expected"] else f"DIFFERS from {EXPECTED[key]}",
+              "with DEMO_SCRIPT.md's taps in order" if demo["demo_script_taps_in_order"] else f"MISSING DEMO_SCRIPT.md's {NARRATED[key]} in order")
     print("result:", report["result"], "page errors:", report["page_errors"])
     return 0 if report["result"] == "PASS" else 1
 

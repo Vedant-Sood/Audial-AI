@@ -33,10 +33,9 @@ TICK_S = 0.02
 # app/services/voice_view.py MAX_VOICE.
 MAX_VOICE = 1_000_000
 # How many recent intent batches the page's clock is compared with (see KandhaService._trip_ms),
-# for how many pages at once, and how close two batches' clock gaps must be to agree, in ms.
+# and for how many pages at once.
 CLOCK_SAMPLES = 8
 CLOCK_PAGES = 8
-CLOCK_AGREE_MS = 500
 
 
 def _default_cues():
@@ -357,15 +356,17 @@ class KandhaService:
         With no batch before it there is nothing to compare with, so no trip is counted.
 
         Each page keeps its own history, so a second page whose clock runs ahead never makes this
-        one's batches look held up. Within a page, the smallest gap sets the difference only when
-        another batch's gap agrees with it (within CLOCK_AGREE_MS); one odd `sent` (a bad value, a
-        clock ahead for a single batch) is outvoted. When no two batches agree yet, the smallest
-        gap is used, as before."""
+        one's batches look held up. Within a page, one gap further below all the others than the
+        stale window is outvoted: believing it would make every tap look stale, so it is taken as
+        one odd `sent` (a bad value, a clock ahead for a single batch). A gap closer to the rest
+        than that still counts, so one fast batch among slower ones (a busy computer) keeps the
+        trip of a held-up batch. When no two gaps are that close yet, the smallest is used."""
         with self.lock:
             gaps = sorted(self.clock_gaps.get(page, ()))
+            window_ms = self.scheduler.stale_after * 1000
         if gap is None or not gaps:
             return 0.0
-        floor = next((a for a, b in zip(gaps, gaps[1:]) if b - a <= CLOCK_AGREE_MS), gaps[0])
+        floor = next((a for a, b in zip(gaps, gaps[1:]) if b - a <= window_ms), gaps[0])
         return max(0.0, gap - floor)
 
     def _clean_intent(self, raw, now, arrived_ms):

@@ -22,11 +22,13 @@ are felt at the collarbone. Your eyes stay on faces.
 **Captions need the Whisper caption model**, downloaded once to this computer. Until it is
 installed, a bar at the top of the Kandha window says so and offers **Get the caption model**.
 That button starts Audial-AI's **Setup & models** with its progress on screen: the full model
-catalogue (about 3.6 GB), the caption model first. Pause and retry keep the files already
-checked. Opened from the Audial-AI window, the button switches Audial-AI to Setup & models
-instead. Voices and stole taps work meanwhile. When the model is ready Kandha reloads itself, or,
-if something is on screen, asks you to press **Reload Kandha** once you have paused and saved.
-After that Kandha captions offline.
+catalogue (about 3.6 GB), the three Whisper models first (tiny, small, medium). With
+Audial-AI's default **Caption quality**, Fast, Kandha captions with Whisper tiny, the first
+download; Balanced uses small (the second) and Accurate medium (the third). Pause and retry keep
+the files already checked. Opened from the Audial-AI window, the button switches Audial-AI to
+Setup & models instead. Voices and stole taps work meanwhile. When the model is ready Kandha
+reloads itself, or, if something is on screen, asks you to press **Reload Kandha** once you have
+paused and saved. After that Kandha captions offline.
 
 In a browser tab, install the model from Audial-AI's **Setup & models**. A browser tab without
 the Whisper model has no captions unless you turn on **Settings

@@ -25,7 +25,8 @@ produced by that script, not estimated:
 (DESIGN.md section 7.3); a turn shorter than 0.6 s there (a cough, an "mm") taps nothing and
 does not use up that tap. The study script also runs resume-after-silence cases (a new voice, a
 known other voice, the same voice, and short noise before the real turn) and reports any resume
-turn that did not get exactly one seat tap.
+turn for which `kandha-intents.js` did not send exactly one seat intent (it counts intents; it
+does not run the scheduler).
 
 **Rejected.** 0.4 s (would let 0.45 s bursts tap); 1.0 s (would hold every early decision back
 by 0.36 s for no gain, since the engine's own minimum is 0.64 s).

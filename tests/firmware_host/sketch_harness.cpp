@@ -15,6 +15,9 @@
 //   write <haptic|patterns|config> <hex bytes>   a write from the app, as the Bluetooth task delivers it
 //   loop <n>                  n passes of loop() (each ends with delay(1))
 //   until <ms>                loop() until the clock reaches <ms>
+//   battery <mV> | charging <0|1>   the battery divider's reading and the charger's CHRG line,
+//                             seen at the next battery sample
+//   console <text>            a line typed on the serial console
 //   state | quiet | echo <text>
 //   race <cycles>             loop() on its own thread while this thread connects, writes
 //                             HAPTIC and CONFIG and disconnects, as the two tasks do on the
@@ -214,6 +217,15 @@ int main() {
     } else if (cmd == "state") {
       printf("STATE %u %d %d %u %u %u %u\n", millis(), engine.playing() ? 1 : 0, connected ? 1 : 0,
              host_duty[PIN_MOTOR_L], host_duty[PIN_MOTOR_R], host_duty[PIN_MOTOR_B], host_duty[PIN_MOTOR_F]);
+    } else if (cmd == "battery") {
+      in >> host_battery_mv;
+    } else if (cmd == "charging") {
+      int on = 0;
+      in >> on;
+      host_chrg_line = on ? LOW : HIGH;
+    } else if (cmd == "console") {
+      std::lock_guard<std::mutex> g(host_serial_lock);
+      host_serial_in += line.substr(8) + "\n";
     } else if (cmd == "quiet") {
       quiet = true;
     } else if (cmd == "echo") {

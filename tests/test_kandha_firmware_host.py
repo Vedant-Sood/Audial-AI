@@ -392,6 +392,31 @@ def test_status_is_notified_when_a_pattern_ends_on_its_own(sketch_exe):
     assert status == [(2000, 16), (2120, 0)], status
 
 
+def test_status_is_notified_on_every_flag_change(sketch_exe):
+    """Each STATUS flag (mute 1, mirror 2, test mode 4, low battery 8, playing 16) and the battery
+    and charging bytes are notified when they change: a write in the loop() pass that applies it,
+    a console command in the next pass (loop() reads the console last), the battery at its next
+    sample. None waits for the 30 s period."""
+    lines = _out(sketch_exe, [
+        "setup", "until 1000", "connect", "until 2000",
+        "write config ffffffff010000", "until 2100",            # mute
+        "write config ffffffff000100", "until 2200",            # mirror
+        "write config ffffffff000001", "until 2300",            # test mode
+        "write config ffffffff000000", "until 2400",            # all off
+        "console mirror 1", "until 2500", "console mirror 0", "until 2600",
+        "battery 1700", "until 5100",                           # 3.4 V: 10 %, low, seen at the 5 s sample
+        "charging 1", "until 10100",                            # on the charger: not low any more
+        "write haptic 0101017801", "until 10400",               # seat_tap on L: 120 ms
+    ])
+    status = [(t, data[0], data[1], data[4] & 31) for t, data in _notifies(lines, "status") if t >= 2000]
+    assert status == [
+        (2000, 95, 0, 1), (2100, 95, 0, 2), (2200, 95, 0, 4), (2300, 95, 0, 0),
+        (2401, 95, 0, 2), (2501, 95, 0, 0),
+        (5000, 10, 0, 8), (10000, 10, 1, 0),
+        (10100, 10, 1, 16), (10220, 10, 1, 0),
+    ], status
+
+
 def test_test_mode_echoes_each_command_as_an_input(sketch_exe):
     lines = _out(sketch_exe, ["setup", "until 1000", "connect", "write config ffffffff000001",
                               "loop 1", "write haptic 2a01017801", "until 1200"])

@@ -30,7 +30,8 @@ Start: {start}
 Captions need the Whisper caption model, downloaded once. Until it is installed, a
 bar at the top of the Kandha window offers "Get the caption model": it runs
 Audial-AI's Setup & models with its progress on screen (the full model catalogue,
-about 3.6 GB, the caption model first). Voices and stole taps work meanwhile.
+about 3.6 GB, the Whisper models first; with the default Fast preset the caption
+model is the first download). Voices and stole taps work meanwhile.
 After that everything runs offline. Audio never leaves this computer.
 
 Let people in the room know live captions are on. Saving a practicum transcript

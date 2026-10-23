@@ -11,8 +11,9 @@
 //
 // It also runs browser/kandha/kandha-intents.js after long silences (the same reader again, a
 // known reader coming back, a new reader, a noise burst first) and records when the engine
-// settled the turn and which seat intents were sent, and when: one tap per start, never the
-// previous voice's seat first, never a voice the engine made from the noise.
+// settled the turn and which seat intents were sent, and when: one seat intent per start, never
+// the previous voice first, never a voice the engine made from the noise. It counts intents; the
+// scheduler and the stole's taps are checked end to end by scripts/verify_kandha.py.
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname } from "node:path";

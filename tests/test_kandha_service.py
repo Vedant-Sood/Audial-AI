@@ -394,6 +394,29 @@ def test_one_odd_sent_or_another_page_s_clock_never_makes_this_page_s_taps_look_
         service.close()
 
 
+@pytest.mark.parametrize("slow_ms", [600, 1400])
+def test_one_fast_batch_among_slower_ones_still_sets_the_clocks_difference(tmp_path, slow_ms):
+    """On a busy computer one batch can arrive at once and the next ones take a while. The fast
+    batch's gap is the clocks' difference even though the slower ones agree with each other, so
+    an intent held up 1.9 s on the way (2.0 s old in all) is dropped, never played late. Only a
+    gap further below the rest than the stale window is outvoted as an odd `sent`."""
+    now = [100.0]
+    service = KandhaService(home=tmp_path, start_bridge=False, ticker=False, clock=lambda: now[0])
+    voices = iter(range(1, 1000))
+
+    def tap(held_ms, age_ms=20):
+        now[0] += 1.0                           # the tap before has finished
+        return bool(service.intents([speaker(next(voices), time.time() * 1000 - held_ms, age_ms=age_ms) | {"page": "p"}])["played"])
+
+    try:
+        service.update_settings({"mode": "practicum"})
+        assert [tap(0), tap(slow_ms), tap(slow_ms + 10)] == [True] * 3, "each of these is under 1.5 s old"
+        assert not tap(1900, age_ms=100) and service.scheduler.dropped[-1][1] == "stale"
+        assert tap(0), "the next batch on time plays"
+    finally:
+        service.close()
+
+
 def test_the_seat_window_closing_tells_every_page_that_nobody_waits(tmp_path):
     """The 6 s seat window after a new voice: when it runs out unused the service says pending: null,
     and a pad tap with no window (or one that seats the voice) says so too, so no page keeps the

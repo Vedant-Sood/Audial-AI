@@ -47,7 +47,8 @@ inline touch_value_t touchRead(uint8_t pin) { return host_touch ? host_touch(pin
 #define INPUT_PULLUP 0x05
 inline void pinMode(uint8_t, uint8_t) {}
 inline void digitalWrite(uint8_t, uint8_t) {}
-inline int digitalRead(uint8_t) { return HIGH; }   // the charger's CHRG line is idle (not charging)
+inline int host_chrg_line = HIGH;                   // the charger's CHRG line: HIGH idle, LOW charging
+inline int digitalRead(uint8_t) { return host_chrg_line; }
 inline void analogReadResolution(uint8_t) {}
 inline uint32_t host_battery_mv = 2050;              // at the divider: 4.1 V at the cell
 inline uint32_t analogReadMilliVolts(uint8_t) { return host_battery_mv; }
