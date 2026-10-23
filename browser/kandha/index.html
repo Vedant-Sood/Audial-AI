@@ -194,7 +194,7 @@
             <button type="button" class="btn" data-export="srt" disabled>SRT</button>
             <button type="button" class="btn" data-export="json" disabled>JSON</button>
           </div>
-          <p class="fineprint" id="saveNote">VTT, SRT and JSON come from Audial-AI's session exports and need captions from the local Whisper model.</p>
+          <p class="fineprint" id="saveNote">Nothing to save yet: start listening or watch a demo first.</p>
         </div>
       </section>
     </section>
@@ -251,7 +251,9 @@
 
         <section class="panel" aria-labelledby="privacyTitle">
           <h2 id="privacyTitle">Privacy</h2>
-          <p class="fineprint">Audio never leaves this computer: the microphone feeds the voice engine in this page and Audial-AI's Whisper model over the loopback address only. The one exception: in a Chrome or Edge tab where Whisper is not available, captions come from the browser's own speech recognition, which the browser may process on its maker's servers; the status line then says <em>browser captions</em>. In the Kandha window captions are always local. No recording is kept. The transcript stays on this screen unless you tick the consent box and save. The stole link carries taps, pad presses and battery level, never audio or words. There is no telemetry.</p>
+          <label class="check check--top"><input type="checkbox" id="setBrowserCaptions" aria-describedby="browserCaptionsNote"> Let the browser's own speech service caption when Whisper is not installed. The browser may send the audio to its maker's servers.</label>
+          <p class="fineprint" id="browserCaptionsNote">Off unless you turn it on. Whisper on this computer is always used when it is installed. The change applies at once, also while listening.</p>
+          <p class="fineprint">Audio never leaves this computer: the microphone feeds the voice engine in this page and Audial-AI's Whisper model over the loopback address only. The browser's own speech service is off unless you turn it on above. Only then, in a Chrome or Edge tab without Whisper, the browser may send the audio to its maker's servers, and the status line says <em>browser captions</em>. Without Whisper and without that choice there are no captions, and the page says so; voice colours and stole taps keep working. In the Kandha window captions are always local. No recording is kept. The transcript stays on this screen unless you tick the consent box and save. The stole link carries taps, pad presses and battery level, never audio or words. There is no telemetry.</p>
           <p class="fineprint">Let people in the room know live captions are on. Saving a practicum transcript with a real client needs supervisor and ethics approval.</p>
           <p class="fineprint" id="aboutLine">Kandha inside Audial-AI · docs/kandha/USER_GUIDE.md</p>
         </section>
@@ -266,6 +268,7 @@
     </button>
     <button class="btn" id="missBtn" aria-label="What did I miss? The last 30 seconds" title="Shortcut: M"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="label-long">What did I miss?</span></button>
     <button class="btn" id="newVoiceBtn" title="Shortcut: N">New voice</button>
+    <button class="btn" id="demoBtn" aria-haspopup="dialog" title="Watch or replay a scripted demo">Demos</button>
     <span class="dock__keys" aria-hidden="true"><span class="kbd">Q</span> queue · <span class="kbd">S</span> start · <span class="kbd">M</span> missed · <span class="kbd">1–4</span> seat</span>
     <span class="dock__spacer"></span>
     <button class="queue-btn" id="queueBtn" aria-pressed="false" title="Shortcut: Q">
@@ -277,7 +280,7 @@
 
 <dialog id="voiceDlg" aria-labelledby="voiceTitle">
   <form method="dialog" class="dlg">
-    <div class="dlg__head"><span class="badge badge--sm" id="voiceBadge" aria-hidden="true"></span><h2 id="voiceTitle">Voice</h2><button class="icon-btn dlg__close" value="close" aria-label="Close">✕</button></div>
+    <div class="dlg__head"><span class="badge badge--sm" id="voiceBadge" aria-hidden="true"></span><h2 id="voiceTitle">Voice</h2><button type="button" class="icon-btn dlg__close" aria-label="Close">✕</button></div>
     <label class="field"><span>Name</span><input type="text" id="voiceName" autocomplete="off"></label>
     <div class="field"><span>Seat</span><div class="row seatrow" id="voiceSeatRow"><button type="button" class="btn btn--sm" data-seat="L">Left</button><button type="button" class="btn btn--sm" data-seat="R">Right</button><button type="button" class="btn btn--sm" data-seat="B">Behind</button><button type="button" class="btn btn--sm" data-seat="F">Front</button><button type="button" class="btn btn--sm" data-seat="me">This is me</button><button type="button" class="btn btn--sm btn--ghost" data-seat="">No seat</button></div><small>"This is me" is your own voice: the stole never taps for it.</small></div>
     <div class="field" id="lineMoveField" hidden><span>This line was said by</span><div class="row"><select id="lineMoveSel" aria-label="Speaker of this line"></select><button type="button" class="btn" id="lineMoveBtn">Move line</button></div></div>
@@ -289,7 +292,7 @@
 
 <dialog id="missDlg" aria-labelledby="missTitle">
   <form method="dialog" class="dlg">
-    <div class="dlg__head"><h2 id="missTitle">The last 30 seconds</h2><button class="icon-btn dlg__close" value="close" aria-label="Close">✕</button></div>
+    <div class="dlg__head"><h2 id="missTitle">The last 30 seconds</h2><button type="button" class="icon-btn dlg__close" aria-label="Close">✕</button></div>
     <ol class="miss" id="missList"></ol>
     <div class="dlg__foot"><button class="btn btn--primary" value="close">Back to live</button></div>
   </form>
@@ -297,7 +300,7 @@
 
 <dialog id="learnDlg" aria-labelledby="learnTitle">
   <form method="dialog" class="dlg">
-    <div class="dlg__head"><h2 id="learnTitle">Learn the taps</h2><button class="icon-btn dlg__close" value="close" aria-label="Close">✕</button></div>
+    <div class="dlg__head"><h2 id="learnTitle">Learn the taps</h2><button type="button" class="icon-btn dlg__close" aria-label="Close">✕</button></div>
     <p class="fineprint" id="learnProgress">Step 1 of 9</p>
     <div class="learn">
       <div class="stolewrap" id="stoleLearn"></div>
@@ -317,7 +320,7 @@
 
 <dialog id="toneDlg" aria-labelledby="toneTitle">
   <form method="dialog" class="dlg">
-    <div class="dlg__head"><h2 id="toneTitle">How accurate are tone estimates?</h2><button class="icon-btn dlg__close" value="close" aria-label="Close">✕</button></div>
+    <div class="dlg__head"><h2 id="toneTitle">How accurate are tone estimates?</h2><button type="button" class="icon-btn dlg__close" aria-label="Close">✕</button></div>
     <p>Kandha's tone model learned from <b>CREMA-D</b>: 7,441 short sentences by 91 actors, each acting six emotions. It was tested on <b>10 actors it never heard in training</b>, using the speaker split from Audial-AI, and on natural, unacted reading. "Was" is the earlier loudness-and-pitch rules on the same test.</p>
     <table class="acc">
       <thead><tr><th scope="col">Tested on 10 actors the model never heard</th><th scope="col">Result</th></tr></thead>
@@ -336,6 +339,18 @@
     <p class="fineprint"><b>Credits.</b> Model trained on CREMA-D (Cao et al., 2014; ODbL 1.0 / DbCL 1.0), using the speaker splits and evaluation approach of Audial-AI by Vedant Sood (MIT licence). Natural-speech checks use LibriSpeech (CC BY 4.0). Everything runs on this device.</p>
     <div class="dlg__foot"><button class="btn btn--primary" value="close">Close</button></div>
   </form>
+</dialog>
+
+<dialog id="demoDlg" aria-labelledby="demoTitle" aria-describedby="demoAbout">
+  <div class="dlg">
+    <div class="dlg__head"><h2 id="demoTitle">Demos</h2><button type="button" class="icon-btn dlg__close" aria-label="Close">✕</button></div>
+    <p class="dlg__text" id="demoAbout">A scripted seminar or practicum role-play, played through this screen and the real tap scheduler. No microphone is used. Starting a demo pauses listening and clears this screen: save in Review first if you want to keep it.</p>
+    <div class="row">
+      <button type="button" class="btn btn--primary" data-demo="seminar" autofocus>Watch the seminar demo</button>
+      <button type="button" class="btn" data-demo="roleplay">Watch the practicum demo</button>
+    </div>
+    <label class="check"><input type="checkbox" id="demoDlgAloud"> Play the demo voices aloud</label>
+  </div>
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>

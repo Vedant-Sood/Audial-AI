@@ -95,3 +95,19 @@ def test_screen_pads_produce_the_real_input_bytes():
     virtual = VirtualStole(on_event=lambda k, d: events.append((k, d)))
     assert virtual.press(PAD_Q, GESTURE_DOUBLE) == PadInput(PAD_Q, GESTURE_DOUBLE).encode() == bytes([4, 2])
     assert events[-1] == ("input", {"device": "virtual", "raw": "0402", "pad": "Q", "gesture": "double"})
+
+
+def test_virtual_stole_reports_each_step_as_played_for_the_page():
+    """What the page draws: zones and mask after mirror, and every step at its zone's level."""
+    clock = Clock()
+    virtual = VirtualStole(clock=clock)
+    config = StoleConfig.from_settings({"L": 100, "R": 50, "B": 100, "F": 100}, mirror=True)
+    virtual.write_config(config.encode())
+    new_voice = table().by_key["new_voice"]
+    played = virtual.write_haptic(HapticCommand(3, zone_mask("LB"), new_voice.id, new_voice.intensity).encode())
+    assert played["zones"] == "RB" and played["mask"] == zone_mask("RB")
+    steps = [(s["zone"], s["start_ms"], s["end_ms"]) for s in played["segments"]]
+    assert steps == [("R", 0, 60), ("B", 0, 60), ("R", 150, 210), ("B", 150, 210)]
+    level = {s["zone"]: s["level"] for s in played["segments"]}
+    assert level["R"] == effective_level(new_voice.steps[0].level, new_voice.intensity, config.scale_r) < level["B"]
+    assert played["duration_ms"] == 210 and virtual.levels() == {"L": 0, "R": level["R"], "B": level["B"], "F": 0}

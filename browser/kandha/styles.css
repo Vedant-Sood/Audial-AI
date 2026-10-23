@@ -124,6 +124,8 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .welcome__fine { font-size: 14px; }
 .check { display: inline-flex; align-items: center; gap: 8px; color: var(--text); font-size: 16px; }
 .check input { width: 20px; height: 20px; accent-color: var(--signal); }
+/* a label of two lines or more: the box stays by the first line */
+.check--top { align-items: flex-start; } .check--top input { flex: none; margin-top: 2px; }
 
 /* ---------------------------------------------------------------- side panels */
 .side { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
@@ -231,6 +233,7 @@ dialog::backdrop { background: rgba(5, 8, 12, .6); }
 .dlg__head { display: flex; align-items: center; gap: 12px; } .dlg__head h2 { font-size: 22px; }
 .dlg__close { margin-left: auto; }
 .dlg__foot { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+.dlg__text { margin: 0; }
 .field { display: grid; gap: 6px; } .field > span { font-weight: 700; }
 .field small { color: var(--muted); font-size: 14px; }
 .field input[type="text"], .field select, .field textarea, .row input[type="text"] { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); min-height: 44px; }

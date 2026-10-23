@@ -95,17 +95,19 @@
       node.addEventListener('keyup', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); end(); } });
     }
 
-    // segments: [{zone, start_ms, end_ms, level}] relative to now (from the scheduler's haptic record)
+    // segments: [{zone, start_ms, end_ms, level}] relative to now: each step as the stole plays
+    // it (zones after mirror, the zone's intensity scale in the level), from the service's record
     pulse(record) {
       const segments = record && record.segments;
       const now = performance.now();
       if (segments && segments.length) {
-        this.frames = this.frames.filter((f) => f.until > now);
+        // a new command replaces whatever was playing, on the stole and here
+        this.frames = [];
         for (const s of segments) this.frames.push({ zone: s.zone, from: now + s.start_ms, until: now + s.end_ms, level: s.level });
       } else if (record && record.zones) {
-        // no segment detail (a deferred command from the stream): light the zones for the duration
+        // no step detail (the page's own fallback flash when the service is unreachable)
         const until = now + (record.duration_ms || 150);
-        for (const z of record.zones) this.frames.push({ zone: z, from: now, until, level: record.intensity || 200 });
+        for (const z of record.zones) this.frames.push({ zone: z, from: now, until, level: record.intensity != null ? record.intensity : 200 });
       }
       this.container.classList.remove('is-flash'); void this.container.offsetWidth; this.container.classList.add('is-flash');
       if (!this.raf) this.tick();
@@ -171,6 +173,9 @@
 
     // seats: {voiceId: zone|null}; voices: [{id, name, idx}]; current: voiceId; pending: voiceId waiting for a pad
     render(seats, voices, current, pending) {
+      // a re-render keeps the keyboard on the voice it was on
+      const active = document.activeElement;
+      const focused = active && this.chipLayer.contains(active) ? active.getAttribute('data-voice') : null;
       for (const node of Object.values(this.seats)) { node.classList.remove('is-lit'); node.style.removeProperty('--c'); }
       this.chipLayer.innerHTML = '';
       const byZone = {};
@@ -193,17 +198,21 @@
       }
       if (pending != null && seats[pending] == null) for (const node of Object.values(this.seats)) node.classList.add('is-over');
       else for (const node of Object.values(this.seats)) node.classList.remove('is-over');
+      const again = focused != null ? this.chipLayer.querySelector(`[data-voice="${focused}"]`) : null;
+      if (again) again.focus({ preventScroll: true });
     }
 
     wireChip(g, id) {
       g.setAttribute('draggable', 'true');
       g.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/kandha-voice', String(id)); e.dataTransfer.effectAllowed = 'move'; });
       g.addEventListener('click', (e) => { e.stopPropagation(); this.select(id); });
+      // the key belongs to this chip: stop it here, so the page's own 1-4 shortcut does not also
+      // seat the person speaking now
       g.addEventListener('keydown', (e) => {
         const z = { 1: 'L', 2: 'R', 3: 'B', 4: 'F' }[e.key];
-        if (z && this.onAssign) { e.preventDefault(); this.onAssign(id, z); }
-        else if ((e.key === 'Delete' || e.key === 'Backspace') && this.onAssign) { e.preventDefault(); this.onAssign(id, null); }
-        else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.select(id); }
+        if (z && this.onAssign) { e.preventDefault(); e.stopPropagation(); this.onAssign(id, z); }
+        else if ((e.key === 'Delete' || e.key === 'Backspace') && this.onAssign) { e.preventDefault(); e.stopPropagation(); this.onAssign(id, null); }
+        else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); this.select(id); }
       });
       // SVG <g draggable> is not reliable everywhere: pointer drag as a fallback
       let dragging = false;

@@ -82,6 +82,8 @@
           await this._sleep(700);
         }
       }
+      // stopped during the last step: a stopped demo never reports an end (a replay may be playing)
+      if (!this.running) return;
       this.running = false;
       this.h.end();
     }
