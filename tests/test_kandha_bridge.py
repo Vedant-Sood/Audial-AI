@@ -88,6 +88,31 @@ def test_haptic_writes_reach_the_stole_only_while_connected_and_measure_latency(
     assert run(link.write_config(StoleConfig(mirror=True))) is True and stole.config.mirror
 
 
+def test_a_new_connection_resets_the_mock_stoles_duplicate_filter():
+    """C50, as the firmware does: the app's seq starts again with every launch, so a command with the
+    previous connection's last seq still plays; within one connection a repeat is still a duplicate."""
+    now = [1.0]
+    stole = MockStole(clock=lambda: now[0])
+    starts = []
+    original = stole.player.start
+    stole.player.start = lambda *args, **kwargs: (starts.append(now[0]), original(*args, **kwargs))[1]
+    connected = bytes.fromhex("01030c7801")     # seq 1, both shoulders, the connection ticks
+
+    async def scenario():
+        first = MockBleakClient(stole, None, lambda: None)
+        await first.connect()
+        await first.write_gatt_char(uuids()["haptic"], connected)
+        await first.write_gatt_char(uuids()["haptic"], connected)      # a duplicate delivery
+        await first.disconnect()
+        now[0] = 5.0
+        second = MockBleakClient(stole, None, lambda: None)          # the app was launched again
+        await second.connect()
+        await second.write_gatt_char(uuids()["haptic"], connected)
+
+    run(scenario())
+    assert starts == [1.0, 5.0], starts
+
+
 def test_reconnects_with_backoff_after_a_drop_and_keeps_captions_out_of_it(tmp_path):
     stole = MockStole()
     backend = MockBackend([stole])

@@ -147,6 +147,9 @@ class MockBleakClient:
             self.stole.connect_failures -= 1
             raise OSError("Connection failed.")
         self.is_connected = True
+        # like the firmware (C50): a new connection forgets the last seq, so the app's counter,
+        # which starts again with every launch, is never taken for a duplicate
+        self.stole.last_seq = None
         self.stole.clients.append(self)
         return True
 

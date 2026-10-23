@@ -6,6 +6,7 @@ SSE stream (`/api/kandha/stream`) and for the companion's `/api/events` poll.
 
 Nothing here can stop captions: the Audial engine is not referenced at all.
 """
+from collections import deque
 from dataclasses import asdict, dataclass, field
 import json
 import math
@@ -31,6 +32,8 @@ TICK_S = 0.02
 # long session can pass 64 or any small cap; this only keeps them sane integers. Matches
 # app/services/voice_view.py MAX_VOICE.
 MAX_VOICE = 1_000_000
+# How many recent intent batches the page's clock is compared with (see KandhaService._trip_ms).
+CLOCK_SAMPLES = 8
 
 
 def _default_cues():
@@ -123,7 +126,11 @@ class KandhaService:
         self.current_voice = None
         self.session_started = None
         self.played = []                  # recent dispatched taps for diagnostics
-        self.latency_ms = []              # page intent -> dispatch, wall clock
+        self.latency_ms = []              # page intent raised -> dispatch
+        # the clock gap (this service's clock minus the page's `sent`) of the last few batches
+        self.clock_gaps = deque(maxlen=CLOCK_SAMPLES)
+        # milliseconds on a wall clock that never steps: time.time() at start, then the monotonic clock
+        self.wall_base_ms = time.time() * 1000 - time.monotonic() * 1000
         self.bridge = None
         self.backend_given = backend
         self.start_bridge = start_bridge
@@ -237,14 +244,14 @@ class KandhaService:
     def _seat_lookup(self, voice):
         return self.seats.zone_for(voice) if voice is not None else None
 
-    def submit(self, intent, sent_ms=None):
+    def submit(self, intent):
         now = self.clock()
         with self.lock:
             commands = self.scheduler.submit(intent, now)
-            played = [self.dispatch(p, sent_ms) for p in commands]
+            played = [self.dispatch(p) for p in commands]
         return played
 
-    def dispatch(self, played, sent_ms=None, age_ms=0.0):
+    def dispatch(self, played, from_page=False):
         data = played.command.encode()
         shown = self.virtual.write_haptic(data)
         device = "virtual"
@@ -261,9 +268,10 @@ class KandhaService:
         if shown is not None:
             record.update(zones=shown["zones"], mask=shown["mask"], intensity=shown["intensity"],
                           duration_ms=shown["duration_ms"], segments=shown["segments"])
-        if sent_ms is not None:
-            # the intent's whole age: its time on the page before sending plus the trip here
-            latency = time.time() * 1000 - sent_ms + age_ms
+        if from_page:
+            # the intent's whole age on this service's clock: its time on the page, the trip here
+            # (see _trip_ms) and any wait in the scheduler
+            latency = (self.clock() - played.intent.created) * 1000
             if math.isfinite(latency) and -1000 < latency < 60000:
                 record["app_latency_ms"] = round(latency, 1)
                 self.latency_ms.append(round(latency, 1))
@@ -289,6 +297,13 @@ class KandhaService:
             if self.queue.due(now):
                 released += [self.dispatch(p) for p in self.scheduler.submit(Intent("queue_reminder", created=now), now)]
                 self.publish("queue", {"on": True, "waited_s": round(self.queue.waited(now)), "reminder": True})
+            # the 6 s seat window after a new voice ran out with no pad tap: say so, so every open
+            # page drops its "waiting for a seat" highlight (a tap now gets "no-window" anyway)
+            if self.seats.pending is not None and not self.seats.window_open(now):
+                voice = self.seats.pending[0]
+                self.seats.pending = None
+                self.publish("seat", {"voice": voice, "source": "seat-window", "action": "window-closed", "pending": None,
+                                      "seats": self.seats.snapshot(now)["seats"]})
         return released
 
     # ----------------------------------------------------------------- page API
@@ -299,9 +314,12 @@ class KandhaService:
         if current is not None:
             self.current_voice = _voice(current)
         now = self.clock()
-        played, accepted = [], 0
+        arrived_ms = self.wall_base_ms + time.monotonic() * 1000
+        played, accepted, gaps = [], 0, set()
         for raw in batch:
-            intent, sent, age_ms = self._clean_intent(raw, now)
+            intent, gap = self._clean_intent(raw, now, arrived_ms)
+            if gap is not None:
+                gaps.add(gap)
             accepted += 1
             with self.lock:
                 if intent.kind == "new_voice":
@@ -311,10 +329,28 @@ class KandhaService:
                 if intent.kind in ("speaker", "voice_resumes", "new_voice") and intent.voice is not None:
                     self.current_voice = intent.voice
                 for p in self.scheduler.submit(intent, now):
-                    played.append(self.dispatch(p, sent, age_ms))
+                    played.append(self.dispatch(p, from_page=True))
+        # this batch's clock gap counts for the batches after it, never for its own intents
+        with self.lock:
+            self.clock_gaps.extend(sorted(gaps))
         return {"accepted": accepted, "played": played, "dropped": len(self.scheduler.dropped)}
 
-    def _clean_intent(self, raw, now):
+    def _trip_ms(self, gap):
+        """How long a batch took to reach this service, in ms, from its clock gap: this service's
+        clock minus the page's `sent` (the page's wall clock as the batch left).
+
+        Both clocks are on this computer, but a browser's clock can still run ahead or behind (a
+        cached time base, a time sync after sleep), so `sent` is only used against the batches
+        before it: the smallest of their gaps is taken as the two clocks' difference (that batch
+        had almost no trip) and only delay beyond it counts. A steady difference of any size then
+        cancels out and drops no tap, and a batch held up on the way still shows its delay. With
+        no batch before it there is nothing to compare with, so no trip is counted."""
+        with self.lock:
+            if gap is None or not self.clock_gaps:
+                return 0.0
+            return max(0.0, gap - min(self.clock_gaps))
+
+    def _clean_intent(self, raw, now, arrived_ms):
         if not isinstance(raw, dict) or raw.get("kind") not in ("speaker", "new_voice", "voice_resumes", "cue", "silence"):
             raise ValueError("Intents are speaker, new_voice, voice_resumes, cue or silence objects.")
         kind = raw["kind"]
@@ -328,15 +364,14 @@ class KandhaService:
         age = raw.get("age_ms", 0)
         if type(age) not in (int, float) or not math.isfinite(age) or not 0 <= age <= 600000:
             raise ValueError("age_ms is how long ago the intent was raised, in milliseconds.")
-        sent = raw.get("sent")
-        if sent is not None and (type(sent) not in (int, float) or not math.isfinite(sent)):
-            sent = None
-        # age_ms is measured by the page when it sends; `sent` is that moment on the wall clock,
-        # which the page shares with this service (loopback, one computer). Adding the trip here
-        # means an intent held up on the way is dropped as stale, never played late.
-        transit = max(0.0, time.time() * 1000 - sent) if sent is not None else 0.0
-        return Intent(kind, created=now - (age + transit) / 1000.0, voice=voice, cue=cue if kind == "cue" else None,
-                      t=None if t is None else round(float(t), 3), new=bool(raw.get("new")), demo=bool(raw.get("demo"))), sent, float(age)
+        # age_ms is how old the intent was when the page sent it, on the page's own steady clock;
+        # `sent` is that moment on the page's wall clock. Adding the trip here (see _trip_ms) means
+        # an intent held up on the way is dropped as stale, never played late.
+        sent = _finite(raw.get("sent"))
+        gap = arrived_ms - sent if sent is not None else None
+        trip = self._trip_ms(gap)
+        return Intent(kind, created=now - (age + trip) / 1000.0, voice=voice, cue=cue if kind == "cue" else None,
+                      t=None if t is None else round(float(t), 3), new=bool(raw.get("new")), demo=bool(raw.get("demo"))), gap
 
     def set_queue(self, on, source="screen"):
         now = self.clock()
@@ -362,7 +397,10 @@ class KandhaService:
         with self.lock:
             result = self.seats.on_pad(pad, gesture, now, self.current_voice)
         if result:
-            self.publish("seat", result | {"source": device + "-pad", "seats": self.seats.snapshot(now)["seats"]})
+            # pending says whether a new voice still waits for a seat (null after "no-window" or an
+            # assignment), so every open page shows the same
+            snap = self.seats.snapshot(now)
+            self.publish("seat", result | {"source": device + "-pad", "seats": snap["seats"], "pending": snap["pending"]})
         return result
 
     def press_pad(self, pad_name, gesture_name):
@@ -380,7 +418,8 @@ class KandhaService:
         with self.lock:
             changed = self.seats.assign(voice, zone, source)
         snap = self.seats.snapshot(now)
-        self.publish("seat", {"voice": voice, "zone": zone, "source": source, "changed": changed, "seats": snap["seats"]})
+        self.publish("seat", {"voice": voice, "zone": zone, "source": source, "changed": changed, "seats": snap["seats"],
+                              "pending": snap["pending"]})
         return snap
 
     def merge_voices(self, keep, drop):
@@ -522,6 +561,17 @@ def _simulated_in(backend):
         if isinstance(stole, SimulatedStole):
             return stole
     return None
+
+
+def _finite(value):
+    """value as a float when it is a finite JSON number (not true or false), else None."""
+    if type(value) not in (int, float):
+        return None
+    try:
+        value = float(value)
+    except OverflowError:       # a whole number too big for a float
+        return None
+    return value if math.isfinite(value) else None
 
 
 def _voice(value, allow_none=False):
