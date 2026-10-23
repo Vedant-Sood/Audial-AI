@@ -161,15 +161,24 @@ class SeatMap:
         return None
 
     def merge(self, keep, drop):
-        """Two colours turned out to be one person: keep the first voice's seat unless it has none."""
+        """Two colours turned out to be one person: keep the first voice's seat unless it has none.
+
+        Returns False when there is nothing to merge (a voice joined to itself)."""
+        if keep == drop:
+            return False
         if drop in self.seats:
             if self.seats.get(keep) is None and self.seats[drop] is not None:
                 self.seats[keep] = self.seats[drop]
+                self.changes.append((keep, self.seats[keep], "merge"))
             del self.seats[drop]
         if drop in self.order:
             self.order.remove(drop)
         if keep not in self.order:
             self.order.append(keep)
+        # a seat window still open for the dropped voice would bring it back on the next pad tap
+        if self.pending and self.pending[0] == drop:
+            self.pending = None
+        return True
 
     def reset(self, keep_room=True):
         self.seats = {}
