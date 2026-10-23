@@ -6,7 +6,6 @@ SSE stream (`/api/kandha/stream`) and for the companion's `/api/events` poll.
 
 Nothing here can stop captions: the Audial engine is not referenced at all.
 """
-from collections import OrderedDict, deque
 from dataclasses import asdict, dataclass, field
 import json
 import math
@@ -32,10 +31,11 @@ TICK_S = 0.02
 # long session can pass 64 or any small cap; this only keeps them sane integers. Matches
 # app/services/voice_view.py MAX_VOICE.
 MAX_VOICE = 1_000_000
-# How many recent intent batches the page's clock is compared with (see KandhaService._trip_ms),
-# and for how many pages at once.
-CLOCK_SAMPLES = 8
-CLOCK_PAGES = 8
+# The page and this service always run on one computer (the service listens on loopback only),
+# so the page's Date.now() and time.time() read the same system clock and a batch's trip is
+# time.time() at arrival minus the page's `sent`. A gap outside this range (ms) cannot be a trip
+# on one clock, so it is a bad `sent`: then no trip is counted, and a bad value never drops a tap.
+TRIP_RANGE_MS = (-1000.0, 600000.0)
 
 
 def _default_cues():
@@ -129,11 +129,6 @@ class KandhaService:
         self.session_started = None
         self.played = []                  # recent dispatched taps for diagnostics
         self.latency_ms = []              # page intent raised -> dispatch
-        # the clock gap (this service's clock minus the page's `sent`) of the last few batches, per
-        # page (its tag; pages that send none share one history): each page has its own clock
-        self.clock_gaps = OrderedDict()
-        # milliseconds on a wall clock that never steps: time.time() at start, then the monotonic clock
-        self.wall_base_ms = time.time() * 1000 - time.monotonic() * 1000
         self.bridge = None
         self.backend_given = backend
         self.start_bridge = start_bridge
@@ -317,12 +312,10 @@ class KandhaService:
         if current is not None:
             self.current_voice = _voice(current)
         now = self.clock()
-        arrived_ms = self.wall_base_ms + time.monotonic() * 1000
-        played, accepted, gaps = [], 0, set()
+        arrived_ms = time.time() * 1000
+        played, accepted = [], 0
         for raw in batch:
-            intent, gap, page = self._clean_intent(raw, now, arrived_ms)
-            if gap is not None:
-                gaps.add((page, gap))
+            intent = self._clean_intent(raw, now, arrived_ms)
             accepted += 1
             with self.lock:
                 if intent.kind == "new_voice":
@@ -333,41 +326,18 @@ class KandhaService:
                     self.current_voice = intent.voice
                 for p in self.scheduler.submit(intent, now):
                     played.append(self.dispatch(p, from_page=True))
-        # this batch's clock gap counts for the page's batches after it, never for its own intents
-        with self.lock:
-            for page, gap in sorted(gaps, key=lambda pg: pg[1]):
-                if page not in self.clock_gaps:
-                    if len(self.clock_gaps) >= CLOCK_PAGES:
-                        self.clock_gaps.popitem(last=False)     # the page heard from least recently
-                    self.clock_gaps[page] = deque(maxlen=CLOCK_SAMPLES)
-                self.clock_gaps.move_to_end(page)
-                self.clock_gaps[page].append(gap)
         return {"accepted": accepted, "played": played, "dropped": len(self.scheduler.dropped)}
 
-    def _trip_ms(self, gap, page=None):
-        """How long a batch took to reach this service, in ms, from its clock gap: this service's
-        clock minus the page's `sent` (the page's wall clock as the batch left).
-
-        Both clocks are on this computer, but a browser's clock can still run ahead or behind (a
-        cached time base, a time sync after sleep), so `sent` is only used against the same page's
-        batches before it: the smallest of their gaps is taken as the two clocks' difference (that
-        batch had almost no trip) and only delay beyond it counts. A steady difference of any size
-        then cancels out and drops no tap, and a batch held up on the way still shows its delay.
-        With no batch before it there is nothing to compare with, so no trip is counted.
-
-        Each page keeps its own history, so a second page whose clock runs ahead never makes this
-        one's batches look held up. Within a page, one gap further below all the others than the
-        stale window is outvoted: believing it would make every tap look stale, so it is taken as
-        one odd `sent` (a bad value, a clock ahead for a single batch). A gap closer to the rest
-        than that still counts, so one fast batch among slower ones (a busy computer) keeps the
-        trip of a held-up batch. When no two gaps are that close yet, the smallest is used."""
-        with self.lock:
-            gaps = sorted(self.clock_gaps.get(page, ()))
-            window_ms = self.scheduler.stale_after * 1000
-        if gap is None or not gaps:
+    @staticmethod
+    def _trip_ms(gap):
+        """How long a batch took to reach this service, in ms: time.time() at arrival minus the
+        page's `sent`. Both read this computer's system clock, so the gap is the trip itself; a
+        clock step moves both readings together. A gap below zero (reading jitter) counts as no
+        trip, and one outside TRIP_RANGE_MS is a bad `sent` and counts as none, so such a value
+        never makes taps look late. Stateless: one batch never changes how the next is measured."""
+        if gap is None or not TRIP_RANGE_MS[0] <= gap <= TRIP_RANGE_MS[1]:
             return 0.0
-        floor = next((a for a, b in zip(gaps, gaps[1:]) if b - a <= window_ms), gaps[0])
-        return max(0.0, gap - floor)
+        return max(0.0, gap)
 
     def _clean_intent(self, raw, now, arrived_ms):
         if not isinstance(raw, dict) or raw.get("kind") not in ("speaker", "new_voice", "voice_resumes", "cue", "silence"):
@@ -384,16 +354,12 @@ class KandhaService:
         if type(age) not in (int, float) or not math.isfinite(age) or not 0 <= age <= 600000:
             raise ValueError("age_ms is how long ago the intent was raised, in milliseconds.")
         # age_ms is how old the intent was when the page sent it, on the page's own steady clock;
-        # `sent` is that moment on the page's wall clock. Adding the trip here (see _trip_ms) means
-        # an intent held up on the way is dropped as stale, never played late.
+        # `sent` is that moment on the system clock. Adding the trip here (see _trip_ms) means an
+        # intent held up on the way is dropped as stale, never played late.
         sent = _finite(raw.get("sent"))
-        gap = arrived_ms - sent if sent is not None else None
-        # `page` tags the page that sent it (its own clock); a page that sends none shares one history
-        page = raw.get("page")
-        page = page if isinstance(page, str) and 0 < len(page) <= 64 else None
-        trip = self._trip_ms(gap, page)
+        trip = self._trip_ms(arrived_ms - sent if sent is not None else None)
         return Intent(kind, created=now - (age + trip) / 1000.0, voice=voice, cue=cue if kind == "cue" else None,
-                      t=None if t is None else round(float(t), 3), new=bool(raw.get("new")), demo=bool(raw.get("demo"))), gap, page
+                      t=None if t is None else round(float(t), 3), new=bool(raw.get("new")), demo=bool(raw.get("demo")))
 
     def set_queue(self, on, source="screen"):
         now = self.clock()

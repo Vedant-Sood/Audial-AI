@@ -282,8 +282,7 @@ def test_the_prototype_pairs_with_the_simulated_stole_and_can_switch_links(tmp_p
 # ---------------------------------------------------------------- review fixes (C6, C11, C13, C16/G3, C18/G2, C21, C25)
 def test_an_intent_held_up_on_the_way_is_dropped_as_stale_not_played_late(tmp_path):
     """DESIGN 7.2: older than 1.5 s when it would play -> dropped. The page sends each intent's age
-    when it leaves (age_ms) and that moment on its wall clock (sent); the trip, measured against
-    the batches before it, is added."""
+    when it leaves (age_ms) and that moment on the system clock (sent); the trip is added."""
     service = KandhaService(home=tmp_path, start_bridge=False, ticker=False)
     try:
         service.update_settings({"mode": "practicum"})
@@ -303,118 +302,53 @@ def speaker(voice, page_clock_ms, age_ms=20):
     return {"kind": "speaker", "voice": voice, "t": float(voice), "age_ms": age_ms, "sent": page_clock_ms}
 
 
-@pytest.mark.parametrize("behind_ms", [2500, 30000, -4000])
-def test_a_page_clock_ahead_or_behind_neither_drops_every_tap_nor_hides_a_held_up_batch(tmp_path, behind_ms):
-    """The page's wall clock (sent) need not agree with this service's: a browser tab can keep its
-    own time base, or catch up with a time sync late. A steady difference bigger than the 1.5 s
-    stale window must not drop every tap (behind) or let a batch held up on the way play late
-    (ahead); the trip counts only beyond the fastest recent batch."""
+@pytest.mark.parametrize("held_ms", [1600, 3000, 30000])
+def test_any_batch_held_up_past_the_stale_window_is_dropped_on_its_own(tmp_path, held_ms):
+    """The page and the service read one system clock (loopback only), so each batch's trip is
+    measured by itself: no earlier batch is needed and none changes how the next is measured."""
     now = [100.0]
     service = KandhaService(home=tmp_path, start_bridge=False, ticker=False, clock=lambda: now[0])
-    page_clock = lambda: time.time() * 1000 - behind_ms
     try:
         service.update_settings({"mode": "practicum"})
-        for voice in range(1, 7):
-            now[0] += 1.0                       # the tap before has finished
-            out = service.intents([speaker(voice, page_clock())])
-            assert [p["voice"] for p in out["played"]] == [voice], (voice, service.scheduler.dropped[-1:])
-            assert 20 <= out["played"][0]["app_latency_ms"] < 200, "the intent's real age, not the clocks' difference"
+        late = service.intents([speaker(1, time.time() * 1000 - held_ms, age_ms=0)])
+        assert late["played"] == [] and service.scheduler.dropped[-1][1] == "stale", "the very first batch counts its trip"
         now[0] += 1.0
-        late = service.intents([speaker(7, page_clock() - 3000, age_ms=0)])
-        assert late["played"] == [] and service.scheduler.dropped[-1][1] == "stale", "held up 3 s on the way: never tapped late"
+        on_time = service.intents([speaker(2, time.time() * 1000)])
+        assert [p["voice"] for p in on_time["played"]] == [2]
+        assert 20 <= on_time["played"][0]["app_latency_ms"] < 200, "the intent's real age"
+    finally:
+        service.close()
+
+
+@pytest.mark.parametrize("sent", [0, -5, 1e15, -1e15, "soon", None])
+def test_a_bad_sent_value_counts_no_trip_and_never_drops_a_tap(tmp_path, sent):
+    """A `sent` that cannot be a reading of this computer's clock (missing, not a number, years
+    off) counts as no trip, so it plays; and it leaves nothing behind for the next batch."""
+    now = [100.0]
+    service = KandhaService(home=tmp_path, start_bridge=False, ticker=False, clock=lambda: now[0])
+    try:
+        service.update_settings({"mode": "practicum"})
+        intent = speaker(1, sent)
+        if sent is None:
+            del intent["sent"]
+        assert [p["voice"] for p in service.intents([intent])["played"]] == [1]
         now[0] += 1.0
-        assert [p["voice"] for p in service.intents([speaker(8, page_clock())])["played"]] == [8], "the next batch on time plays"
+        assert [p["voice"] for p in service.intents([speaker(2, time.time() * 1000)])["played"]] == [2]
+        now[0] += 1.0
+        late = service.intents([speaker(3, time.time() * 1000 - 3000, age_ms=0)])
+        assert late["played"] == [] and service.scheduler.dropped[-1][1] == "stale", "a held-up batch is still dropped"
     finally:
         service.close()
 
 
-def test_a_page_clock_that_steps_costs_a_few_taps_at_most(tmp_path):
-    """A clock step (a time sync after sleep) changes the difference mid-session. A page clock that
-    jumps ahead loses nothing. One that falls behind by more than the stale window looks like a
-    held-up batch until CLOCK_SAMPLES batches have shown the new difference: at most that many
-    taps are lost, then they all play again."""
-    from app.kandha.service import CLOCK_SAMPLES
-    now = [100.0]
-    service = KandhaService(home=tmp_path, start_bridge=False, ticker=False, clock=lambda: now[0])
-    voices = iter(range(1, 1000))
-
-    def taps(behind_ms, batches):
-        played = []
-        for _ in range(batches):
-            now[0] += 1.0
-            voice = next(voices)
-            played.append(bool(service.intents([speaker(voice, time.time() * 1000 - behind_ms)])["played"]))
-        return played
-
-    try:
-        service.update_settings({"mode": "practicum"})
-        assert all(taps(0, 3)), "the clocks agree"
-        assert all(taps(-5000, 3)), "the page clock jumps 5 s ahead: nothing is lost"
-        for behind_ms in (0, 2500):             # it falls back 5 s, then 2.5 s more
-            after_step = taps(behind_ms, CLOCK_SAMPLES + 4)
-            assert after_step[CLOCK_SAMPLES:] == [True] * 4, (behind_ms, after_step)
-        assert all(taps(-1000, 3)), "ahead again: at once"
-    finally:
-        service.close()
-
-
-def test_one_odd_sent_or_another_page_s_clock_never_makes_this_page_s_taps_look_late(tmp_path):
-    """The clocks' difference is kept per page (the page's tag), and one batch alone never sets
-    it: a single `sent` ahead of the rest (a bad value, a clock ahead for one batch) or a second
-    page whose clock runs 5 s ahead all along drops no tap, and a held-up batch is still dropped."""
-    from app.kandha.service import CLOCK_PAGES, CLOCK_SAMPLES
-    now = [100.0]
-    service = KandhaService(home=tmp_path, start_bridge=False, ticker=False, clock=lambda: now[0])
-    voices = iter(range(1, 1000))
-
-    def tap(ahead_ms=0, page=None, held_ms=0):
-        now[0] += 1.0                           # the tap before has finished
-        intent = speaker(next(voices), time.time() * 1000 + ahead_ms - held_ms, age_ms=0 if held_ms else 20)
-        if page is not None:
-            intent["page"] = page
-        return bool(service.intents([intent])["played"])
-
-    try:
-        service.update_settings({"mode": "practicum"})
-        for odd in (5000, 1e15):                # pages that send no tag share one history
-            assert all(tap() for _ in range(3))
-            tap(odd)
-            assert [tap() for _ in range(CLOCK_SAMPLES + 2)] == [True] * (CLOCK_SAMPLES + 2), odd
-            assert not tap(held_ms=3000), "held up 3 s on the way: never tapped late"
-        # two pages, one on time and one 5 s ahead, taking turns
-        both = [(tap(page="here"), tap(5000, page="there")) for _ in range(CLOCK_SAMPLES + 2)]
-        assert both == [(True, True)] * (CLOCK_SAMPLES + 2), both
-        assert not tap(page="here", held_ms=3000) and not tap(5000, page="there", held_ms=3000)
-        assert tap(page="here") and tap(5000, page="there")
-        # many pages over a long run: only the last few are remembered
-        for n in range(CLOCK_PAGES + 4):
-            tap(page=f"page-{n}")
-        assert len(service.clock_gaps) == CLOCK_PAGES and "page-0" not in service.clock_gaps
-    finally:
-        service.close()
-
-
-@pytest.mark.parametrize("slow_ms", [600, 1400])
-def test_one_fast_batch_among_slower_ones_still_sets_the_clocks_difference(tmp_path, slow_ms):
-    """On a busy computer one batch can arrive at once and the next ones take a while. The fast
-    batch's gap is the clocks' difference even though the slower ones agree with each other, so
-    an intent held up 1.9 s on the way (2.0 s old in all) is dropped, never played late. Only a
-    gap further below the rest than the stale window is outvoted as an odd `sent`."""
-    now = [100.0]
-    service = KandhaService(home=tmp_path, start_bridge=False, ticker=False, clock=lambda: now[0])
-    voices = iter(range(1, 1000))
-
-    def tap(held_ms, age_ms=20):
-        now[0] += 1.0                           # the tap before has finished
-        return bool(service.intents([speaker(next(voices), time.time() * 1000 - held_ms, age_ms=age_ms) | {"page": "p"}])["played"])
-
-    try:
-        service.update_settings({"mode": "practicum"})
-        assert [tap(0), tap(slow_ms), tap(slow_ms + 10)] == [True] * 3, "each of these is under 1.5 s old"
-        assert not tap(1900, age_ms=100) and service.scheduler.dropped[-1][1] == "stale"
-        assert tap(0), "the next batch on time plays"
-    finally:
-        service.close()
+def test_a_sent_slightly_ahead_counts_as_no_trip(tmp_path):
+    """Two readings of one clock can differ by a little (timer coarsening in the browser): a `sent`
+    up to a second ahead of the arrival counts as no trip, not as a negative one."""
+    from app.kandha.service import KandhaService as Service
+    assert Service._trip_ms(-0.4) == 0.0 and Service._trip_ms(-999.0) == 0.0
+    assert Service._trip_ms(-1001.0) == 0.0, "outside the range: a bad value, no trip"
+    assert Service._trip_ms(12.5) == 12.5 and Service._trip_ms(2000.0) == 2000.0
+    assert Service._trip_ms(600001.0) == 0.0 and Service._trip_ms(None) == 0.0
 
 
 def test_the_seat_window_closing_tells_every_page_that_nobody_waits(tmp_path):

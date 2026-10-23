@@ -2,10 +2,10 @@
 
 Every number here comes from a script in this repository. The checks in the table (all but the
 baseline before Kandha) were last run on 2026-10-23 on the tree of the commit that last changed
-this file (`git log -1 -- docs/kandha/VALIDATION.md`): the review fix run's final fix-up on top
-of `dedd2df` (the run's commits `822d818`, `607d41e`, `a4937d0` and `dedd2df` follow
-`2281216`). The back-channel study, the tap budget and the accessibility audit wrote records
-identical to those of `dedd2df`. They ran in a Linux x86_64 cloud container
+this file (`git log -1 -- docs/kandha/VALIDATION.md`), which follows the review fix commits
+after `2281216`. The suites, the embedded page check and the Chromium end-to-end check were
+re-run on that tree; the back-channel study, the tap budget and the accessibility audit wrote
+records identical to those of `dedd2df`, and nothing they measure changed after it. They ran in a Linux x86_64 cloud container
 (Python 3.12.3, Node 22.22.0, Chromium 141.0.7390.37, QtWebEngine 6.8.3 / Chromium 122,
 g++ 13.3). The Windows and Linux build sections further down are older records and say so. What
 was simulated is marked. Nothing has been measured on a physical stole, over Bluetooth, or with
@@ -14,7 +14,7 @@ Indian English or Hindi speakers; on Windows only the CI install check below has
 | Check | Script | Record |
 |---|---|---|
 | Test baseline before Kandha | `npm test`, `pytest` | [baseline.json](validation/baseline.json): npm 31/31, pytest 132 passed, 1 skipped |
-| Tests now | `npm test`, `QT_QPA_PLATFORM=offscreen python -m pytest -q` | npm 58/58 (19 in `tests/kandha.test.js`); pytest 362 passed, 1 skipped (the Windows Credential Manager test). 216 of the pytest tests are in `tests/test_kandha_*.py`, and none of them was skipped: the page in real Chromium (13), the Kandha window in QtWebEngine (12) and the firmware built and run on the host with g++ (59) all ran |
+| Tests now | `npm test`, `QT_QPA_PLATFORM=offscreen python -m pytest -q` | npm 58/58 (19 in `tests/kandha.test.js`); pytest 366 passed, 1 skipped (the Windows Credential Manager test). 220 of the pytest tests are in `tests/test_kandha_*.py`, and none of them was skipped: the page in real Chromium (14), the Kandha window in QtWebEngine (12) and the firmware built and run on the host with g++ (59) all ran |
 | Firmware pattern header | `python scripts/generate_kandha_patterns.py --check` | `firmware/kandha/patterns.h` is up to date with the pattern table |
 | Back-channel hold and the first turn after a long silence | `node scripts/kandha_backchannel_study.mjs` | [backchannel.json](validation/backchannel.json) |
 | End to end in Chromium | `python -m scripts.verify_kandha` | [e2e-chromium.json](validation/e2e-chromium.json) |

@@ -57,7 +57,7 @@ final fix-up, on top of `dedd2df` and `2281216`), except the Windows CI line.
   on, 1.0 per minute; Practicum 1.0 per minute (target ≤ 6).
 - Accessibility audit: every control reachable by keyboard with visible focus, no contrast
   failure, no overflow at 1280 × 720, both themes.
-- Tests: pytest 362 passed and 1 skipped (a Windows-only test), npm 58 passed (baseline before
+- Tests: pytest 366 passed and 1 skipped (a Windows-only test), npm 58 passed (baseline before
   Kandha: pytest 132 passed and 1 skipped, npm 31).
 - Windows CI, on the earlier commit `305b77c`: `Kandha-Setup-0.6.0.exe` built, installed on a
   disposable Windows account, the packaged page ready in 0.8 s, uninstalled cleanly

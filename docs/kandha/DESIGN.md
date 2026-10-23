@@ -90,15 +90,14 @@ every bridge call is bounded, and a failure in either only changes which device 
 **Speaker decision → shoulder.** `engine.js` emits `speaker` 0.64–1.4 s after speech starts
 (unchanged). `kandha-intents.js` applies the back-channel hold and the rule for the first turn
 after a long silence (section 7.3), and the page posts the intents in batches to
-`/api/kandha/intents`. Each intent is `{kind, voice, cue, t, new, demo, age_ms, sent, page}`:
+`/api/kandha/intents`. Each intent is `{kind, voice, cue, t, new, demo, age_ms, sent}`:
 
 - `kind` is `speaker`, `new_voice`, `voice_resumes`, `cue` or `silence`; `voice` is a session
   voice number from 1 to 1,000,000; `t` is the audio time;
 - `age_ms` (0–600000) is how old the intent is when the page sends it, on the page's steady
   clock (`performance.now()`), so latency counts from the moment it was raised;
-- `sent` is the page's `Date.now()` at that moment, and `page` is the window's tag (1–64
-  characters, the same tag it sends to `/api/kandha/session/new`); the service uses them only
-  to estimate the batch's trip (section 7.2, "How old an intent is").
+- `sent` is the page's `Date.now()` at that moment; the service uses it only to measure the
+  batch's trip on the shared system clock (section 7.2, "How old an intent is").
 
 `KandhaService` dates the intent `age_ms` plus that trip before its arrival, resolves the voice
 to a zone through `SeatMap`, `HapticScheduler.submit()` returns the command to play now,
@@ -379,23 +378,14 @@ scheduler rules are pure code in `app/kandha/scheduler.py` with unit tests.
   ends is dropped as soon as a newer intent would wait behind it, so it cannot keep the newer
   one out.
 - **How old an intent is**: its `age_ms` on the page plus the batch's trip to the service. The
-  trip comes from the batch's clock gap (the service clock at arrival minus the page's `sent`),
-  compared only with the same page's last `CLOCK_SAMPLES` = 8 batches (kept for the
-  `CLOCK_PAGES` = 8 pages heard from most recently; pages that send no tag share one history).
-  The smallest of those gaps is taken as the difference between the two clocks, and only delay
-  beyond it counts, unless it lies further below every other gap than the stale window (1.5 s):
-  then it is outvoted as one odd `sent`, and the smallest gap with another within 1.5 s of it is
-  used (the smallest gap while no two are that close yet). So a steady difference between the
-  page's and the service's clocks never drops a tap, one odd `sent` or another page whose clock
-  runs ahead cannot make this page's taps look late, and a batch held up on the way is still
-  dropped, also when one fast batch sits among slower ones. Batches that all take longer than
-  1.5 s after a single fast one look the same as an odd `sent`, so their trip is undercounted
-  until that fast batch leaves the history (a computer too busy to pass a batch on within
-  1.5 s, again and again). The first batch from a page has no trip measured; a page clock that
-  falls behind mid-session can cost at most 8 batches, one that jumps ahead none. The service
-  clock is `time.time()` at start plus `time.monotonic()`, so it never steps. `app_latency_ms`
-  in a haptic record is the intent's whole age when it was dispatched: page age, estimated trip
-  and time in the scheduler.
+  service listens on loopback only, so the page and the service run on one computer and read one
+  system clock: the trip is `time.time()` at arrival minus the page's `sent` (`Date.now()` as the
+  batch left), measured for each batch on its own. A gap below zero (two readings of one clock
+  differ by a little) counts as no trip; a gap outside -1 s to 10 min cannot be a trip on one
+  clock, so it is a bad `sent` and also counts as no trip, which means a bad value never drops a
+  tap. A batch held up on the way by more than 1.5 s is dropped, including the first one.
+  `app_latency_ms` in a haptic record is the intent's whole age when it was dispatched: page age,
+  trip and time in the scheduler.
 - **Checked again on release**: a deferred intent is dropped as `mode` when its mode or
   do-not-disturb no longer allows it, and as `self` when its voice was marked "This is me" while
   it waited.
@@ -521,8 +511,8 @@ scheduler; `scripts/verify_kandha.py` checks the stole's taps end to end); its r
 | Virtual stole parity | the same bytes produce the same zone timeline on the virtual stole and the mock stole (both run the Python `PatternPlayer`) | `tests/test_kandha_virtual.py` |
 | Firmware on the host | `pattern_engine.h`, `touch_pads.h` and the whole `kandha.ino` built with the host C++ compiler against Arduino and BLE stand-ins (`tests/firmware_host/`): every built-in pattern, played once and twice, and CONFIG scaling, mirror, mute, a command replacing another, stop and late `loop()` ticks equal `PatternPlayer` millisecond by millisecond, with the 60/255 floor and the 15 ms kick on top; pad gestures (tap, double, long, debounce); the BLE-to-`loop()` mailbox and its backlog; the seq filter forgotten on each connection; STATUS notified on every flag, battery and charging change (CONFIG, console, battery sample, a pattern ending); a ThreadSanitizer run. Skipped without a C++ compiler and on Windows | `tests/test_kandha_firmware_host.py` |
 | Intents | back-channel hold on LibriSpeech turns, the first turn after a long silence (one seat intent, short sounds, the page's silence setting), page controls, no double taps; the on-screen pads' gesture timing | `tests/kandha.test.js` |
-| Service and HTTP | `/api/kandha/*` ownership, SSE, consent gate, settings, the session record (`session/new`, `session/events`, `session/save`, export by session id), the stale rule with page clocks ahead, behind or stepping and with one fast batch among slow ones, the seat window closing | `tests/test_kandha_service.py` |
-| Page in Chromium | real `BrowserService` with the mock stole, Chromium's fake microphone: seat chips and keys, the voice dialog, the seat highlight, the queue after a reload, browser captions only as an opt-in, Demos and the session clock, the silence setting reaching the intents, the unreachable-service flash and status, the page tag on intents, the pads' gestures, the microphone remembered by name. Skipped without Playwright or Chromium | `tests/test_kandha_page.py` |
+| Service and HTTP | `/api/kandha/*` ownership, SSE, consent gate, settings, the session record (`session/new`, `session/events`, `session/save`, export by session id), the stale rule (each batch's trip on the shared system clock, a bad `sent` counting as no trip), the seat window closing | `tests/test_kandha_service.py` |
+| Page in Chromium | real `BrowserService` with the mock stole, Chromium's fake microphone: seat chips and keys, the voice dialog, the seat highlight, the queue after a reload, browser captions only as an opt-in, Demos and the session clock, the silence setting reaching the intents, the unreachable-service flash and status, each intent's age and send time, a chip selection ending with its session, the pads' gestures, the microphone remembered by name. Skipped without Playwright or Chromium | `tests/test_kandha_page.py` |
 | Kandha window | QtWebEngine in a subprocess: the microphone only for the exact companion origin, exports saved to Downloads with unique names (also when the window closes right after one), the caption-model bar, opening from Audial-AI, quitting with Kandha open, the microphone across a relaunch, an explicit `--port` | `tests/test_kandha_window.py` |
 | Packaging | `bleak` pinned and collected with its backend, the portable Windows wheel set, the HTML user guide, a `.sha256` beside every release asset | `tests/test_kandha_packaging.py` |
 | End to end | real Chromium, fake microphone A B A B then A and a new reader C after 5 s silences, Whisper stubbed, mock stole: zones in order, latency, no cue storms, queue saved, a consented save of this session | `scripts/verify_kandha.py` |

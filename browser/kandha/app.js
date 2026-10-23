@@ -529,7 +529,7 @@
     // service adds the trip and drops anything older than 1.5 s rather than tapping late. The
     // page tag keeps this window's clock apart from any other page's on the service.
     const now = performance.now(), sent = Date.now();
-    const body = batch.map((i) => Object.assign({}, i.body, { age_ms: Math.min(600000, Math.max(0, Math.round(now - i.raised))), sent, page: PAGE_TAG }));
+    const body = batch.map((i) => Object.assign({}, i.body, { age_ms: Math.min(600000, Math.max(0, Math.round(now - i.raised))), sent }));
     try {
       const out = await api('/api/kandha/intents', { intents: body, current: S.current });
       if (unreachable) {
@@ -898,6 +898,9 @@
     S.speakers.clear(); S.current = null; S.lines = []; S.changes = []; S.tones = []; S.taps = []; S.seatChanges = []; S.seenSeq = [];
     S.demoTitle = null; S.demoEnd = null;
     K.seats = {}; setPending(null);
+    // voice numbers start again at 1, so a chip picked in the last session must not stay the
+    // target of the 1-4 keys on the Seats screen
+    for (const view of [views.roomBig, views.roomLive]) if (view) view.selected = null;
     // a new session starts with the queue off, as the service's does
     applyQueue({ on: false, source: 'session' });
     newRecord();

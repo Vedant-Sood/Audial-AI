@@ -14,6 +14,7 @@ device, and demos are fast-forwarded with Playwright's clock. Skipped without Pl
 """
 import json
 import os
+import time
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -446,18 +447,31 @@ def test_an_unreachable_service_flashes_every_seat_tap_and_a_new_session_drops_t
         assert page.evaluate(STATUS) == ["demo", "Demo · Case seminar"]
 
 
-def test_each_intent_carries_the_page_tag_so_the_service_measures_this_page_s_clock_alone(kandha):
+def test_each_intent_carries_its_age_and_the_system_clock_when_it_was_sent(kandha):
     bodies = []
     with kandha_page(kandha) as page:
         for t in (1, 2):
             with page.expect_response(lambda r: r.request.method == "POST" and r.url.endswith("/api/kandha/intents")) as answer:
                 page.evaluate("(t) => window.Kandha.intents.emit({ kind: 'silence', t, voice: null })", t)
             bodies.extend(json.loads(answer.value.request.post_data)["intents"])
-        tags = {b.get("page") for b in bodies}
-        assert len(bodies) == 2 and len(tags) == 1, bodies
-        tag = tags.pop()
-        assert isinstance(tag, str) and tag, bodies
-        assert len(kandha.service.kandha.clock_gaps.get(tag, ())) == 2, "the service keeps this page's clock gaps under its tag"
+        assert len(bodies) == 2, bodies
+        for body in bodies:
+            assert 0 <= body["age_ms"] < 5000, body
+            assert abs(body["sent"] - time.time() * 1000) < 60000, "sent is a reading of this computer's clock"
+            assert "page" not in body, "the trip is measured per batch on the shared clock; no page history"
+
+
+def test_a_chip_picked_in_one_session_is_not_picked_in_the_next(kandha):
+    with kandha_page(kandha) as page:
+        page.evaluate("() => { const K = window.Kandha; K.onSpeaker(1, 1, true); K.onSpeaker(2, 2, true); K.assignSeat(1, 'F', 'demo'); K.assignSeat(2, 'L', 'demo'); }")
+        wait_seats(page, {"1": "F", "2": "L"})
+        page.evaluate("() => window.Kandha.showScreen('seats')")
+        page.wait_for_timeout(150)
+        page.click("#roomBig [data-voice='2']")
+        page.wait_for_function("() => !!document.querySelector('#roomBig .is-selected')")
+        page.evaluate("() => window.Kandha.playDemo('seminar')")
+        page.wait_for_timeout(400)
+        assert page.evaluate("() => document.querySelectorAll('#roomBig .is-selected').length") == 0
 
 
 def test_g7_the_on_screen_stole_pads_send_the_stole_s_gestures(kandha):
