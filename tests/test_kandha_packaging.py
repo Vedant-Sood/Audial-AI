@@ -92,6 +92,78 @@ def test_the_spec_no_longer_skips_bleak_quietly():
     assert "'bleak'}" not in spec                          # its metadata is no longer optional
 
 
+# ---------------------------------------------------------------------------- legacy portable ZIP (any build host)
+def portable_script():
+    found = importlib.util.spec_from_file_location("package_windows_portable",
+                                                   ROOT / "scripts" / "package_windows_portable.py")
+    module = importlib.util.module_from_spec(found)
+    found.loader.exec_module(module)
+    return module
+
+
+def normalised(name):
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def test_the_portable_zip_fetches_bleak_alone_and_lists_its_winrt_backend(tmp_path):
+    from packaging.requirements import Requirement
+    portable = portable_script()
+    bleak = pins("requirements.txt")["bleak"]
+    resolved, no_deps = portable.portable_requirements(ROOT)
+    # pip reads bleak's markers for the build host (dbus-fast on Linux, no WinRT), so it is fetched alone
+    assert no_deps == [f"bleak=={bleak}"]
+    names = {portable.requirement_name(line) for line in resolved} - {None}
+    assert "bleak" not in names and "dbus-fast" not in names
+    core = (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines()
+    assert all(line in resolved for line in core if portable.requirement_name(line) not in (None, "bleak"))
+
+    # requirements-portable.txt lists the backend the Windows build collects, from one PyWinRT release
+    listed = pins("requirements-portable.txt")
+    winrt = {name: version for name, version in listed.items() if name.startswith("winrt-")}
+    windows = helper("kandha_bluetooth").BACKENDS["windows"]["distributions"]
+    assert set(winrt) | {"typing-extensions"} == {normalised(name) for name in windows}
+    assert "typing-extensions" in names and len(set(winrt.values())) == 1
+
+    # ...and it is exactly what this bleak asks for on Windows with the bundled CPython, at versions it accepts
+    assert importlib.metadata.version("bleak") == bleak
+    python = re.search(r"/python/([\d.]+)/", portable.PYTHON_URL).group(1)
+    windows_cpython = {"sys_platform": "win32", "platform_system": "Windows", "os_name": "nt",
+                       "platform_machine": "AMD64", "implementation_name": "cpython",
+                       "platform_python_implementation": "CPython", "python_full_version": python,
+                       "python_version": ".".join(python.split(".")[:2]), "extra": ""}
+    needed = {}
+    for text in importlib.metadata.requires("bleak"):
+        requirement = Requirement(text)
+        if requirement.marker is None or requirement.marker.evaluate(windows_cpython):
+            needed[normalised(requirement.name)] = requirement.specifier
+    assert set(needed) == set(winrt), "bleak's Windows dependencies changed; update requirements-portable.txt"
+    for name, specifier in needed.items():
+        assert specifier.contains(winrt[name]), f"{name}=={winrt[name]} does not satisfy bleak's {specifier}"
+
+    # both pip passes fetch Windows x64 CPython 3.12 wheels; only bleak skips dependency resolution
+    resolve, alone = portable.pip_downloads(tmp_path / "wheels", tmp_path, tmp_path / "listing.txt", no_deps)
+    for command in (resolve, alone):
+        assert "--only-binary=:all:" in command and command[command.index("--platform") + 1] == "win_amd64"
+        assert command[command.index("--python-version") + 1] == "312"
+        assert command[command.index("--dest") + 1] == str(tmp_path / "wheels")
+    assert "--no-deps" not in resolve and resolve[-2:] == ["-r", str(tmp_path / "listing.txt")]
+    assert alone[-2:] == ["--no-deps", f"bleak=={bleak}"]
+
+
+def test_the_portable_requirement_reader_expands_includes_and_keeps_bleak_apart(tmp_path):
+    portable = portable_script()
+    (tmp_path / "requirements.txt").write_text("numpy==2.3.5\n# a comment\nBleak == 3.0.2  # stole link\n")
+    (tmp_path / "more.txt").write_text("pywin32>=306\nbleak-pythonista>=0.1.1\n")
+    (tmp_path / "requirements-portable.txt").write_text(
+        "-r requirements.txt\n--requirement=more.txt\nwinrt-runtime==3.2.1\n")
+    resolved, no_deps = portable.portable_requirements(tmp_path)
+    assert no_deps == ["Bleak == 3.0.2"]
+    assert resolved == ["numpy==2.3.5", "# a comment", "pywin32>=306", "bleak-pythonista>=0.1.1",
+                        "winrt-runtime==3.2.1"]
+    assert portable.pip_downloads(tmp_path, tmp_path, tmp_path / "listing.txt", [])[-1][-1] == \
+        str(tmp_path / "listing.txt")                    # nothing to fetch alone: one pass
+
+
 def fake_payload(tmp_path, platform="windows", version="3.0.2", drop=()):
     bluetooth = helper("kandha_bluetooth")
     backend = bluetooth.BACKENDS[platform]
