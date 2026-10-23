@@ -12,6 +12,7 @@ import hashlib
 from io import StringIO
 import json
 from pathlib import Path, PurePosixPath
+import re
 import shutil
 import subprocess
 import sys
@@ -21,6 +22,45 @@ import zipfile
 PYTHON_URL = "https://api.nuget.org/v3-flatcontainer/python/3.12.10/python.3.12.10.nupkg"
 # Published x-ms-meta-sha512 of the official CPython package, retrieved over TLS.
 PYTHON_SHA512 = "u9pNz2iKlCEbYtUJaKkbOPMF0LjR7NkCafdKhvigpPzrt8oWKgdTpHaR6z3wyWQAm9PYGUxv0Zr66NX9AeHMDw=="
+# pip reads dependency markers for the machine it runs on, not for Windows. These packages are
+# fetched without their dependencies; requirements-portable.txt lists their Windows ones itself.
+NO_DEPS = {"bleak"}
+
+
+def requirement_name(line):
+    """The normalised project name a requirement line names, or None for comments and options."""
+    match = re.match(r"\s*([A-Za-z0-9][A-Za-z0-9._-]*)", line.split("#", 1)[0])
+    return re.sub(r"[-_.]+", "-", match.group(1)).lower() if match else None
+
+
+def portable_requirements(root):
+    """(resolved, no_deps): requirements-portable.txt with its -r includes expanded, NO_DEPS lines kept apart."""
+    resolved, no_deps = [], []
+
+    def read(path):
+        for line in path.read_text(encoding="utf-8").splitlines():
+            include = re.match(r"\s*(?:-r|--requirement)(?:\s+|=)(\S+)", line)
+            if include:
+                read(path.parent / include.group(1))
+            elif requirement_name(line) in NO_DEPS:
+                no_deps.append(line.split("#", 1)[0].strip())
+            else:
+                resolved.append(line)
+
+    read(Path(root) / "requirements-portable.txt")
+    return resolved, no_deps
+
+
+def pip_downloads(wheels, cache, listing, no_deps):
+    """The pip commands that fetch the Windows x64 CPython 3.12 wheel set on any host."""
+    download = [sys.executable, "-m", "pip", "download", "--only-binary=:all:",
+                "--platform", "win_amd64", "--python-version", "312", "--implementation", "cp",
+                "--abi", "cp312", "--abi", "abi3", "--dest", str(wheels),
+                "--cache-dir", str(Path(cache) / "pip")]
+    commands = [download + ["--extra-index-url", "https://download.pytorch.org/whl/cpu", "-r", str(listing)]]
+    if no_deps:
+        commands.append(download + ["--no-deps"] + no_deps)
+    return commands
 
 
 def safe_path(name):
@@ -80,12 +120,11 @@ def build(output, cache):
                                  + (root / "requirements.txt").read_bytes()).hexdigest()[:12]
     wheels = cache / ("windows-wheels-" + fingerprint); wheels.mkdir(exist_ok=True)
     print("Resolving Windows CPU wheels", flush=True)
-    subprocess.run([sys.executable, "-m", "pip", "download", "--only-binary=:all:",
-                    "--platform", "win_amd64", "--python-version", "312", "--implementation", "cp",
-                    "--abi", "cp312", "--abi", "abi3", "--dest", str(wheels),
-                    "--cache-dir", str(cache / "pip"),
-                    "--extra-index-url", "https://download.pytorch.org/whl/cpu",
-                    "-r", str(root / "requirements-portable.txt")], check=True)
+    resolved, no_deps = portable_requirements(root)
+    listing = cache / ("portable-requirements-" + fingerprint + ".txt")
+    listing.write_text("\n".join(resolved) + "\n", encoding="utf-8")
+    for command in pip_downloads(wheels, cache, listing, no_deps):
+        subprocess.run(command, check=True)
     staging = cache / "AccessibilityAI-Windows"
     if staging.exists():
         shutil.rmtree(staging)
