@@ -121,20 +121,36 @@ Not done: a screen-reader walkthrough with a user.
 
 ## Windows installer (GitHub Actions, windows-2022 runners)
 
-An earlier record, not re-run in this pass: the fixes since then need a new run of the Windows
-workflow. Run [39807417445](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39807417445) on commit
-`305b77c` passed on both runtimes (CPU and NVIDIA): the Windows regression suite including the
-Kandha tests, `python -m app.main --kandha-check` from source (page ready in 0.8 s), the
-Audial-AI and Kandha installer builds, Chrome for Testing and Edge transport, the installed
-Audial-AI lifecycle, and the installed Kandha acceptance (`scripts/verify_kandha_windows.ps1`):
-`Kandha-Setup-0.6.0.exe` installed on a disposable account, `Kandha.exe` and the Start-menu entry
-"Kandha" present, firmware sources, bundled font and tone model in the payload, the packaged
-QtWebEngine page ready in 0.8 s with the `QWebEnginePermission` API, uninstall with purge. The
-artifacts `Kandha-Windows-x64-CPU` (1.38 GB) and `Kandha-Windows-x64-NVIDIA` (5.26 GB) hold
+Run [39947715464](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39947715464) on commit
+`3f8351d` (the review fixes plus the CI diagnostics below; two attempts), on both runtimes (CPU and
+NVIDIA) unless noted:
+
+- The Windows regression suite: 292 passed and 75 skipped (the Chromium page tests and the host
+  firmware tests skip on the runner, which has no Playwright Chromium and no g++ at that step).
+- `python -m app.main --kandha-check` from source: page ready in 0.8 s.
+- The Audial-AI and Kandha installer builds; the payload check found bleak 3.0.2 with its WinRT
+  backend and nothing missing (`packaging/kandha_bluetooth.py --payload`).
+- The installed Audial-AI lifecycle acceptance.
+- The installed Kandha acceptance (`scripts/verify_kandha_windows.ps1`): `Kandha-Setup-0.6.0.exe`
+  installed on a disposable account, the Start-menu entries present, the "Kandha user guide" entry
+  opens an HTML page, the bundled Bluetooth link complete, the packaged QtWebEngine page ready in
+  0.8 s with the `QWebEnginePermission` API, uninstall with purge.
+- Chrome for Testing extension and native capture (CPU job only).
+
+The artifacts `Kandha-Windows-x64-CPU` (1.38 GB) and `Kandha-Windows-x64-NVIDIA` (5.26 GB) hold
 `Kandha-Setup-0.6.0.exe`, `Kandha-0.6.0-windows.zip`, their `.sha256` files and the acceptance
-report. An earlier run on `7bb5b52` failed only because the page check then gave up after 40 s on
-a cold runner; the window now waits 150 s and reports why it gave up. **Not covered:** a
-microphone, Bluetooth hardware, and a human looking at the window.
+report.
+
+**Failed, and not caused by Kandha:** the Microsoft Edge extension and native capture check
+(CPU job only, Audial-AI's existing browser transport test). Edge Stable moved to 156.0.4314.42
+on 2026-10-23. With it, the check's toolbar popup closes early (`No session with given id`) or
+Windows refuses to focus the Edge window, in all four attempts on this branch. `main` at `822802e`,
+which has none of these changes, passed it once on Edge 156 and failed it the same way on the next
+attempt. The same branch passed the same script with Edge 156 three times in the separate browser
+transport workflow (runs on `f8a0674`, `d718c10` and `3f8351d`). The Edge step now records the window-owning processes before the check and
+the visible windows at a failure; no leftover program was running. The cause is open and belongs
+to that test's owner. An earlier run, 39807417445 on `305b77c`, passed every step on Edge 155.
+**Not covered:** a microphone, Bluetooth hardware, and a human looking at the window.
 
 ## Linux portable build (this container, 2026-10-22)
 

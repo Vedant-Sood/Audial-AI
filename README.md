@@ -19,8 +19,9 @@ prepared but untested with hardware.
 
 - Windows: `Kandha-Setup-<version>.exe` or `Kandha-<version>-windows.zip` from the
   [Windows workflow](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml)
-  artifacts (`Kandha-Windows-x64-CPU`; the first accepted build is on
-  [run 39807417445](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39807417445)) or a
+  artifacts (`Kandha-Windows-x64-CPU`; the latest build that passed the installed Kandha checks is on
+  [run 39947715464](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39947715464), whose only
+  failed step is the Edge 156 capture check described in docs/kandha/VALIDATION.md) or a
   `kandha-v*` [release](https://github.com/Vedant-Sood/Audial-AI/releases) (installers, the
   Windows zip and the stole firmware zip); check the `.sha256` beside each file. Start-menu
   entries: **Kandha**, **Audial-AI workspace**, **Kandha user guide**. Unsigned, like the

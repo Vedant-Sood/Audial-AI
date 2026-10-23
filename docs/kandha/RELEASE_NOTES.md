@@ -59,9 +59,10 @@ final fix-up, on top of `dedd2df` and `2281216`), except the Windows CI line.
   failure, no overflow at 1280 × 720, both themes.
 - Tests: pytest 366 passed and 1 skipped (a Windows-only test), npm 58 passed (baseline before
   Kandha: pytest 132 passed and 1 skipped, npm 31).
-- Windows CI, on the earlier commit `305b77c`: `Kandha-Setup-0.6.0.exe` built, installed on a
-  disposable Windows account, the packaged page ready in 0.8 s, uninstalled cleanly
-  (run 39807417445, both runtimes).
+- Windows CI on `3f8351d` (run 39947715464, both runtimes): `Kandha-Setup-0.6.0.exe` built with
+  bleak 3.0.2 in the payload, installed on a disposable Windows account, the HTML guide entry,
+  the packaged page ready in 0.8 s, uninstalled cleanly. The Edge 156 capture check of
+  Audial-AI's browser transport failed there and on `main` alike (see VALIDATION.md).
 
 ## Not measured
 
