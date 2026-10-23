@@ -27,28 +27,50 @@ Authoritative values live in `browser/sanket/kandha-patterns.json` (`protocol`, 
 
 ### HAPTIC `[seq u8][zones u8][pattern u8][intensity u8][repeat u8]`
 
-- `seq`: wraps at 255; the stole ignores a command whose `seq` equals the previous one (a
-  duplicate delivery), so the app increments per command.
+- `seq`: wraps at 255; within one connection the stole ignores a command whose `seq` equals
+  the previous one (a duplicate delivery), so the app increments per command. The stole forgets
+  the last `seq` on every new connection, so the first command after a reconnect or an app
+  restart always plays. The app's mock and simulated stoles do the same.
 - `zones`: bitmask `L=1, R=2, B=4, F=8`. `0` plays nothing.
 - `pattern`: 0 = stop; 1–31 built-in (table below); 32–255 custom (uploaded through PATTERNS).
-- `intensity`: 0–255 scales every step's `level` (effective duty = level × intensity / 255 ×
-  zone scale / 255).
+- `intensity`: 0–255 scales every step's `level`. The duty a zone's motor gets is
+  `level × intensity × zone scale / (255 × 255)`, in whole numbers (0 when CONFIG `mute` is
+  set). The firmware then adds two things for coin ERM motors (`firmware/kandha/config.h`):
+  - a floor: any non-zero duty below `MOTOR_MIN_DUTY` = 60 is raised to 60, because the motor
+    does not start below it;
+  - a spin-up kick: a motor that starts from rest runs at full duty (255) for its first
+    `MOTOR_KICK_MS` = 15 ms, timed from that start. A step or command that takes over within
+    those 15 ms keeps the kick until they are up; a motor already spinning gets none.
+
+  The app's `PatternPlayer`, the virtual stole and the screen use the formula without the floor
+  and the kick; `tests/test_kandha_firmware_host.py` checks that the firmware equals them with
+  both added.
 - `repeat`: 1–255 plays of the whole step list. 0 is treated as 1.
-- A new command **replaces** whatever is playing: the running pattern stops and the new one
-  starts at once. This is how a speaker tap pre-empts a cue.
+- A new command **replaces** whatever is playing: the new pattern takes over at once, with no
+  stop in between. This is how a speaker tap pre-empts a cue.
 
 ### PATTERNS `[id u8][n u8][(on_ms u16)(off_ms u16)(level u8)] × n`
 
 - `id`: 32–255. Ids 0–31 are reserved for built-ins and are rejected.
 - `n`: 1–16 steps. Each step drives the selected zones at `level` for `on_ms`, then rests
-  `off_ms`. Uploaded patterns live in RAM until power-off.
+  `off_ms`. A step with `on_ms` 0 only rests; a step with both 0 is skipped. Steps are timed
+  from when they were due, so a late tick never pushes the rest of a pattern back. Uploaded
+  patterns live in RAM until power-off; uploading the id that is playing does not change the
+  pattern already playing.
 
 ### INPUT `[pad u8][gesture u8]`
 
 - `pad`: `1=L 2=R 3=B 4=Q`. `gesture`: `1=tap 2=double 3=long`.
-- Gesture timing in firmware: a touch shorter than 400 ms is a tap unless a second touch starts
-  within 300 ms, which makes a double; a touch held 700 ms is a long press (sent once, on the
-  700 ms mark). A pad is debounced for 40 ms.
+- Gesture timing, the same on the stole and on the page's on-screen pads:
+  - a touch shorter than 400 ms is a tap, sent 300 ms after it ends, unless a second touch
+    starts within 300 ms of its end, which makes a double (sent when that second touch ends);
+  - a touch held 700 ms is a long press, sent once on the 700 ms mark;
+  - a touch of 400–699 ms sends nothing.
+
+  On the stole, times are measured to within the 20 ms poll, a pad is debounced for 40 ms, and
+  dropouts shorter than that do not split a touch. On the page, leaving the pad, a cancelled
+  pointer or the pad losing keyboard focus cancels a touch, and Enter or Space on a focused pad
+  follow the same rules.
 
 What the app does with them:
 
@@ -62,7 +84,8 @@ What the app does with them:
 - `battery`: 0–100 %. `charging`: 0/1.
 - `flags`: bit0 muted, bit1 mirrored, bit2 test mode, bit3 low battery (≤ 20 %), bit4 a
   pattern is playing, bit5 touch pads calibrated.
-- Notified on change and at least every 30 s; readable at any time.
+- Notified as soon as any flag changes (including bit4 clearing when a pattern ends on its
+  own) and at least every 30 s; readable at any time.
 
 ### CONFIG `[scale_L u8][scale_R u8][scale_B u8][scale_F u8][mute u8][mirror u8][test_mode u8]`
 
@@ -70,7 +93,19 @@ What the app does with them:
   HAPTIC command (for wearing the stole the other way round or for a left-handed layout).
   `test_mode` makes the stole echo each HAPTIC command as an INPUT `[0][seq]` for bench checks.
 - The app writes CONFIG on connect and whenever settings change; the virtual stole applies the
-  same arithmetic in Python (`app/kandha/protocol.py: apply_config`).
+  same arithmetic in Python (`app/kandha/protocol.py: apply_config`). Reading CONFIG returns
+  exactly the bytes the app last wrote.
+
+## How the stole takes in writes
+
+The BLE callbacks only queue each write for the firmware's `loop()`, which applies them in the
+order they arrived, on its next pass. The queue holds 16 writes. Connects and disconnects are
+counted, not queued, so none is lost: a disconnect stops every motor and a connect resets the
+`seq` filter, in their place among the writes. If `loop()` falls behind (for
+example during the serial console's `cal`), the firmware leaves out first a write that would
+change nothing (a malformed write, a HAPTIC with a later HAPTIC behind it, a CONFIG with a later
+CONFIG behind it and no HAPTIC between), then the oldest HAPTIC, then the oldest PATTERNS upload,
+and the serial console says how many were left out.
 
 ## Built-in patterns (ids from the JSON table)
 

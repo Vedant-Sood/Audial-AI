@@ -16,7 +16,12 @@
 **Decision.** MOSFET + PWM for the reference build: it is cheaper by an order of magnitude,
 lighter, simpler to sew into a scarf, and plays the shared pattern table exactly, so the
 virtual stole, the tests and the firmware all run the same step lists. The firmware adds an
-overdrive kick at the start of every step that begins from rest so 120 ms taps feel crisp.
+overdrive kick so 120 ms taps feel crisp: a motor runs at full duty for its first 15 ms
+(`MOTOR_KICK_MS`) whenever it starts from rest, timed from that start; a step or command that
+takes over within those 15 ms keeps the kick until they are up, and a motor already spinning
+gets none. It also raises any non-zero duty below 60/255 (`MOTOR_MIN_DUTY`) to 60, because a
+coin ERM does not start below it. The app's pattern player and the virtual stole leave both
+out; `tests/test_kandha_firmware_host.py` checks the firmware against them with both added.
 
 **Rejected.** DRV2605L drivers remain the upgrade path if user tests say taps feel mushy on
 the chosen motors (LRA motors with braking would be the next step). The pin map leaves the

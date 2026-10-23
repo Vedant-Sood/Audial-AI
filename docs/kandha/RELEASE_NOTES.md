@@ -11,7 +11,9 @@ opt-in setting marked untested.
 ## What is in this release
 
 - Live captions (English or हिन्दी, local Whisper) in the speaker's colour, with the
-  psychology vocabulary and definitions.
+  psychology vocabulary and definitions. The Kandha window offers **Get the caption model**
+  until Whisper is installed. A browser tab never falls back to the browser's own speech
+  service unless you turn that on in Settings › Privacy (off by default).
 - Who is speaking and where they sit: a room diagram, seat taps on the stole, pads and keys
   to seat voices, saved rooms, a "this is me" voice.
 - The tap language: one firm tap on the speaker's side, two taps at the front for a new voice,
@@ -20,24 +22,44 @@ opt-in setting marked untested.
   the tests and the firmware.
 - A pure haptic scheduler: priorities, rate limits (3 s / 8 s), stale-drop at 1.5 s,
   pre-emption, Lecture / Seminar / Practicum / Do-not-disturb modes.
-- Review with timeline lanes, tone notes, "How accurate is this?", a consent gate and exports.
+- Review with timeline lanes, tone notes, "How accurate is this?", a consent gate, saving and
+  exports for live sessions and demos, whatever gave the captions; in the Kandha window exports
+  go to your Downloads folder.
 - Learn the taps (five-minute tutorial), per-zone intensity, mirror left/right.
-- Two demos (seminar, practicum) through the real scheduler, for filming.
-- `Kandha.exe` and `Kandha-Setup-<version>.exe` (Windows), `Kandha-<version>-windows.zip`,
-  `Kandha-<version>-linux.tar.gz`; checksums beside every file.
-- ESP32-S3 firmware for a future stole (compiled in CI, not run on hardware), with a flashing
-  guide.
+- Two demos (seminar, practicum) through the real scheduler, from **Demos** in the dock, for
+  filming.
+- Downloads on a `kandha-v<version>` release: `Kandha-Setup-<version>.exe` (installs
+  `Kandha.exe`; a `Kandha-Setup-<version>-NVIDIA.exe` when that runtime is built),
+  `Kandha-<version>-windows.zip` and `kandha-stole-firmware-<version>.zip`, each with a
+  `.sha256` beside it, plus `SHA256SUMS.txt` for all of them. There is no Linux or macOS
+  download; from source, run `python -m app.main --kandha`.
+- ESP32-S3 firmware for a future stole, with a flashing guide: compiled for the ESP32-S3 in CI
+  and built and run on the host by the tests against the app's pattern player, not run on
+  hardware. The firmware binary is the separate firmware download, not part of the installer.
 
 ## Measured (see docs/kandha/VALIDATION.md)
 
-- In-app tap latency in the end-to-end check: p50 4.3 ms, p95 6.5 ms (budget 150 ms).
+Re-run on 2026-10-23 on the working tree of the review fix run (on top of `2281216`) in a Linux
+container, except the Windows CI line.
+
+- In-app tap latency in the end-to-end check (real Chromium, fake microphone, Whisper stubbed,
+  mock stole): p50 2.4 ms, p95 4.5 ms (budget 150 ms). Bluetooth was not involved, so the
+  300 ms budget with Bluetooth is not measured.
+- After 5 s of silence a different voice got exactly one tap, its own (a returning reader on
+  its seat, a new reader at the front), never the previous speaker's seat first. In the
+  back-channel study's 16 long-silence cases (LibriSpeech readers with spliced silences and
+  noise) the first turn after the silence always sent exactly one seat tap.
+- The two demos' taps, recorded through the real scheduler with the mock stole, match the
+  demo video script.
 - Tap budget on the natural-speech fixtures: Seminar default 0 cue taps per minute; with cues
   on, 1.0 per minute; Practicum 1.0 per minute (target ≤ 6).
 - Accessibility audit: every control reachable by keyboard with visible focus, no contrast
   failure, no overflow at 1280 × 720, both themes.
-- Tests: pytest 206 passed, npm 38 passed (baseline before Kandha: 132 and 31).
-- Windows CI: `Kandha-Setup-0.6.0.exe` built, installed on a disposable Windows account, the
-  packaged page ready in 0.8 s, uninstalled cleanly (run 39807417445, both runtimes).
+- Tests: pytest 359 passed and 1 skipped (a Windows-only test), npm 58 passed (baseline before
+  Kandha: pytest 132 passed and 1 skipped, npm 31).
+- Windows CI, on the earlier commit `305b77c`: `Kandha-Setup-0.6.0.exe` built, installed on a
+  disposable Windows account, the packaged page ready in 0.8 s, uninstalled cleanly
+  (run 39807417445, both runtimes).
 
 ## Not measured
 

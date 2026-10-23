@@ -21,10 +21,16 @@ prepared but untested with hardware.
   [Windows workflow](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml)
   artifacts (`Kandha-Windows-x64-CPU`; the first accepted build is on
   [run 39807417445](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39807417445)) or a
-  `kandha-v*` [release](https://github.com/Vedant-Sood/Audial-AI/releases); check the `.sha256`
-  beside each file. Start-menu entry: **Kandha**. Unsigned, like the Audial-AI installer.
-- From source: `python -m app.main --kandha` (also **Kandha** in the desktop navigation, and
-  `http://127.0.0.1:<port>/kandha/` in Chrome or Edge).
+  `kandha-v*` [release](https://github.com/Vedant-Sood/Audial-AI/releases) (installers, the
+  Windows zip and the stole firmware zip); check the `.sha256` beside each file. Start-menu
+  entries: **Kandha**, **Audial-AI workspace**, **Kandha user guide**. Unsigned, like the
+  Audial-AI installer. Until the Whisper caption model is installed, the Kandha window offers
+  **Get the caption model**, which runs Audial-AI's Setup & models; voices and taps work
+  meanwhile.
+- From source: install `requirements.txt` (it pins `bleak` for the stole's Bluetooth link), then
+  `python -m app.main --kandha` (also **Kandha** in the desktop navigation, and
+  `http://127.0.0.1:<port>/kandha/` in Chrome or Edge, where the browser's own speech service
+  captions without Whisper only if you turn it on in Settings).
 - Design: [docs/kandha/DESIGN.md](docs/kandha/DESIGN.md) · protocol:
   [PROTOCOL.md](docs/kandha/PROTOCOL.md) · decisions: [decisions/](docs/kandha/decisions/) ·
   measurements: [VALIDATION.md](docs/kandha/VALIDATION.md) · firmware:

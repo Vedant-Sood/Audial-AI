@@ -34,13 +34,24 @@ remain in the repository for provenance. They do not establish a new Indian voic
 accuracy result. Windows device capture, target-machine speed, and signer assessment
 require testing on the target machine.
 
-Kandha: `tests/kandha.test.js` (pattern table, intents on LibriSpeech turns) and
-`tests/test_kandha_*.py` (pattern table and firmware header, protocol bytes, scheduler rules,
-seat map and rooms, virtual-stole parity, bridge with mock bleak, service and HTTP routes, SSE,
-consent gate). `python -m app.main --kandha-check` loads the page in QtWebEngine headlessly.
-`python -m scripts.verify_kandha` is the Chromium end-to-end check with the mock stole;
-`scripts/kandha_tap_budget.{mjs,py}` measure taps per minute; `scripts/audit_kandha_a11y.py`
-audits keyboard, focus, names and contrast. Records: [kandha/VALIDATION.md](kandha/VALIDATION.md).
+Kandha: `tests/kandha.test.js` (pattern table, intents on LibriSpeech turns, the on-screen
+pads' gesture timing) and `tests/test_kandha_*.py` (pattern table and firmware header, protocol
+bytes, scheduler rules, seat map and rooms, virtual-stole parity, bridge with mock bleak,
+service and HTTP routes, SSE, the session record and consent gate, packaging). Three of them
+need more than Python: `tests/test_kandha_firmware_host.py` builds and runs the firmware's C++
+on the host and is skipped without a C++ compiler (and on Windows);
+`tests/test_kandha_page.py` drives the page in real Chromium with the mock stole and is skipped
+without Playwright or Chromium (`KANDHA_CHROMIUM` names the browser; the Linux source workflow
+runs pytest before it installs Chromium, so this test skips there); and
+`tests/test_kandha_window.py` opens the Kandha window in QtWebEngine subprocesses.
+`python -m app.main --kandha-check` loads the page in QtWebEngine headlessly.
+`python -m scripts.verify_kandha` is the Chromium end-to-end check with the mock stole (it also
+checks that a different voice after a 5 s silence gets only its own tap);
+`python -m scripts.record_kandha_demos` records the two demos' taps and checks them against the
+demo video script; `scripts/kandha_backchannel_study.mjs` measures the back-channel hold and the
+first turn after a long silence; `scripts/kandha_tap_budget.{mjs,py}` measure taps per minute;
+`scripts/audit_kandha_a11y.py` audits keyboard, focus, names and contrast. Records and the
+latest counts: [kandha/VALIDATION.md](kandha/VALIDATION.md).
 The Windows workflow installs `Kandha-Setup-<version>.exe` on the CI account and loads the
 packaged page (`scripts/verify_kandha_windows.ps1`).
 
