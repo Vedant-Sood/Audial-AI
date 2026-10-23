@@ -60,7 +60,7 @@ def test_kandha_page_is_csp_safe_and_every_script_it_loads_is_served(companion):
             assert request(companion, "/kandha/" + src)[0] == 200
     assert request(companion, "/kandha/fonts/AtkinsonHyperlegible-Regular.ttf")[2]["Content-Type"] == "font/ttf"
     assert request(companion, "/kandha/fonts/OFL.txt")[0] == 200
-    assert request(companion, "/kandha/patterns.json")[1]["protocol"]["name_prefix"] == "KandhaStole-"
+    assert request(companion, "/kandha/patterns.json")[1]["protocol"]["name_prefix"] == "Kandha-"
     assert request(companion, "/kandha/package.json")[0] == 404
     assert request(companion, "/kandha/../app/main.py")[0] == 404
     assert request(companion, "/sanket/band.js")[0] == 404, "the band is retired"

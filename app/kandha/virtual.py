@@ -49,7 +49,9 @@ class VirtualStole:
             self.on_event("haptic", {"device": "virtual", "seq": command.seq, "stopped": True})
             return None
         effective = self.player.current["command"]      # after mute / mirror
-        played = {"device": "virtual", "seq": command.seq, "zones": "".join(mask_zones(effective.zones)),
+        # zones, mask and intensity as played (after CONFIG); each segment's level has the
+        # zone's intensity scale applied, exactly as the motor would run it
+        played = {"device": "virtual", "seq": command.seq, "zones": "".join(mask_zones(effective.zones)), "mask": effective.zones,
                   "pattern_id": command.pattern, "pattern": pattern.key if hasattr(pattern, "key") else f"custom-{command.pattern}",
                   "intensity": effective.intensity, "repeat": command.repeat,
                   "duration_ms": self.player.current["end"] - now_ms,

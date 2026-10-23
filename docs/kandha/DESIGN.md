@@ -258,7 +258,8 @@ and pattern ids are in `browser/sanket/kandha-patterns.json`.
   `a7c2f3e0-…0001` is never used). Characteristics `…c101` HAPTIC (write without response),
   `…c102` PATTERNS (write), `…c103` INPUT (notify), `…c104` STATUS (read + notify),
   `…c105` CONFIG (read + write).
-- Devices advertise as `KandhaStole-XXXX` (last four hex digits of the BLE address).
+- Devices advertise as `Kandha-XXXX` (last four hex digits of the BLE address), the name the
+  brief specifies; the simulated stole is `Kandha-SIM1`.
 - Little-endian everywhere.
 - **Pairing**: a user-initiated scan filtered by the service UUID or name prefix; the chosen
   address is remembered in `<data>/kandha/stole.json`; `INPUT` from any other address is
