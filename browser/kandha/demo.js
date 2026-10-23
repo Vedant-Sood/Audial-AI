@@ -65,6 +65,8 @@
         if (step.say) {
           this.h.speaker(step.say, !!step.new);
           await this._sleep(350);
+          // stopped in the pause: say nothing (the next demo may already be speaking)
+          if (!this.running) return;
           const text = step[lang] || step.en;
           const words = text.split(/\s+/);
           const msPerWord = 330 / (step.rate || 1);
@@ -77,6 +79,8 @@
             await this._sleep(msPerWord);
           }
           if (spoken) await spoken;
+          // stopped on the last word or while the voice spoke: the line belongs to no session now
+          if (!this.running) return;
           this.h.final(text);
           if (this.h.tone) this.h.tone(step.say, step.tone || { relative: 'usual' });
           await this._sleep(700);

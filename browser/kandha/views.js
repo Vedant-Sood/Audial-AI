@@ -11,10 +11,13 @@
   const ZONE_ANGLE = { F: -90, R: 0, B: 90, L: 180 };   // arrow rotation (the arrow points right at 0)
   const ZONE_NAME = { L: 'left', R: 'right', B: 'behind', F: 'in front' };
   const PADS = ['L', 'R', 'B', 'Q'];
+  // gesture timing, as docs/kandha/PROTOCOL.md gives it for the stole's pads
+  const PAD_TIMING = { TAP_MAX_MS: 400, DOUBLE_GAP_MS: 300, LONG_MS: 700 };
 
   function el(tag, attrs, parent) {
     const node = document.createElementNS(SVG, tag);
-    for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, String(v));
+    // a null value means "no such attribute" (not the text "null")
+    for (const [k, v] of Object.entries(attrs || {})) if (v != null) node.setAttribute(k, String(v));
     if (parent) parent.appendChild(node);
     return node;
   }
@@ -75,24 +78,51 @@
       this.svg = svg;
     }
 
+    // An on-screen pad reads a gesture as the stole's own pads do (firmware/kandha/touch_pads.h,
+    // docs/kandha/PROTOCOL.md): a touch shorter than 400 ms is a tap, sent once no second touch can
+    // start, unless a second touch starts within 300 ms of its end (a double, sent when that touch
+    // ends); a touch held 700 ms is a long press, sent once on the 700 ms mark. A touch of
+    // 400-699 ms is nothing. Leaving the pad, a cancelled pointer or losing focus ends the touch
+    // without a gesture.
     wirePad(node, pad) {
       if (!this.onPad) return;
-      let down = 0, longTimer = 0, fired = false, clickTimer = 0;
-      const start = () => { down = performance.now(); fired = false; node.classList.add('is-active'); longTimer = setTimeout(() => { fired = true; this.onPad(pad, 'long'); node.classList.remove('is-active'); }, 700); };
-      const end = () => {
-        clearTimeout(longTimer); node.classList.remove('is-active');
-        if (fired || !down) { down = 0; return; }
+      const { TAP_MAX_MS, DOUBLE_GAP_MS, LONG_MS } = PAD_TIMING;
+      let down = 0, longTimer = 0, tapTimer = 0, longSent = false, second = false, tapPending = false, lastTapAt = 0;
+      const sendTap = () => { clearTimeout(tapTimer); tapTimer = 0; if (tapPending) { tapPending = false; this.onPad(pad, 'tap'); } };
+      const waitForSecond = () => { clearTimeout(tapTimer); tapTimer = setTimeout(sendTap, Math.max(0, lastTapAt + DOUBLE_GAP_MS - performance.now())); };
+      const start = () => {
+        if (down) return;
+        const now = performance.now();
+        clearTimeout(tapTimer); tapTimer = 0;
+        // a touch that starts within the gap after a tap is the second half of a double
+        second = tapPending && now - lastTapAt <= DOUBLE_GAP_MS;
+        if (!second) sendTap();
+        down = now; longSent = false; node.classList.add('is-active');
+        longTimer = setTimeout(() => { longTimer = 0; longSent = true; tapPending = false; node.classList.remove('is-active'); this.onPad(pad, 'long'); }, LONG_MS);
+      };
+      const end = (cancelled) => {
+        if (!down) return;
+        clearTimeout(longTimer); longTimer = 0; node.classList.remove('is-active');
+        const now = performance.now(), held = now - down;
         down = 0;
-        if (clickTimer) { clearTimeout(clickTimer); clickTimer = 0; this.onPad(pad, 'double'); return; }
-        clickTimer = setTimeout(() => { clickTimer = 0; this.onPad(pad, 'tap'); }, 280);
+        if (!cancelled && !longSent && held < TAP_MAX_MS) {
+          if (second) { tapPending = false; this.onPad(pad, 'double'); }
+          else { tapPending = true; lastTapAt = now; }
+        }
+        second = false;
+        // a tap still waiting (this one, or the first of a second touch that came to nothing)
+        if (tapPending) waitForSecond();
       };
       node.addEventListener('pointerdown', (e) => { e.preventDefault(); start(); });
-      node.addEventListener('pointerup', end);
-      node.addEventListener('pointerleave', () => { clearTimeout(longTimer); node.classList.remove('is-active'); down = 0; });
+      node.addEventListener('pointerup', () => end(false));
+      node.addEventListener('pointerleave', () => end(true));
+      node.addEventListener('pointercancel', () => end(true));
+      // a key held while the focus moves away never sends its keyup here
+      node.addEventListener('blur', () => end(true));
       node.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!e.repeat) start(); }
       });
-      node.addEventListener('keyup', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); end(); } });
+      node.addEventListener('keyup', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); end(false); } });
     }
 
     // segments: [{zone, start_ms, end_ms, level}] relative to now: each step as the stole plays
@@ -187,11 +217,20 @@
       for (const [z, list] of Object.entries(byZone)) {
         const [cx, cy] = this.spots[z];
         list.forEach((v, i) => {
-          const n = list.length, dx = (i - (n - 1) / 2) * 30;
-          const g = el('g', { class: 'room__chip' + (v.id === current ? ' is-current' : '') + (v.id === this.selected ? ' is-selected' : ''), 'data-voice': v.id, tabindex: this.interactive ? 0 : -1, role: this.interactive ? 'button' : null, 'aria-label': `${v.name}, seated ${ZONE_NAME[z]}` }, this.chipLayer);
+          const n = list.length, dx = (i - (n - 1) / 2) * 30, x = cx + dx;
+          const picked = v.id === this.selected;
+          const g = el('g', { class: 'room__chip' + (v.id === current ? ' is-current' : '') + (picked ? ' is-selected' : ''), 'data-voice': v.id, tabindex: this.interactive ? 0 : -1, role: this.interactive ? 'button' : null, 'aria-pressed': this.interactive ? String(picked) : null, 'aria-label': `${v.name}, seated ${ZONE_NAME[z]}` }, this.chipLayer);
           g.style.setProperty('--c', `var(--s${v.idx + 1})`);
-          el('circle', { cx: cx + dx, cy, r: 15 }, g);
-          const t = el('text', { x: cx + dx, y: cy + 5, 'text-anchor': 'middle' }, g); t.textContent = v.name.slice(0, 2);
+          // three looks that never stand in for each other: keyboard focus is the outer ring, the
+          // person speaking now has the strong outline, a selected voice wears a tick on top
+          el('circle', { cx: x, cy, r: 19.5, class: 'room__ring' }, g);
+          el('circle', { cx: x, cy, r: 15, class: 'room__dot' }, g);
+          const t = el('text', { x, y: cy + 5, 'text-anchor': 'middle' }, g); t.textContent = v.name.slice(0, 2);
+          if (picked) {
+            const tick = el('g', { class: 'room__tick' }, g);
+            el('circle', { cx: x, cy: cy - 16, r: 7 }, tick);
+            el('path', { d: `M${x - 3.5} ${cy - 15.5} l2.5 2.5 l4.5 -5` }, tick);
+          }
           if (v.id === current) this.seats[z].classList.add('is-lit'), this.seats[z].style.setProperty('--c', `var(--s${v.idx + 1})`);
           if (this.interactive) this.wireChip(g, v.id);
         });
@@ -282,7 +321,7 @@
     return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Who spoke when, with cues, tone estimates, queue moments, taps and seat changes"><line x1="${x0}" x2="${X(T)}" y1="${laneY.voices + 21}" y2="${laneY.voices + 21}" stroke="${opts.literal ? '#d3dbe3' : 'var(--line)'}" stroke-width="2"/>${parts.join('')}</svg>`;
   }
 
-  const api = { StoleView, RoomView, timelineSVG, ZONE_ANGLE, ZONE_NAME };
+  const api = { StoleView, RoomView, timelineSVG, ZONE_ANGLE, ZONE_NAME, PAD_TIMING };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.KandhaViews = api;
 })(typeof self !== 'undefined' ? self : typeof globalThis !== 'undefined' ? globalThis : this);
