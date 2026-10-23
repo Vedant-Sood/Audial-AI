@@ -23,7 +23,9 @@
   // ------------------------------------------------------------------ page settings (this device)
   const STORE = 'kandha.settings.v1';
   const DEFAULTS = {
-    name: '', theme: 'system', cap: 'M', showOriginal: true, micId: '',
+    // micLabel: the chosen microphone's name. Its id changes with every launch of the Kandha
+    // window (an off-the-record profile) and with every new port in a browser tab.
+    name: '', theme: 'system', cap: 'M', showOriginal: true, micId: '', micLabel: '',
     sensitivity: 1, maxSpeakers: 6, silenceSec: 4, noiseFilter: false,
     autocorrect: true, customTerms: '', toneReview: true, toneLive: false,
     // browserCaptions: the browser's own speech service may caption when Whisper is not installed.
@@ -57,6 +59,7 @@
   };
   const EMOTION_NAME = { angry: 'angry', disgust: 'disgusted', fear: 'fearful', happy: 'happy', neutral: 'neutral', sad: 'sad' };
   const ARROW_SVG = '<svg viewBox="0 0 24 24"><path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const TICK_SVG = '<svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const ZONE_LONG = { L: 'left shoulder', R: 'right shoulder', B: 'back of the neck', F: 'front', LR: 'both shoulders' };
 
   // ------------------------------------------------------------------ state
@@ -75,8 +78,11 @@
   let assembler = new C.CaptionAssembler({ delay: 0.6 });
   let vocab = buildVocab();
   const translator = new Translator();
-  // intents are stamped on the page's monotonic clock (seconds), which queueIntent reads back
-  const intents = new IntentSource({ onIntent: (i) => queueIntent(i), wall: () => performance.now() / 1000 });
+  // intents are stamped on the page's monotonic clock (seconds), which queueIntent reads back.
+  // They know the wearer's "a silence counts as long after" setting from the start (and from
+  // configureEngine on every change), so the resume tap after a long silence never depends on
+  // the silence cue, which the wearer can switch off and the engine rate-limits.
+  const intents = new IntentSource({ onIntent: (i) => queueIntent(i), wall: () => performance.now() / 1000, silenceSec: +settings.silenceSec });
   let localHost = null;
   const mic = { stream: null, ctx: null, node: null, src: null, wake: null };
   const views = {};
@@ -203,6 +209,12 @@
       cues: { drop: cueEnabled('drop'), rise: cueEnabled('rise'), hesitation: cueEnabled('hesitation'), silence: cueEnabled('silence') },
     };
   }
+  // the engine and the intents always hear the same settings (the intents take the silence setting)
+  function configureEngine() {
+    const s = engineSettings();
+    intents.configure(s);
+    if (engine) engine.configure(s);
+  }
 
   // ------------------------------------------------------------------ rendering: live
   function renderNow(pieces) {
@@ -234,7 +246,11 @@
     renderRoomLive();
     if (views.roomBig) views.roomBig.render(K.seats, voices, S.current, K.pending && K.pending.voice);
     const un = voices.filter((v) => !zoneOf(v.id) || zoneOf(v.id) === 'me');
-    $('#unseated').innerHTML = un.map((v) => `<li><button type="button" class="chip${views.roomBig && views.roomBig.selected === v.id ? ' is-selected' : ''}" draggable="true" data-chip="${v.id}" style="--c:${colourVar(v.id)}" aria-label="${esc(v.name)}, no seat. Select, then press 1 to 4."><i aria-hidden="true"></i>${esc(v.name)}</button></li>`).join('');
+    // a selected chip shows a tick and says aria-pressed, so it never looks like mere focus
+    $('#unseated').innerHTML = un.map((v) => {
+      const picked = !!views.roomBig && views.roomBig.selected === v.id;
+      return `<li><button type="button" class="chip${picked ? ' is-selected' : ''}" aria-pressed="${picked}" draggable="true" data-chip="${v.id}" style="--c:${colourVar(v.id)}" aria-label="${esc(v.name)}, no seat. Select, then press 1 to 4."><i aria-hidden="true">${picked ? TICK_SVG : ''}</i>${esc(v.name)}</button></li>`;
+    }).join('');
     $('#roomList').innerHTML = K.rooms.length ? K.rooms.map((r) => `<li><b>${esc(r.name)}</b><small>${esc(r.slots.map((z) => z || '–').join(' · ') || 'empty')} · ${esc(r.mode)}</small>${K.loadedRoom === r.name ? '<small>· in use</small>' : ''}<button type="button" class="btn btn--sm" data-room-load="${esc(r.name)}">Use</button><button type="button" class="btn btn--sm btn--ghost" data-room-delete="${esc(r.name)}" aria-label="Delete ${esc(r.name)}">Delete</button></li>`).join('')
       : '<li><small>No rooms saved yet. Seat the voices, name the room and save.</small></li>';
     if (focusVoice != null && (!document.activeElement || document.activeElement === document.body)) {
@@ -492,8 +508,11 @@
   }
 
   // ------------------------------------------------------------------ intents -> scheduler -> stole
+  // unreachable: the status line from before 'unreachable' replaced it, put back when the service
+  // answers again; a session that ends or starts forgets it (its own status takes over)
   let pendingIntents = [], flushing = false, unreachable = null;
   const UNREACHABLE = 'Stole service unreachable · captions continue';
+  const SEAT_KINDS = new Set(['speaker', 'new_voice', 'voice_resumes']);
   function queueIntent(intent) {
     // raised: when the intent was raised (IntentSource stamps it; the demo and controls raise it now)
     const raised = Number.isFinite(intent.created) ? intent.created * 1000 : performance.now();
@@ -517,8 +536,9 @@
       }
       for (const p of out.played || []) onHaptic(p);
     } catch (e) {
-      // the screen still flashes the zone the tap would have used
-      for (const i of batch) if (i.body.kind === 'speaker' || i.body.kind === 'new_voice') flashZone(i.body.kind === 'new_voice' ? 'F' : zoneOf(i.body.voice) || 'F');
+      // the screen still flashes the zone the tap would have used (a voice resuming after a long
+      // silence taps its seat like any speaker)
+      for (const i of batch) if (SEAT_KINDS.has(i.body.kind)) flashZone(i.body.kind === 'new_voice' ? 'F' : zoneOf(i.body.voice) || 'F');
       // a refused batch (e.status) is not an unreachable service: only say so when it is
       if (!e.status) {
         if (!unreachable) unreachable = { state: $('#status').dataset.state, text: $('#statusText').textContent };
@@ -562,7 +582,7 @@
     on('input', (data) => toast(`Stole pad <b>${esc(data.pad)}</b>: ${esc(data.gesture)}${data.device === 'virtual' ? ' (on screen)' : ''}`, 2500));
     on('queue', (data) => applyQueue(data));
     on('seat', (data) => applySeat(data));
-    on('settings', (data) => { K.settings = data.settings; settings.mode = K.settings.mode; saveSettings(); applyDisplay(); renderStole(); fillSettings(); if (engine) engine.configure(engineSettings()); });
+    on('settings', (data) => { K.settings = data.settings; settings.mode = K.settings.mode; saveSettings(); applyDisplay(); renderStole(); fillSettings(); configureEngine(); });
     on('stole_state', (data) => { K.stole = Object.assign({}, K.stole, data, { status: K.stole.status }); if (data.state === 'connected') K.stole.error = null; renderStole(); });
     on('stole_status', (data) => { if (data.device === 'stole') { K.stole = Object.assign({}, K.stole, { status: data }); renderStole(); } });
     on('stole_connected', (data) => { toast(`Stole connected: <b>${esc(data.name || data.address)}</b>.`); K.stole.state = 'connected'; renderStole(); });
@@ -576,6 +596,8 @@
     K.queue = state.queue || K.queue; K.latency = state.latency_ms;
     if (K.settings.mode !== settings.mode) { settings.mode = K.settings.mode; saveSettings(); }
     applyDisplay(); renderStole(); renderVoices(); renderRooms(); renderNow(); fillSettings();
+    // the service's cue switches and mode reach the engine as well
+    configureEngine();
     // the service knows how long the wearer has waited: after a reload or a reconnect the strip
     // goes on from there, not from 0:00
     if (K.queue.on || K.queue.on !== S.queue.on) applyQueue({ on: K.queue.on, waited_s: K.queue.waited_s, source: 'state', changed: true });
@@ -656,12 +678,12 @@
   }
   async function setMode(mode) {
     settings.mode = mode; saveSettings(); applyDisplay();
-    if (engine) engine.configure(engineSettings());
+    configureEngine();
     try { await api('/api/kandha/settings', { mode }); } catch (e) { toast(esc(e.message)); }
   }
   async function updateServerSettings(changes) {
     try {
-      const out = await api('/api/kandha/settings', changes); K.settings = out; applyDisplay(); renderStole(); if (engine) engine.configure(engineSettings());
+      const out = await api('/api/kandha/settings', changes); K.settings = out; applyDisplay(); renderStole(); configureEngine();
       // a new stole link: take its state (simulated or not) from the service, not the old link's
       if ('link' in changes) { const state = await api('/api/kandha/state'); K.stole = state.stole || K.stole; renderStole(); }
     }
@@ -669,24 +691,53 @@
   }
 
   // ------------------------------------------------------------------ microphone + engine
+  async function audioInputs() { return (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput'); }
+  // The saved microphone among these devices: by its id, else by its name (ids change, see
+  // DEFAULTS). Found by name, it takes the device's new id. Devices listed before the page may use
+  // a microphone have no id or name, so they never match.
+  function savedMicrophone(inputs) {
+    if (!settings.micId) return null;
+    let found = inputs.find((d) => d.deviceId && d.deviceId === settings.micId);
+    if (!found && settings.micLabel) found = inputs.find((d) => d.deviceId && d.label === settings.micLabel);
+    if (found && found.deviceId !== settings.micId) { settings.micId = found.deviceId; saveSettings(); }
+    return found || null;
+  }
   async function listMicrophones() {
     try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const inputs = devices.filter((d) => d.kind === 'audioinput');
+      const inputs = await audioInputs();
       const sel = $('#setMic');
-      const current = settings.micId;
-      sel.innerHTML = '<option value="">Default microphone</option>' + inputs.map((d, i) => `<option value="${esc(d.deviceId)}">${esc(d.label || `Microphone ${i + 1}`)}</option>`).join('');
-      sel.value = inputs.some((d) => d.deviceId === current) ? current : '';
+      sel.innerHTML = '<option value="">Default microphone</option>' + inputs.map((d, i) => `<option value="${esc(d.deviceId)}" data-label="${esc(d.label)}">${esc(d.label || `Microphone ${i + 1}`)}</option>`).join('');
+      const found = savedMicrophone(inputs);
+      sel.value = found ? found.deviceId : '';
     } catch (e) { /* no device access yet */ }
   }
   async function startAudio() {
     const audio = { echoCancellation: true, noiseSuppression: !!settings.noiseFilter, autoGainControl: false, channelCount: 1 };
-    if (settings.micId) audio.deviceId = { ideal: settings.micId };
-    const stream = await navigator.mediaDevices.getUserMedia({ audio });
+    if (settings.micId) {
+      // the saved microphone by name, when its id changed since it was chosen
+      try { savedMicrophone(await audioInputs()); } catch (e) { /* the id as saved */ }
+      audio.deviceId = { ideal: settings.micId };
+    }
+    let stream = await navigator.mediaDevices.getUserMedia({ audio });
+    // A browser tab names its microphones only once it may use one, so a saved microphone whose id
+    // changed is found now: open it instead of the one the browser picked.
+    const opened = stream.getAudioTracks()[0];
+    if (settings.micId && settings.micLabel && opened && opened.label !== settings.micLabel) {
+      try {
+        const found = savedMicrophone(await audioInputs());
+        if (found && found.label === settings.micLabel) {
+          const again = await navigator.mediaDevices.getUserMedia({ audio: Object.assign({}, audio, { deviceId: { exact: found.deviceId } }) });
+          stream.getTracks().forEach((t) => t.stop());
+          stream = again;
+        }
+      } catch (e) { /* keep the microphone already open */ }
+    }
     let ctx;
     try { ctx = new AudioContext({ sampleRate: 16000 }); } catch (e) { ctx = new AudioContext(); }
     const src = ctx.createMediaStreamSource(stream);
-    engine = new E.VoiceEngine({ sampleRate: ctx.sampleRate, settings: engineSettings(), onEvent: onEngineEvent, toneModel: settings.toneReview || settings.toneLive ? TONE_MODEL : null });
+    const engineOpts = engineSettings();
+    intents.configure(engineOpts);
+    engine = new E.VoiceEngine({ sampleRate: ctx.sampleRate, settings: engineOpts, onEvent: onEngineEvent, toneModel: settings.toneReview || settings.toneLive ? TONE_MODEL : null });
     const rate = ctx.sampleRate;
     const take = (x) => { if (engine) engine.process(x); if (recognizer.feed) recognizer.feed(x, rate); };
     let node = null;
@@ -735,6 +786,9 @@
     },
     onStatus: (s, info) => { if (s === 'listening' && S.running) setStatus('live', statusLine(info && info.local)); },
     onError: (code, msg) => {
+      // Whisper removed since the last status check: say why in Kandha's words (the shared text
+      // names another app's settings and offers the browser's service without its privacy note)
+      if (code === 'local-missing') { msg = noCaptionsReason(); $('#nowHint').textContent = msg; }
       toast(esc(msg), 9000);
       if (code === 'network' || code === 'unsupported' || code === 'local-missing' || code === 'local-busy') setStatus('live', 'Listening · voices and taps only');
       else if (!recognizer.active && S.running) setStatus('error', 'Captions stopped · voices and taps continue');
@@ -761,9 +815,11 @@
     const st = await LocalCaptions.available();
     if (st) localHost = st;
   }
+  // how to get the caption model: the Kandha window has its own button above the page
+  const GET_MODEL = IN_QT ? 'Press Get the caption model above this page' : 'Install it in Audial-AI (Setup & models)';
   function noCaptionsReason() {
-    const why = localHost ? `the Whisper model (${localHost.asr_model}) is not installed. Install it in Audial-AI (Setup & models)` : 'Audial-AI\'s Whisper model could not be reached';
-    const or = Recognizer.supported() ? ', or turn on the browser\'s speech service in Settings (the browser may send the audio to its maker\'s servers)' : '';
+    const why = localHost ? `the Whisper model (${localHost.asr_model}) is not installed. ${GET_MODEL}` : 'Audial-AI\'s Whisper model could not be reached';
+    const or = Recognizer.supported() && !settings.browserCaptions ? ', or turn on the browser\'s speech service in Settings (the browser may send the audio to its maker\'s servers)' : '';
     return `No captions: ${why}${or}. Voice colours and stole taps keep working.`;
   }
   // the browser-captions choice applies at once while listening: off stops the browser's speech
@@ -823,6 +879,7 @@
     S.running = false;
     $('#startBtn').dataset.running = 'false';
     $('#startLabel').textContent = 'Start';
+    unreachable = null;
     setStatus('idle', 'Paused');
     releaseWake();
   }
@@ -839,6 +896,8 @@
     applyQueue({ on: false, source: 'session' });
     newRecord();
     intents.reset();
+    // the last session's status line is not this one's: never put it back
+    unreachable = null;
     renderNowTone(null);
     assembler = new C.CaptionAssembler({ delay: 0.6 });
     $('#history').innerHTML = '';
@@ -873,20 +932,25 @@
         // the wearer's own voice has no seat: clear whatever the mode default gave it once it appears
         demoOwnVoice = sc.own || null;
       },
+      // a demo that was stopped or replaced writes nothing more: its last line would land in the
+      // next session (and in Audial-AI's record of it)
       speaker: (id, isNew) => {
+        if (S.demo !== demo) return;
         clearTimeout(silenceTimer); const t = nowT(); onSpeaker(id, t, isNew);
         queueIntent({ kind: isNew ? 'new_voice' : 'speaker', voice: id, t, new: isNew });
         if (isNew && id === demoOwnVoice) setTimeout(() => { if (S.demo === demo) assignSeat(id, 'me', 'demo'); }, 250);
       },
-      interim: (text) => handleInterim(text),
-      final: (text) => handleFinal(text, { lang: settings.capLang }),
-      cue: (kind) => { onCue(kind, nowT(), S.current); queueIntent({ kind: 'cue', cue: kind, voice: S.current, t: nowT() }); },
+      interim: (text) => { if (S.demo === demo) handleInterim(text); },
+      final: (text) => { if (S.demo === demo) handleFinal(text, { lang: settings.capLang }); },
+      cue: (kind) => { if (S.demo !== demo) return; onCue(kind, nowT(), S.current); queueIntent({ kind: 'cue', cue: kind, voice: S.current, t: nowT() }); },
       tone: (id, tone) => {
+        if (S.demo !== demo) return;
         const line = S.lines.filter((l) => l.kind === 'speech' && l.speakerId === id).pop();
         onTone(Object.assign({ t0: line ? line.t : nowT() - 2, t1: nowT(), speakerId: id, personal: true, demo: true, accepted: !!tone.label, label: tone.label || 'uncertain' }, tone));
       },
-      queue: (on) => toggleQueue(on),
+      queue: (on) => { if (S.demo === demo) toggleQueue(on); },
       silence: (ms) => {
+        if (S.demo !== demo) return;
         renderNow([]);
         $('#nowText').classList.add('is-idle'); $('#nowText').textContent = '…';
         silenceTimer = setTimeout(() => { if (S.demo !== demo) return; onCue('silence', nowT(), null); queueIntent({ kind: 'silence', t: nowT(), voice: null }); }, Math.min(ms - 150, settings.silenceSec * 1000));
@@ -898,6 +962,14 @@
     demo.play(key, { lang: settings.capLang, aloud: $('#demoAloud').checked });
   }
   function stopDemo() { if (S.demo) { S.demoEnd = nowT(); S.demo.stop(); S.demo = null; } toggleQueue(false); }
+  // the Demos dialog says what a demo would end and clear here: nothing is kept until a save
+  function demoNote() {
+    const n = S.lines.filter((l) => l.kind === 'speech').length;
+    const lines = `the ${n} line${n === 1 ? '' : 's'} on this screen`;
+    if (S.running) return n ? `You are listening now: a demo pauses listening and clears ${lines}. Save in Review first if you want to keep them.` : 'You are listening now: a demo pauses listening.';
+    if (n && !S.demoTitle) return `A demo clears ${lines}. Save in Review first if you want to keep them.`;
+    return 'Starting a demo pauses listening and clears this screen: save in Review first if you want to keep it.';
+  }
   function hideWelcome() { $('#welcome').hidden = true; }
   function showWelcome() { if (!S.lines.length) $('#welcome').hidden = false; }
 
@@ -1110,12 +1182,19 @@
     }
     settingsFilling = false;
   }
-  function readSettings() {
+  function readSettings(ev) {
     if (settingsFilling) return;
     settings.name = $('#setName').value.trim();
     settings.cap = $('#setCap').value;
     settings.theme = $('#setTheme').value;
-    settings.micId = $('#setMic').value;
+    // only a change of the microphone list itself changes the microphone: before the page may use
+    // a microphone the list cannot show the saved one, and another setting must not clear it
+    const micSel = $('#setMic');
+    if (!ev || ev.target === micSel) {
+      const option = micSel.selectedOptions[0];
+      settings.micId = micSel.value;
+      settings.micLabel = micSel.value && option ? option.dataset.label || '' : '';
+    }
     settings.noiseFilter = $('#setNoise').checked;
     const toneWas = settings.toneReview || settings.toneLive;
     settings.toneReview = $('#setToneReview').checked;
@@ -1132,7 +1211,7 @@
     settings.showOriginal = $('#setOrig').checked;
     saveSettings();
     applyDisplay();
-    if (engine) engine.configure(engineSettings());
+    configureEngine();
     rerenderHistory();
     if (S.queue.on) $('#stripLabel').textContent = settings.name ? `${settings.name} is waiting to speak` : 'Waiting to speak';
   }
@@ -1180,7 +1259,12 @@
     $('#welcomeStart').addEventListener('click', () => startListening());
     // the demos: on the welcome card, and any time from Demos in the dock (to replay or switch)
     $$('[data-demo]').forEach((b) => b.addEventListener('click', () => { const dlg = b.closest('dialog'); if (dlg) dlg.close('demo'); playDemo(b.dataset.demo); }));
-    $('#demoBtn').addEventListener('click', () => $('#demoDlg').showModal());
+    $('#demoBtn').addEventListener('click', () => {
+      $('#demoClears').textContent = demoNote();
+      $('#demoDlg').showModal();
+      // focus starts on the description (autofocus), never on a demo button
+      if (document.activeElement !== $('#demoAbout')) $('#demoAbout').focus();
+    });
     const alouds = [$('#demoAloud'), $('#demoDlgAloud')];
     for (const box of alouds) box.addEventListener('change', () => { for (const other of alouds) other.checked = box.checked; });
     // the ✕ buttons close their dialog; they are not submit buttons, so Enter in the voice Name field saves
@@ -1360,7 +1444,7 @@
         $('#aboutLine').textContent = `Kandha inside Audial-AI · Whisper model: ${st.asr_model}${st.asr_installed ? '' : ' (not installed yet: Setup & models)'} · docs/kandha/USER_GUIDE.md`;
         if (!S.running && !S.demo) $('#nowHint').textContent = st.asr_installed ? `Captions from Whisper (${st.asr_model}) on this computer.`
           : browserCaptionsAllowed() ? `Whisper (${st.asr_model}) is not installed, so the browser's speech service captions, as you chose in Settings.`
-          : `No captions until ${st.asr_model} is installed in Audial-AI (Setup & models). Voices and taps work now.`;
+          : `No captions until the Whisper model (${st.asr_model}) is installed. ${GET_MODEL}. Voices and taps work now.`;
         updateSaveButtons();
       });
     }

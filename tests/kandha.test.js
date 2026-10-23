@@ -1,5 +1,5 @@
 // Kandha: the shared pattern table, and the page-side intent layer on real LibriSpeech turns.
-import test from "node:test";
+import test, { mock } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -7,6 +7,7 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const E = require("../browser/sanket/engine.js");
 const { IntentSource, ENGINE_TIMING, FINAL_MARGIN_FRAMES, REJUDGE_WAIT_SEC } = require("../browser/kandha/kandha-intents.js");
+const { StoleView, PAD_TIMING } = require("../browser/kandha/views.js");
 const read = path => readFileSync(new URL(path, import.meta.url));
 const table = JSON.parse(read("../browser/sanket/kandha-patterns.json"));
 
@@ -36,6 +37,10 @@ function run(signal, options = {}, actions = [], intentOptions = {}) {
   }
   return { source, events, engine };
 }
+// what browser/kandha/app.js gives the engine and the intents alike (engineSettings, configureEngine)
+const pageSettings = (silenceSec, silenceCue = true) => ({ singleSpeaker: false, maxSpeakers: 6, sensitivity: 1, silenceSec, cues: { drop: true, rise: true, hesitation: true, silence: silenceCue } });
+// run() wired as the page wires it: the setting passed to IntentSource, then configure() with the engine's settings
+const asPage = (signal, settings, actions = []) => run(signal, { settings }, [[0, (engine, source) => source.configure(settings)], ...actions], { silenceSec: settings.silenceSec });
 const SEAT = new Set(["speaker", "new_voice", "voice_resumes"]);
 // seat intents emitted from the first speech after a silence of at least `gap` seconds
 function seatTapsAfterSilence(source, events, gap = 4) {
@@ -166,16 +171,20 @@ test("raising the silence setting mid-session does not leave the old one tapping
   // setting 4 s: the first 5 s pause shows it on the cue and taps. The wearer raises it to 8 s
   // during the next turn; the 5.5 s pause after that is not a long silence any more.
   const raise = (engine, source, page) => { engine.configure({ silenceSec: 8 }); if (page) source.configure({ silenceSec: 8 }); };
-  // the page as it is (it does not tell the intents): the missing cue gives the change away
+  // intents not told the setting: the missing cue gives the change away
   const late = concat([quiet(0.6), a.subarray(0, 4 * S), quiet(5), a.subarray(4.5 * S, 9 * S), quiet(5.5), a.subarray(9.5 * S, 13.5 * S), quiet(1)]);
   const r1 = run(late, { settings: { silenceSec: 4 } }, [[12.5, (engine, source) => raise(engine, source, false)]]);
   assert.equal(r1.events.filter(e => e.type === "cue" && e.kind === "silence").length, 1);
   assert.deepEqual(seat(r1.source), [["new_voice", 1], ["voice_resumes", 1]]);
   // sooner after the cue the engine's cooldown could explain it, so the page passes the setting
-  // (intents.configure next to engine.configure)
+  // (configureEngine: intents.configure next to engine.configure)
   const soon = concat([quiet(0.6), a.subarray(0, 4 * S), quiet(5), a.subarray(4.5 * S, 7 * S), quiet(5.5), a.subarray(8 * S, 12 * S), quiet(1)]);
   const r2 = run(soon, { settings: { silenceSec: 4 } }, [[12.5, (engine, source) => raise(engine, source, true)]], { silenceSec: 4 });
   assert.deepEqual(seat(r2.source), [["new_voice", 1], ["voice_resumes", 1]]);
+  // and as the page does it, with the whole of its engine settings
+  const r3 = asPage(soon, pageSettings(4), [[12.5, (engine, source) => { const s = pageSettings(8); source.configure(s); engine.configure(s); }]]);
+  assert.deepEqual(seat(r3.source), [["new_voice", 1], ["voice_resumes", 1]]);
+  assert.equal(r3.source.silenceSec, 8);
 });
 
 test("after a long silence a different voice gets only its own tap, never the previous voice's seat first", () => {
@@ -224,6 +233,34 @@ test("the resume tap follows the silence itself, not the rate-limited, switchabl
       assert.deepEqual(source.intents.filter(i => SEAT.has(i.kind)).map(i => i.kind), ["new_voice"], `setting 8 s, pause ${pause} s`);
     }
   }
+});
+
+test("wired as the page wires it, the voice taps when it starts again after a long silence even when no silence cue fires", () => {
+  const a = wav("198-209-0000");
+  const silenceCues = events => events.filter(e => e.type === "cue" && e.kind === "silence").length;
+  const resumes = source => source.intents.filter(i => i.kind === "voice_resumes").map(i => i.voice);
+  const pausedTurns = pause => concat([quiet(0.6), a.subarray(0, 6 * S), quiet(pause), a.subarray(8.5 * S, 12.5 * S), quiet(1)]);
+  // "Long silence" unticked in Settings (or do-not-disturb): no floor-open tick, the tap stays
+  for (const silenceSec of [3, 4, 6]) {
+    const { source, events } = asPage(pausedTurns(silenceSec + 0.6), pageSettings(silenceSec, false));
+    assert.equal(silenceCues(events), 0);
+    assert.deepEqual(resumes(source), [1], `setting ${silenceSec} s, cue off`);
+    assert.equal(source.silenceFrom, "page");
+  }
+  // a tone cue 0.5 s after the turn (as a tone estimate gives one, through the engine's own cue
+  // limits) holds the silence cue back: the engine leaves 3 s between any two cues
+  for (const pause of [3.6, 4.5]) {
+    const toneCue = [7.1, engine => engine._cue("drop", engine.t, { source: "model" })];
+    const { source, events } = asPage(pausedTurns(pause), pageSettings(3), [toneCue]);
+    assert.ok(events.some(e => e.type === "cue" && e.kind === "drop" && e.t > 7), "the tone cue fired after the turn");
+    assert.equal(silenceCues(events), 0, "and the silence cue was held back");
+    assert.deepEqual(resumes(source), [1], `setting 3 s, pause ${pause} s`);
+  }
+  // the silence cue, when it does fire, agrees with the page's setting and does not replace it
+  const { source, events } = asPage(pausedTurns(4.6), pageSettings(4));
+  assert.equal(silenceCues(events), 1);
+  assert.deepEqual(resumes(source), [1]);
+  assert.deepEqual([source.silenceSec, source.silenceFrom], [4, "page"]);
 });
 
 test("a short noise after a long silence does not use up the tap for the real resumption", () => {
@@ -331,4 +368,79 @@ test("cues become cue and silence intents with the speaker attached", () => {
   assert.deepEqual(source.handle({ type: "cue", kind: "silence", t: 9 }).map(i => [i.kind, i.voice]), [["silence", null]]);
   assert.deepEqual(source.handle({ type: "cue", kind: "sarcasm", t: 10 }), []);
   assert.deepEqual(source.handle({ type: "level", t: 11, db: -40 }), []);
+});
+
+// ------------------------------------------------------------------ on-screen stole pads
+// StoleView.wirePad against docs/kandha/PROTOCOL.md, on a fake pad node with mocked timers.
+// script: [[ms, pad, "down"|"up"|"leave"|"cancel"|"blur"|"keydown"|"keyup"]]; returns [[ms, pad, gesture]]
+function playPads(script, until = 5000) {
+  mock.timers.enable({ apis: ["setTimeout", "Date"], now: 0 });
+  const now = mock.method(performance, "now", () => Date.now());
+  try {
+    const got = [], nodes = {};
+    const view = { onPad: (pad, gesture) => got.push([Date.now(), pad, gesture]) };
+    const node = pad => nodes[pad] || (nodes[pad] = (() => {
+      const on = {};
+      const n = { classList: { add() {}, remove() {} }, addEventListener: (type, fn) => { on[type] = fn; }, fire: type => on[type] && on[type]({ preventDefault() {}, key: "Enter", repeat: false }) };
+      StoleView.prototype.wirePad.call(view, n, pad);
+      return n;
+    })());
+    // 1 ms at a time: a timer callback reads the clock at the end of the tick that ran it
+    const advance = ms => { for (let i = 0; i < ms; i++) mock.timers.tick(1); };
+    const TYPE = { down: "pointerdown", up: "pointerup", leave: "pointerleave", cancel: "pointercancel" };
+    let t = 0;
+    for (const [at, pad, what] of script.slice().sort((x, y) => x[0] - y[0])) {
+      node(pad);
+      advance(at - t); t = at;
+      nodes[pad].fire(TYPE[what] || what);
+    }
+    advance(until - t);
+    return got;
+  } finally { now.mock.restore(); mock.timers.reset(); }
+}
+const touch = (from, ms, pad = "L") => [[from, pad, "down"], [from + ms, pad, "up"]];
+const gestures = got => got.map(x => x[2]);
+
+test("on-screen pads use the stole's gesture timing", () => {
+  assert.deepEqual(PAD_TIMING, { TAP_MAX_MS: 400, DOUBLE_GAP_MS: 300, LONG_MS: 700 });
+  // a touch shorter than 400 ms is a tap, sent once no second touch can start (300 ms after it ends)
+  const tap = playPads(touch(1000, 100));
+  assert.deepEqual(gestures(tap), ["tap"]);
+  assert.ok(tap[0][0] >= 1400 && tap[0][0] <= 1420, `tap sent at ${tap[0][0]} ms`);
+  assert.deepEqual(gestures(playPads(touch(1000, 390))), ["tap"]);
+  // a touch of 400-699 ms is no gesture
+  for (const ms of [400, 450, 550, 690]) assert.deepEqual(playPads(touch(1000, ms)), [], `${ms} ms`);
+  // held 700 ms: a long press, sent once on the 700 ms mark, never also a tap
+  assert.deepEqual(playPads(touch(1000, 1500)), [[1700, "L", "long"]]);
+  assert.deepEqual(gestures(playPads(touch(1000, 3000))), ["long"]);
+});
+
+test("on-screen pads: a second touch starting within 300 ms of a tap's end makes a double", () => {
+  for (const gap of [50, 200, 290]) {
+    const got = playPads([...touch(1000, 100), ...touch(1100 + gap, 100)]);
+    assert.deepEqual(got, [[1200 + gap, "L", "double"]], `gap ${gap} ms`);
+  }
+  // later than that: two taps
+  assert.deepEqual(gestures(playPads([...touch(1000, 100), ...touch(1420, 100)])), ["tap", "tap"]);
+  // three quick touches: a double, then a tap
+  assert.deepEqual(gestures(playPads([...touch(1000, 80), ...touch(1180, 80), ...touch(1360, 80)])), ["double", "tap"]);
+  // a second touch held 400-699 ms is nothing, and the first tap still counts
+  assert.deepEqual(gestures(playPads([...touch(1000, 100), ...touch(1200, 500)])), ["tap"]);
+  // a second touch held into a long press: the long press only
+  assert.deepEqual(gestures(playPads([...touch(1000, 100), ...touch(1200, 900)])), ["long"]);
+  // pads are timed independently
+  const got = playPads([...touch(1000, 100, "L"), ...touch(1150, 100, "R"), ...touch(1300, 100, "L")]);
+  assert.deepEqual(got.filter(x => x[2] === "double").map(x => x[1]), ["L"]);
+  assert.deepEqual(got.filter(x => x[2] === "tap").map(x => x[1]), ["R"]);
+});
+
+test("on-screen pads: the keyboard follows the same rules, and a touch that is left or cancelled sends nothing", () => {
+  assert.deepEqual(gestures(playPads([[1000, "L", "keydown"], [1100, "L", "keyup"], [1250, "L", "keydown"], [1350, "L", "keyup"]])), ["double"]);
+  assert.deepEqual(playPads([[1000, "L", "keydown"], [1600, "L", "keyup"]]), []);
+  assert.deepEqual(gestures(playPads([[1000, "L", "keydown"], [1800, "L", "keyup"]])), ["long"]);
+  for (const end of ["leave", "cancel", "blur"]) {
+    assert.deepEqual(playPads([[1000, "L", "down"], [1100, "L", end]]), [], `${end} mid-touch`);
+    // the pad is not left stuck: the next touch is a tap again
+    assert.deepEqual(gestures(playPads([[1000, "L", "keydown"], [1800, "L", end], [3000, "L", "keydown"], [3100, "L", "keyup"]])), ["long", "tap"], `${end} after a long press`);
+  }
 });

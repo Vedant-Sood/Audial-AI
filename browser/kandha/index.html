@@ -160,7 +160,7 @@
       <div class="cols">
         <section class="panel" aria-labelledby="seatsTitle">
           <h2 id="seatsTitle">Who sits where</h2>
-          <p class="panel__hint">Drag a voice onto a seat, or select a voice and press 1 (left), 2 (right), 3 (behind) or 4 (front). On the stole: when two taps at the front announce a new voice, touch the L, R or B pad within six seconds. Double-tap a pad to move the person speaking now; hold it to clear their seat.</p>
+          <p class="panel__hint">Drag a voice onto a seat, or select a voice (it gets a tick; select it again to let go) and press 1 (left), 2 (right), 3 (behind) or 4 (front). On the stole: when two taps at the front announce a new voice, touch the L, R or B pad within six seconds. Double-tap a pad to move the person speaking now; hold it to clear their seat.</p>
           <div class="room room--big" id="roomBig" aria-label="Room diagram with draggable voices"></div>
           <ul class="chips" id="unseated" aria-label="Voices without a seat"></ul>
         </section>
@@ -341,12 +341,14 @@
   </form>
 </dialog>
 
-<dialog id="demoDlg" aria-labelledby="demoTitle" aria-describedby="demoAbout">
+<!-- Focus starts on the description, not on a demo: a repeated Enter on Demos must not end a live session.
+     The focused paragraph is read out, so it is not also the dialog's aria-describedby. -->
+<dialog id="demoDlg" aria-labelledby="demoTitle">
   <div class="dlg">
     <div class="dlg__head"><h2 id="demoTitle">Demos</h2><button type="button" class="icon-btn dlg__close" aria-label="Close">✕</button></div>
-    <p class="dlg__text" id="demoAbout">A scripted seminar or practicum role-play, played through this screen and the real tap scheduler. No microphone is used. Starting a demo pauses listening and clears this screen: save in Review first if you want to keep it.</p>
+    <p class="dlg__text" id="demoAbout" tabindex="-1" autofocus>A scripted seminar or practicum role-play, played through this screen and the real tap scheduler. No microphone is used. <span id="demoClears">Starting a demo pauses listening and clears this screen: save in Review first if you want to keep it.</span></p>
     <div class="row">
-      <button type="button" class="btn btn--primary" data-demo="seminar" autofocus>Watch the seminar demo</button>
+      <button type="button" class="btn btn--primary" data-demo="seminar">Watch the seminar demo</button>
       <button type="button" class="btn" data-demo="roleplay">Watch the practicum demo</button>
     </div>
     <label class="check"><input type="checkbox" id="demoDlgAloud"> Play the demo voices aloud</label>
