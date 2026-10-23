@@ -1,0 +1,328 @@
+{
+ "what": "The taps the two built-in demos play through the real scheduler, as the paired mock stole received them",
+ "generated_by": "scripts/record_kandha_demos.py",
+ "platform": "Linux-6.18.44-fc-v153-x86_64-with-glibc2.39",
+ "simulated": [
+  "the stole is the in-process mock (the same HAPTIC bytes, played by the Python PatternPlayer)",
+  "the demos are scripted: no microphone, scripted tone estimates"
+ ],
+ "demos": {
+  "seminar": {
+   "mode": "seminar",
+   "seconds": 37.6,
+   "voices": {
+    "1": "Dr Rao",
+    "2": "Priya",
+    "3": "Arjun"
+   },
+   "seats": {
+    "1": "F",
+    "2": "L",
+    "3": "R"
+   },
+   "stole_received": [
+    {
+     "at": 0.02,
+     "pattern": "new_voice",
+     "zones": "F"
+    },
+    {
+     "at": 5.72,
+     "pattern": "new_voice",
+     "zones": "F"
+    },
+    {
+     "at": 11.07,
+     "pattern": "new_voice",
+     "zones": "F"
+    },
+    {
+     "at": 16.81,
+     "pattern": "queue_ack",
+     "zones": "LR"
+    },
+    {
+     "at": 17.42,
+     "pattern": "seat_tap",
+     "zones": "L"
+    },
+    {
+     "at": 22.44,
+     "pattern": "seat_tap",
+     "zones": "F"
+    },
+    {
+     "at": 26.14,
+     "pattern": "queue_ack",
+     "zones": "LR"
+    },
+    {
+     "at": 31.35,
+     "pattern": "silence",
+     "zones": "LR"
+    },
+    {
+     "at": 31.75,
+     "pattern": "seat_tap",
+     "zones": "R"
+    }
+   ],
+   "page_taps": [
+    {
+     "intent": "new_voice",
+     "pattern": "new_voice",
+     "zones": "F",
+     "voice": 1,
+     "device": "stole"
+    },
+    {
+     "intent": "new_voice",
+     "pattern": "new_voice",
+     "zones": "F",
+     "voice": 2,
+     "device": "stole"
+    },
+    {
+     "intent": "new_voice",
+     "pattern": "new_voice",
+     "zones": "F",
+     "voice": 3,
+     "device": "stole"
+    },
+    {
+     "intent": "queue_ack",
+     "pattern": "queue_ack",
+     "zones": "LR",
+     "voice": null,
+     "device": "stole"
+    },
+    {
+     "intent": "speaker",
+     "pattern": "seat_tap",
+     "zones": "L",
+     "voice": 2,
+     "device": "stole"
+    },
+    {
+     "intent": "speaker",
+     "pattern": "seat_tap",
+     "zones": "F",
+     "voice": 1,
+     "device": "stole"
+    },
+    {
+     "intent": "queue_ack",
+     "pattern": "queue_ack",
+     "zones": "LR",
+     "voice": null,
+     "device": "stole"
+    },
+    {
+     "intent": "silence",
+     "pattern": "silence",
+     "zones": "LR",
+     "voice": null,
+     "device": "stole"
+    },
+    {
+     "intent": "speaker",
+     "pattern": "seat_tap",
+     "zones": "R",
+     "voice": 3,
+     "device": "stole"
+    }
+   ],
+   "sequence": [
+    [
+     "new_voice",
+     "F"
+    ],
+    [
+     "new_voice",
+     "F"
+    ],
+    [
+     "new_voice",
+     "F"
+    ],
+    [
+     "queue_ack",
+     "LR"
+    ],
+    [
+     "seat_tap",
+     "L"
+    ],
+    [
+     "seat_tap",
+     "F"
+    ],
+    [
+     "queue_ack",
+     "LR"
+    ],
+    [
+     "silence",
+     "LR"
+    ],
+    [
+     "seat_tap",
+     "R"
+    ]
+   ],
+   "matches_demo_script": true,
+   "page_matches_stole": true
+  },
+  "roleplay": {
+   "mode": "practicum",
+   "seconds": 31.8,
+   "voices": {
+    "1": "Client",
+    "2": "Vikram"
+   },
+   "seats": {
+    "1": "F",
+    "2": "me"
+   },
+   "stole_received": [
+    {
+     "at": 0.02,
+     "pattern": "new_voice",
+     "zones": "F"
+    },
+    {
+     "at": 5.04,
+     "pattern": "new_voice",
+     "zones": "F"
+    },
+    {
+     "at": 8.75,
+     "pattern": "seat_tap",
+     "zones": "F"
+    },
+    {
+     "at": 9.76,
+     "pattern": "drop",
+     "zones": "F"
+    },
+    {
+     "at": 17.77,
+     "pattern": "silence",
+     "zones": "LR"
+    },
+    {
+     "at": 18.18,
+     "pattern": "seat_tap",
+     "zones": "F"
+    },
+    {
+     "at": 19.94,
+     "pattern": "hesitation",
+     "zones": "F"
+    },
+    {
+     "at": 27.36,
+     "pattern": "rise",
+     "zones": "F"
+    }
+   ],
+   "page_taps": [
+    {
+     "intent": "new_voice",
+     "pattern": "new_voice",
+     "zones": "F",
+     "voice": 1,
+     "device": "stole"
+    },
+    {
+     "intent": "new_voice",
+     "pattern": "new_voice",
+     "zones": "F",
+     "voice": 2,
+     "device": "stole"
+    },
+    {
+     "intent": "speaker",
+     "pattern": "seat_tap",
+     "zones": "F",
+     "voice": 1,
+     "device": "stole"
+    },
+    {
+     "intent": "cue",
+     "pattern": "drop",
+     "zones": "F",
+     "voice": 1,
+     "device": "stole"
+    },
+    {
+     "intent": "silence",
+     "pattern": "silence",
+     "zones": "LR",
+     "voice": null,
+     "device": "stole"
+    },
+    {
+     "intent": "speaker",
+     "pattern": "seat_tap",
+     "zones": "F",
+     "voice": 1,
+     "device": "stole"
+    },
+    {
+     "intent": "cue",
+     "pattern": "hesitation",
+     "zones": "F",
+     "voice": 1,
+     "device": "stole"
+    },
+    {
+     "intent": "cue",
+     "pattern": "rise",
+     "zones": "F",
+     "voice": 1,
+     "device": "stole"
+    }
+   ],
+   "sequence": [
+    [
+     "new_voice",
+     "F"
+    ],
+    [
+     "new_voice",
+     "F"
+    ],
+    [
+     "seat_tap",
+     "F"
+    ],
+    [
+     "drop",
+     "F"
+    ],
+    [
+     "silence",
+     "LR"
+    ],
+    [
+     "seat_tap",
+     "F"
+    ],
+    [
+     "hesitation",
+     "F"
+    ],
+    [
+     "rise",
+     "F"
+    ]
+   ],
+   "matches_demo_script": true,
+   "page_matches_stole": true
+  }
+ },
+ "page_errors": [],
+ "browser_version": "141.0.7390.37",
+ "result": "PASS"
+}

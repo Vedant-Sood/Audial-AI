@@ -2,92 +2,92 @@
   "scope": "Automated audit in Chromium; not a screen-reader session with a user",
   "screens": {
     "dark/live": {
-      "focusable": 19,
+      "focusable": 20,
       "unnamed": [],
-      "reached_by_tab": 19,
+      "reached_by_tab": 20,
       "focus_not_visible": [],
-      "text_elements": 56,
+      "text_elements": 57,
       "contrast_failures": [],
       "horizontal_overflow": false
     },
     "dark/stole": {
-      "focusable": 30,
+      "focusable": 31,
       "unnamed": [],
-      "reached_by_tab": 30,
+      "reached_by_tab": 31,
       "focus_not_visible": [],
-      "text_elements": 65,
+      "text_elements": 66,
       "contrast_failures": [],
       "horizontal_overflow": false
     },
     "dark/seats": {
-      "focusable": 18,
-      "unnamed": [],
-      "reached_by_tab": 18,
-      "focus_not_visible": [],
-      "text_elements": 34,
-      "contrast_failures": [],
-      "horizontal_overflow": false
-    },
-    "dark/review": {
-      "focusable": 15,
-      "unnamed": [],
-      "reached_by_tab": 15,
-      "focus_not_visible": [],
-      "text_elements": 53,
-      "contrast_failures": [],
-      "horizontal_overflow": false
-    },
-    "dark/settings": {
-      "focusable": 41,
-      "unnamed": [],
-      "reached_by_tab": 41,
-      "focus_not_visible": [],
-      "text_elements": 74,
-      "contrast_failures": [],
-      "horizontal_overflow": false
-    },
-    "light/live": {
       "focusable": 19,
       "unnamed": [],
       "reached_by_tab": 19,
       "focus_not_visible": [],
-      "text_elements": 56,
+      "text_elements": 35,
+      "contrast_failures": [],
+      "horizontal_overflow": false
+    },
+    "dark/review": {
+      "focusable": 16,
+      "unnamed": [],
+      "reached_by_tab": 16,
+      "focus_not_visible": [],
+      "text_elements": 54,
+      "contrast_failures": [],
+      "horizontal_overflow": false
+    },
+    "dark/settings": {
+      "focusable": 43,
+      "unnamed": [],
+      "reached_by_tab": 43,
+      "focus_not_visible": [],
+      "text_elements": 78,
+      "contrast_failures": [],
+      "horizontal_overflow": false
+    },
+    "light/live": {
+      "focusable": 20,
+      "unnamed": [],
+      "reached_by_tab": 20,
+      "focus_not_visible": [],
+      "text_elements": 57,
       "contrast_failures": [],
       "horizontal_overflow": false
     },
     "light/stole": {
-      "focusable": 30,
+      "focusable": 31,
       "unnamed": [],
-      "reached_by_tab": 30,
+      "reached_by_tab": 31,
       "focus_not_visible": [],
-      "text_elements": 65,
+      "text_elements": 66,
       "contrast_failures": [],
       "horizontal_overflow": false
     },
     "light/seats": {
-      "focusable": 18,
+      "focusable": 19,
       "unnamed": [],
-      "reached_by_tab": 18,
+      "reached_by_tab": 19,
       "focus_not_visible": [],
-      "text_elements": 34,
+      "text_elements": 35,
       "contrast_failures": [],
       "horizontal_overflow": false
     },
     "light/review": {
-      "focusable": 15,
+      "focusable": 16,
       "unnamed": [],
-      "reached_by_tab": 15,
+      "reached_by_tab": 16,
       "focus_not_visible": [],
-      "text_elements": 53,
+      "text_elements": 54,
       "contrast_failures": [],
       "horizontal_overflow": false
     },
     "light/settings": {
-      "focusable": 41,
+      "focusable": 43,
       "unnamed": [],
-      "reached_by_tab": 41,
+      "reached_by_tab": 43,
       "focus_not_visible": [],
-      "text_elements": 74,
+      "text_elements": 78,
       "contrast_failures": [],
       "horizontal_overflow": false
     }

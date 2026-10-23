@@ -2,15 +2,18 @@
 
 Two LibriSpeech readers take turns (A B A B, tests/fixtures/sanket). Whisper is replaced by a stub
 that captions each received stretch with its own time span, and the stole is the in-process mock
-(the same bytes and timing as the firmware simulation). This verifies the integration, not speech
-or emotion accuracy:
+(the same bytes, played by the Python PatternPlayer that the virtual stole uses). This verifies
+the integration, not speech or emotion accuracy:
 
 - the correct zones fire in the correct order (new voice, new voice, then the seats);
 - the in-app latency budget (page intent -> stole write) holds;
 - no cue storms: outside speaker changes at most one tap in any 1.5 s window;
 - queue presses (key and stole pad) light the strip and are saved with the session;
 - a consented "Save to sessions" writes this session's captions and events, as on screen;
-- a pad double-tap reseats the voice speaking now.
+- a pad double-tap reseats the voice speaking now;
+- after a silence of about 5 s a different voice gets only its own tap: the first reader coming
+  back taps its own seat, then a third, new reader taps the front, and the previous speaker's
+  seat is never tapped first.
 
     python -m scripts.verify_kandha --browser /opt/pw-browsers/chromium --output artifacts/kandha
 """
@@ -29,21 +32,33 @@ import wave
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
+# longer than the page's default "a silence counts as long after" (4 s), so the silence cue fires
+LONG_SILENCE_S = 5.0
 
 
 def conversation(path):
-    """Two readers, alternating, with short pauses: A B A B (the same clip as verify_sanket)."""
+    """Two readers, alternating, with short pauses: A B A B (the same clip as verify_sanket). Then
+    a long silence and A again, and a long silence and a third reader, C. Returns the length in
+    seconds and when each turn after a long silence starts and ends, in audio seconds."""
     def read(name):
         with wave.open(str(ROOT / "tests/fixtures/sanket" / f"{name}.wav")) as clip:
             return np.frombuffer(clip.readframes(clip.getnframes()), "<i2").astype(np.float32) / 32768
-    a, b = read("198-209-0000"), read("3436-172162-0000")
+    a, b, c = read("198-209-0000"), read("3436-172162-0000"), read("5703-47212-0000")
     gap = lambda s: np.random.default_rng(1).normal(0, 3e-4, int(s * 16000)).astype(np.float32)
-    parts = [gap(0.6), a[:8 * 16000], gap(0.8), b[:8 * 16000], gap(0.8), a[8 * 16000:13 * 16000], gap(0.8), b[8 * 16000:14 * 16000], gap(2)]
+    parts = [gap(0.6), a[:8 * 16000], gap(0.8), b[:8 * 16000], gap(0.8), a[8 * 16000:13 * 16000], gap(0.8), b[8 * 16000:14 * 16000]]
+    turns = {}
+    # A again and then a new reader, each after a silence long enough for the silence cue (4 s)
+    for name, piece in (("first_reader_after_silence", a[2 * 16000:8 * 16000]), ("new_reader_after_silence", c[:6 * 16000])):
+        parts.append(gap(LONG_SILENCE_S))
+        start = sum(len(p) for p in parts) / 16000
+        parts.append(piece)
+        turns[name] = {"start_s": round(start, 3), "end_s": round(start + len(piece) / 16000, 3)}
+    parts.append(gap(2))
     signal = np.concatenate(parts)
     with wave.open(str(path), "wb") as out:
         out.setnchannels(1); out.setsampwidth(2); out.setframerate(16000)
         out.writeframes((np.clip(signal, -1, 1) * 32767).astype("<i2").tobytes())
-    return len(signal) / 16000
+    return len(signal) / 16000, turns
 
 
 def stub_engine(service):
@@ -95,6 +110,26 @@ def storms(taps, window=1.5):
     return worst
 
 
+SEAT_INTENTS = ("speaker", "new_voice", "voice_resumes")
+
+
+def after_silence(dispatched, turn, started):
+    """The seat taps for one turn after a long silence: every speaker, new-voice or voice-resumes
+    tap whose intent is dated inside that turn (the engine dates a decision at the speech it
+    judged), and the taps played between the silence tap and the first of them."""
+    seat = [x for x in dispatched if x["intent"] in SEAT_INTENTS and x.get("t") is not None
+            and turn["start_s"] - 0.5 <= x["t"] <= turn["end_s"] + 0.5]
+    silences = [x for x in dispatched if x["intent"] == "silence" and seat and x["at"] <= seat[0]["at"]]
+    between = []
+    if silences and seat:
+        between = [x for x in dispatched if silences[-1]["at"] < x["at"] < seat[0]["at"] and x["intent"] in SEAT_INTENTS]
+    return {"turn_s": [turn["start_s"], turn["end_s"]],
+            "silence_tap_at": round(silences[-1]["at"] - started, 2) if silences else None,
+            "seat_taps": [{"intent": x["intent"], "pattern": x["pattern"], "zones": x["zones"], "voice": x["voice"],
+                           "t": x["t"], "at": round(x["at"] - started, 2)} for x in seat],
+            "seat_taps_between_silence_and_first": len(between)}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--browser", default="/opt/pw-browsers/chromium")
@@ -111,7 +146,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="audial-kandha-") as directory:
         os.environ["ACCESSIBILITY_AI_HOME"] = directory
         audio = Path(directory) / "conversation.wav"
-        seconds = conversation(audio)
+        seconds, turns = conversation(audio)
         stole = MockStole()
         service = BrowserService(settings=Settings(device="cpu", voice_colors=True, voice_cues=True, voice_tone=True), kandha_backend=MockBackend([stole]))
         stub_engine(service)
@@ -155,13 +190,16 @@ def main():
                 strip_after_pad = page.locator("#strip").evaluate("e => e.classList.contains('is-on')")
                 page.wait_for_timeout(1200)
                 stole.press(PAD_Q, GESTURE_TAP)
-                # let the conversation play; reseat the current voice to "behind" with a pad double-tap mid-way
-                page.wait_for_timeout(int(seconds * 1000 * 0.55))
+                # let the conversation play; reseat the voice speaking now to "behind" with a pad
+                # double-tap 22 s in, during the first reader's second turn (18.2-23.2 s), after its seat tap
+                page.wait_for_timeout(max(0, int((22.0 - (time.monotonic() - started)) * 1000)))
                 current = service.kandha.current_voice
+                reseat_at = round(time.monotonic() - started, 2)
                 stole.press(PAD_B, GESTURE_DOUBLE)
                 page.wait_for_timeout(600)
                 reseated = service.kandha.seats.zone_for(current) if current else None
-                page.wait_for_timeout(int(seconds * 1000 * 0.5) + 3000)
+                # the rest of the clip: the two turns after a long silence, then the silence cue at the end
+                page.wait_for_timeout(max(0, int((seconds + 6.0 - (time.monotonic() - started)) * 1000)))
                 page.screenshot(path=str(args.output / "kandha-live.png"))
                 page.locator("#startBtn").click()
                 page.wait_for_timeout(1200)
@@ -219,8 +257,15 @@ def main():
                                        "events": len(saved[0].get("voice_view", {}).get("events", [])) if saved else 0}
             report["queue"] = {"strip_after_key": strip_after_key, "strip_after_second_key": strip_after_second_key, "strip_after_pad": strip_after_pad, "lines": page_state["queue_lines"]}
             report["pad_double_tap_reseated_current_voice_to"] = reseated
+            report["pad_double_tap"] = {"at": reseat_at, "voice": current, "zone": reseated}
+            # finding C0: after a long silence a different voice taps only its own seat (or the front, when new)
+            new_voices = [x["voice"] for x in dispatched if x["intent"] == "new_voice"]
+            report["after_long_silence"] = {"silence_s": LONG_SILENCE_S, "first_reader": new_voices[0] if new_voices else None,
+                                            "second_reader": new_voices[1] if len(new_voices) > 1 else None}
+            for name, turn in turns.items():
+                report["after_long_silence"][name] = after_silence(dispatched, turn, started)
             report["page"] = page_state
-            report["all_taps_in_order"] = [(x["intent"], x["pattern"], x["zones"], round(x["at"] - started, 2)) for x in dispatched]
+            report["all_taps_in_order"] = [(x["intent"], x["pattern"], x["zones"], x["voice"], x["t"], round(x["at"] - started, 2)) for x in dispatched]
             (args.output / "kandha-acceptance.json").write_text(json.dumps(report, indent=2) + "\n")
             # ---- assertions
             assert page_state["lines"] >= 4 and len(page_state["voices"]) >= 2, "timed captions and two voices"
@@ -240,6 +285,17 @@ def main():
             assert replaced["note"].startswith("Another Kandha window") and replaced["blank_export_status"] == 409, replaced
             assert replaced["toast"] == replaced["note"] and replaced["toast_live"] == "polite" and replaced["buttons_described_by_note"], replaced
             assert reseated == "B", "a pad double-tap reseats the voice speaking now"
+            # after ~5 s of silence the first reader (last heard before the second reader) comes back:
+            # one tap, on its own seat (behind, since the reseat), never the second reader's seat first
+            silence = report["after_long_silence"]
+            back, new = silence["first_reader_after_silence"], silence["new_reader_after_silence"]
+            assert current == silence["first_reader"], "the double-tap reseated the first reader"
+            assert [(x["voice"], x["pattern"], x["zones"]) for x in back["seat_taps"]] == [(silence["first_reader"], "seat_tap", "B")], back
+            assert back["silence_tap_at"] is not None and back["seat_taps_between_silence_and_first"] == 0, back
+            # then a third reader, new, after another long silence: only the front double tap
+            assert len(new["seat_taps"]) == 1 and new["seat_taps"][0]["pattern"] == "new_voice" and new["seat_taps"][0]["zones"] == "F", new
+            assert new["seat_taps"][0]["voice"] not in (silence["first_reader"], silence["second_reader"]), new
+            assert new["silence_tap_at"] is not None and new["seat_taps_between_silence_and_first"] == 0, new
             assert not report["page_errors"], report["page_errors"]
             report["result"] = "PASS"
         finally:
