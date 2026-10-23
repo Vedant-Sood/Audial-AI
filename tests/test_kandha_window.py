@@ -213,20 +213,46 @@ report = {"off_the_record": window.profile.isOffTheRecord(), "downloads_folder":
 STARTED = time.monotonic()
 
 
-def until(script, test, then):
-    deadline = time.monotonic() + 60
+def until(script, test, then, seconds=60):
+    """Ask the page `script` until test(answer) holds, then call then(answer). A script that runs
+    while the page reloads gets '' (not JSON) back, which counts as not yet; a question left
+    unanswered is asked again, and a wall-clock deadline names the step instead of hanging."""
+    state = {"asked": None, "done": False}
 
-    def check(value):
-        data = json.loads(value) if isinstance(value, str) else value
+    def ask():
+        if state["done"]:
+            return
+        token = state["asked"] = object()
+        window.run_js(script, lambda value: answered(token, value))
+        QTimer.singleShot(2000, lambda: ask() if state["asked"] is token else None)
+
+    def answered(token, value):
+        if state["done"] or state["asked"] is not token:
+            return
+        state["asked"] = None
+        data = parse(value)
         if test(data):
+            state["done"] = True
             report.setdefault("steps", []).append([then.__name__, round(time.monotonic() - STARTED, 1)])
             then(data)
-        elif time.monotonic() > deadline:
-            report["timeout"] = script
-            finish()
         else:
-            QTimer.singleShot(200, lambda: window.run_js(script, check))
-    window.run_js(script, check)
+            QTimer.singleShot(200, ask)
+
+    def give_up():
+        if not state["done"]:
+            state["done"] = True
+            report["timeout"] = f"{then.__name__}: {script}"
+            finish()
+
+    QTimer.singleShot(int(seconds * 1000), give_up)
+    ask()
+
+
+def parse(value):
+    try:
+        return json.loads(value) if isinstance(value, str) else value
+    except ValueError:
+        return None
 
 
 def start(_):
@@ -361,6 +387,88 @@ def test_kandha_window_saves_exports_stays_on_its_origin_and_gets_the_caption_mo
     assert result.returncode == 0, result.stderr[-3000:]
 
 
+CLOSE_AFTER_EXPORT_PROBE = r'''
+import json, sys, time
+from pathlib import Path
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtWidgets import QApplication
+QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts, True)
+app = QApplication(sys.argv[:1])
+app.setApplicationName("Kandha")
+app.setOrganizationName("Audial-AI")
+app.setQuitOnLastWindowClosed(False)
+from app.services.browser import BrowserService
+from app.ui import kandha_window
+from app.ui.kandha_window import KandhaWindow, prepare_chromium_flags
+from app.utils.config import Settings
+prepare_chromium_flags()
+if sys.platform == "win32":   # Windows finds Downloads through the user's shell folders, not HOME
+    kandha_window.downloads_folder = lambda: Path(sys.argv[1]) / "user" / "Downloads"
+service = BrowserService(settings=Settings(), port=0)
+window = KandhaWindow(service.start(), service=service)
+window.show()
+warnings = []
+window.warn = warnings.append
+report = {}
+folder = kandha_window.downloads_folder()
+# made the way the page's saveFile makes them
+SAVE = """(name, text) => { const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' })); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); }"""
+# the second export is fetched from the companion first, as VTT, SRT and JSON are; its answer
+# takes 250 ms, so it reaches the window only after the page has answered the stop
+EXPORTS = f"""(() => {{ const save = {SAVE};
+  save('kandha-now.txt', 'saved as the window closed');
+  fetch('/api/kandha/state').then((r) => r.json()).then(() => save('kandha-fetched.txt', 'fetched, then saved'));
+  return 1; }})()"""
+
+
+def ask():
+    window.run_js("JSON.stringify(window.Kandha ? window.Kandha.ready() : null)", ready)
+
+
+def ready(value):
+    try:
+        data = json.loads(value) if value else None
+    except ValueError:
+        data = None
+    if not (data and data.get("ready")):
+        return QTimer.singleShot(200, ask)
+    snapshot = service.kandha.snapshot
+    service.kandha.snapshot = lambda: (time.sleep(0.25), snapshot())[1]
+    # the close comes in the same moment as the exports
+    window.run_js(EXPORTS, lambda _: report.update(close_returned=window.close(), visible=window.isVisible(),
+                                                   closed_at=time.monotonic()))
+
+
+def closed():
+    report.update(seconds_to_close=round(time.monotonic() - report["closed_at"], 2), page_freed=window.page is None,
+                  still_saving=len(window.downloads), warnings=list(warnings),
+                  files={p.name: p.read_text() for p in folder.iterdir()} if folder.is_dir() else {})
+    app.quit()
+
+
+window.closed.connect(closed)
+app.aboutToQuit.connect(lambda: (print("REPORT " + json.dumps(report), flush=True), service.stop()))
+QTimer.singleShot(0, ask)
+QTimer.singleShot(60000, lambda: (report.update(timeout=True), app.quit()))
+sys.exit(app.exec())
+'''
+
+
+@WEBENGINE
+def test_closing_right_after_an_export_still_saves_it(tmp_path):
+    """C14: the window is closed in the same moment as two exports, one of them still being fetched:
+    both files reach Downloads before the page is freed, and the close is not held up for long."""
+    result, report = run_probe(tmp_path, CLOSE_AFTER_EXPORT_PROBE)
+    assert "timeout" not in report and result.returncode == 0, (report, result.stderr[-3000:])
+    assert report["close_returned"] is True and report["visible"] is False
+    assert report["files"] == {"kandha-now.txt": "saved as the window closed", "kandha-fetched.txt": "fetched, then saved"}, report
+    assert report["still_saving"] == 0 and report["warnings"] == [] and report["page_freed"] is True
+    assert report["seconds_to_close"] < 5, report
+    assert PROFILE_WARNING not in result.stderr
+
+
 MAIN_WINDOW_PROBE = r'''
 import json, sys, time
 from PySide6.QtCore import Qt, QTimer
@@ -392,7 +500,10 @@ def until(kandha, script, test, then):
     deadline = time.monotonic() + 60
 
     def check(value):
-        data = json.loads(value) if isinstance(value, str) else value
+        try:
+            data = json.loads(value) if isinstance(value, str) else value
+        except ValueError:
+            data = None     # '' from a script that ran while the page was loading: not yet
         if test(data):
             then(data)
         elif time.monotonic() > deadline:
@@ -668,10 +779,6 @@ def test_the_chosen_microphone_survives_a_relaunch(tmp_path):
     # the window's part: the microphones are named before Start, and listing them opened none
     for report in (first, second):
         assert report["named_before_start"] is True and report["microphone_requests"] == [], report
-    if second["selected"] != "Fake Audio Input 2":
-        # the saved choice did come back from page-settings.json, but the off-the-record web view
-        # gives the devices new ids on every launch (as every new port does), so the page has to
-        # know the device by its name as well
-        assert second["restored_mic"] == first["chosen"]
-        pytest.xfail("R1: the page (browser/kandha/app.js) does not yet match a saved microphone by its name")
-    assert second["selected"] == "Fake Audio Input 2"
+    # the off-the-record web view gives the devices new ids on every launch (as every new port
+    # does), so the page finds the saved microphone by its name as well
+    assert second["selected"] == "Fake Audio Input 2", second

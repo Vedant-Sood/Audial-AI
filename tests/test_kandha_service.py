@@ -282,10 +282,12 @@ def test_the_prototype_pairs_with_the_simulated_stole_and_can_switch_links(tmp_p
 # ---------------------------------------------------------------- review fixes (C6, C11, C13, C16/G3, C18/G2, C21, C25)
 def test_an_intent_held_up_on_the_way_is_dropped_as_stale_not_played_late(tmp_path):
     """DESIGN 7.2: older than 1.5 s when it would play -> dropped. The page sends each intent's age
-    when it leaves (age_ms) and that moment on the shared wall clock (sent); the trip is added."""
+    when it leaves (age_ms) and that moment on its wall clock (sent); the trip, measured against
+    the batches before it, is added."""
     service = KandhaService(home=tmp_path, start_bridge=False, ticker=False)
     try:
         service.update_settings({"mode": "practicum"})
+        service.intents([{"kind": "silence", "t": 11.0, "age_ms": 0, "sent": time.time() * 1000}])    # an earlier batch, on time
         late = service.intents([{"kind": "speaker", "voice": 7, "t": 12.0, "age_ms": 0, "sent": time.time() * 1000 - 3000}])
         assert late["played"] == [] and service.scheduler.dropped[-1][1] == "stale", "held up 3 s on the way: never tapped late"
         old = service.intents([{"kind": "speaker", "voice": 8, "t": 12.0, "age_ms": 2000}])
@@ -293,6 +295,109 @@ def test_an_intent_held_up_on_the_way_is_dropped_as_stale_not_played_late(tmp_pa
         fresh = service.intents([{"kind": "speaker", "voice": 9, "t": 12.0, "age_ms": 40, "sent": time.time() * 1000}])
         assert fresh["played"][0]["pattern"] == "seat_unmapped"
         assert 35 <= fresh["played"][0]["app_latency_ms"] < 200, "latency counts from when the intent was raised"
+    finally:
+        service.close()
+
+
+def speaker(voice, page_clock_ms, age_ms=20):
+    return {"kind": "speaker", "voice": voice, "t": float(voice), "age_ms": age_ms, "sent": page_clock_ms}
+
+
+@pytest.mark.parametrize("behind_ms", [2500, 30000, -4000])
+def test_a_page_clock_ahead_or_behind_neither_drops_every_tap_nor_hides_a_held_up_batch(tmp_path, behind_ms):
+    """The page's wall clock (sent) need not agree with this service's: a browser tab can keep its
+    own time base, or catch up with a time sync late. A steady difference bigger than the 1.5 s
+    stale window must not drop every tap (behind) or let a batch held up on the way play late
+    (ahead); the trip counts only beyond the fastest recent batch."""
+    now = [100.0]
+    service = KandhaService(home=tmp_path, start_bridge=False, ticker=False, clock=lambda: now[0])
+    page_clock = lambda: time.time() * 1000 - behind_ms
+    try:
+        service.update_settings({"mode": "practicum"})
+        for voice in range(1, 7):
+            now[0] += 1.0                       # the tap before has finished
+            out = service.intents([speaker(voice, page_clock())])
+            assert [p["voice"] for p in out["played"]] == [voice], (voice, service.scheduler.dropped[-1:])
+            assert 20 <= out["played"][0]["app_latency_ms"] < 200, "the intent's real age, not the clocks' difference"
+        now[0] += 1.0
+        late = service.intents([speaker(7, page_clock() - 3000, age_ms=0)])
+        assert late["played"] == [] and service.scheduler.dropped[-1][1] == "stale", "held up 3 s on the way: never tapped late"
+        now[0] += 1.0
+        assert [p["voice"] for p in service.intents([speaker(8, page_clock())])["played"]] == [8], "the next batch on time plays"
+    finally:
+        service.close()
+
+
+def test_a_page_clock_that_steps_costs_a_few_taps_at_most(tmp_path):
+    """A clock step (a time sync after sleep) changes the difference mid-session. A page clock that
+    jumps ahead loses nothing. One that falls behind by more than the stale window looks like a
+    held-up batch until CLOCK_SAMPLES batches have shown the new difference: at most that many
+    taps are lost, then they all play again."""
+    from app.kandha.service import CLOCK_SAMPLES
+    now = [100.0]
+    service = KandhaService(home=tmp_path, start_bridge=False, ticker=False, clock=lambda: now[0])
+    voices = iter(range(1, 1000))
+
+    def taps(behind_ms, batches):
+        played = []
+        for _ in range(batches):
+            now[0] += 1.0
+            voice = next(voices)
+            played.append(bool(service.intents([speaker(voice, time.time() * 1000 - behind_ms)])["played"]))
+        return played
+
+    try:
+        service.update_settings({"mode": "practicum"})
+        assert all(taps(0, 3)), "the clocks agree"
+        assert all(taps(-5000, 3)), "the page clock jumps 5 s ahead: nothing is lost"
+        for behind_ms in (0, 2500):             # it falls back 5 s, then 2.5 s more
+            after_step = taps(behind_ms, CLOCK_SAMPLES + 4)
+            assert after_step[CLOCK_SAMPLES:] == [True] * 4, (behind_ms, after_step)
+        assert all(taps(-1000, 3)), "ahead again: at once"
+    finally:
+        service.close()
+
+
+def test_the_seat_window_closing_tells_every_page_that_nobody_waits(tmp_path):
+    """The 6 s seat window after a new voice: when it runs out unused the service says pending: null,
+    and a pad tap with no window (or one that seats the voice) says so too, so no page keeps the
+    "waiting for a seat" highlight."""
+    events = []
+    now = [10.0]
+    service = KandhaService(publish=lambda kind, data: events.append(data), home=tmp_path, start_bridge=False, ticker=False,
+                            clock=lambda: now[0])
+
+    def last_seat():
+        return [e for e in events if e["kind"] == "seat"][-1]
+
+    try:
+        service.intents([{"kind": "new_voice", "voice": 3, "t": 1.0, "new": True}])
+        opened = last_seat()
+        assert opened["pending"]["voice"] == 3 and opened["source"] == "new-voice"
+        now[0] += service.seats.window_s - 0.5
+        service.tick()
+        assert last_seat() is opened, "still open: nothing to say"
+        now[0] += 1.0
+        service.tick()
+        closed = last_seat()
+        assert closed["pending"] is None and closed["voice"] == 3 and closed["action"] == "window-closed"
+        assert "zone" not in closed, "the page must not take this for a seat change"
+        assert service.seats.snapshot(now[0])["seats"] == closed["seats"] == {"3": None}
+        service.tick()
+        assert [e.get("action") for e in events].count("window-closed") == 1, "said once"
+        service.press_pad("L", "tap")
+        assert last_seat()["action"] == "no-window" and last_seat()["pending"] is None
+        # a tap inside the window seats the voice: nobody waits, and the window does not close again later
+        service.intents([{"kind": "new_voice", "voice": 4, "t": 9.0, "new": True}])
+        service.press_pad("R", "tap")
+        assert last_seat()["action"] == "assign-new" and last_seat()["zone"] == "R" and last_seat()["pending"] is None
+        now[0] += service.seats.window_s + 1
+        service.tick()
+        assert [e.get("action") for e in events].count("window-closed") == 1
+        # seated from the screen while the window is open: the event says nobody waits either
+        service.intents([{"kind": "new_voice", "voice": 5, "t": 20.0, "new": True}])
+        service.assign_seat(5, "B")
+        assert last_seat()["source"] == "screen" and last_seat()["pending"] is None
     finally:
         service.close()
 

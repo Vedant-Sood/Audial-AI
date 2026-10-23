@@ -6,8 +6,8 @@ page can open the microphone without a browser prompt and name the microphones b
 and the view never leaves that origin.
 Review exports are saved to the user's Downloads folder. The web view keeps nothing on disk; the
 page's own settings are kept in one file under the app's data root (see STORAGE_JS). Closing the
-window hides it at once, stops the page (listening, its stream and the microphone) and then frees
-it. Everything else is the HTML/JS app.
+window hides it at once, stops the page (listening, its stream and the microphone), lets an export
+it is saving finish, and then frees it. Everything else is the HTML/JS app.
 """
 import functools
 import json
@@ -36,6 +36,12 @@ STOP_PAGE_JS = """(() => {
 })()"""
 PAGE_BUSY_JS = "(() => { const K = window.Kandha; return !!(K && K.S && (K.S.running || K.S.demo || K.S.lines.length)); })()"
 STOP_WAIT_S = 3.0
+# Closing also waits for exports. One the page asked for just before the close (a VTT, SRT or
+# JSON export is fetched first) can reach the window a moment after the page has stopped, and
+# freeing the page cancels one still being written, so the page is kept a little while after
+# the close and for as long as a file is still being saved, up to DOWNLOAD_WAIT_S.
+EXPORT_SETTLE_S = 0.5
+DOWNLOAD_WAIT_S = 10.0
 
 # The page keeps its settings in localStorage, which Chromium files under the page's origin, and the
 # origin includes the companion's port, which is a new free port on most launches. So the web view
@@ -190,7 +196,12 @@ class KandhaWindow(QMainWindow):
         self.setup_dialog = self.model_setup = None
         self._reload_offered = False
         self._stop_started = self._page_stopped = False
-        self._stop_deadline = 0.0
+        self._stop_deadline = self._settle_until = self._download_deadline = 0.0
+        # one pending re-check of the close at a time, however many paths ask for it
+        self._finish_timer = QTimer(self)
+        self._finish_timer.setSingleShot(True)
+        self._finish_timer.setInterval(150)
+        self._finish_timer.timeout.connect(self._finish_close)
         self.downloads = {}
         # off the record: the web view writes nothing to disk (no history, cache or storage of its
         # own, and nothing two running copies could fight over); the page's settings are kept by
@@ -437,14 +448,18 @@ class KandhaWindow(QMainWindow):
 
     def closeEvent(self, event):
         """Closing hides the window at once and stops the page rather than keeping it: listening
-        ends the page's own way (its last words and events reach the companion), then the page,
-        its stream and the microphone are freed, `closed` is emitted and the window is deleted.
-        The close itself is never refused, so it cannot hold up Audial-AI's or the program's quit."""
+        ends the page's own way (its last words and events reach the companion), an export the
+        page is still saving reaches Downloads, then the page, its stream and the microphone are
+        freed, `closed` is emitted and the window is deleted. The close itself is never refused,
+        so it cannot hold up Audial-AI's or the program's quit."""
         if self.setup_dialog is not None:
             self.setup_dialog.hide()
         if not self._stop_started:
             self._stop_started = True
-            self._stop_deadline = time.monotonic() + STOP_WAIT_S
+            now = time.monotonic()
+            self._stop_deadline = now + STOP_WAIT_S
+            self._settle_until = now + EXPORT_SETTLE_S
+            self._download_deadline = now + DOWNLOAD_WAIT_S
             if self.page is None:
                 QTimer.singleShot(0, self, self._finish_close)
             else:
@@ -466,7 +481,14 @@ class KandhaWindow(QMainWindow):
     def _finish_close(self):
         if self._page_stopped:
             return
+        now = time.monotonic()
+        # an export can be asked for after the page answered the stop, and one being written is
+        # cancelled if the page goes: keep the page while either may happen (bounded)
+        if self.page is not None and (self.downloads or now < self._settle_until) and now < self._download_deadline:
+            self._finish_timer.start()
+            return
         self._page_stopped = True
+        self._finish_timer.stop()
         if self.model_setup is not None:
             self.model_setup.shutdown()
         self.setup_timer.stop()
