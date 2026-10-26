@@ -139,7 +139,9 @@ def launch(check=False, port=0, timeout_s=150):
                 data = json.loads(value) if value else None
             except (TypeError, ValueError):
                 data = None
-            if data and data.get("ready"):
+            # "ready" turns true once the tap patterns load; the tone model and the event stream
+            # arrive separately, so wait for all three before reporting the page ready
+            if data and data.get("ready") and data.get("toneModel") and data.get("stream") == "open":
                 result.update(ok=True, page=data, permission_api=window.permission_api, companion=url, title=window.windowTitle(),
                               seconds_to_ready=round(time.monotonic() - last["started"], 1))
                 print(json.dumps(result), flush=True)
