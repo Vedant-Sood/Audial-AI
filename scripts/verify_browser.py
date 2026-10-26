@@ -508,12 +508,31 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     dismiss_dev_mode_bubbles()
                     raise ToolbarRetry("Browser toolbar action did not open its real popup")
 
+                def click_capture(popup, page, attempts=3):
+                    # The popup can also close just after it opened, when the bubble
+                    # appears late; reopen it from the same tab and click again.
+                    for attempt in range(attempts):
+                        try:
+                            popup.click("#capture-current")
+                            return popup
+                        except Exception as error:
+                            if attempt == attempts - 1:
+                                raise
+                            report.setdefault("toolbar_retries", []).append("Capture click failed: " + str(error).splitlines()[0])
+                            dismiss_dev_mode_bubbles()
+                            if isinstance(popup, ToolbarPopup):
+                                try:
+                                    popup.cdp.detach()
+                                except Exception:
+                                    pass
+                            page.wait_for_timeout(500)
+                            popup = invoke(page)
+
                 report["toolbar_commands"] = worker.evaluate("chrome.commands.getAll()")
                 observed = []
                 report["source_capture_and_switching"] = observed
                 for source, expected in [(first, 440), (second, 1000)]:
-                    popup = invoke(source)
-                    popup.click("#capture-current")
+                    popup = click_capture(invoke(source), source)
                     expected_tab = tab_id(source)
                     wait(
                         lambda: service.bridge.owner is not None
@@ -602,7 +621,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                 report["extension_background_restart"] = (
                     "PASS; real extension reloaded and metadata restored"
                 )
-                popup.click("#capture-current")
+                popup = click_capture(popup, first)
                 packets.clear()
                 wait(lambda: packets, timeout=25)
                 popup.close()
