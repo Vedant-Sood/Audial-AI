@@ -375,7 +375,52 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                     path=str(args.output / "browser-with-real-tabs.png"), full_page=True
                 )
 
-                def invoke(page):
+                class ToolbarRetry(AssertionError):
+                    """The toolbar action did not reach its popup; a browser bubble may have taken focus."""
+
+                def dismiss_dev_mode_bubbles():
+                    # Edge 156 shows a "Turn off extensions in developer mode" bubble in a
+                    # window of its own. It takes the foreground and closes the toolbar popup
+                    # (a popup closes when its window loses focus), so close it first.
+                    if sys.platform != "win32":
+                        return 0
+                    import ctypes
+                    from ctypes import wintypes
+
+                    user32 = ctypes.windll.user32
+                    user32.GetWindowTextLengthW.argtypes = [wintypes.HWND]
+                    user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+                    user32.IsWindowVisible.argtypes = [wintypes.HWND]
+                    user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+                    bubbles = []
+                    callback = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+                    @callback
+                    def visit(handle, parameter):
+                        text = ctypes.create_unicode_buffer(user32.GetWindowTextLengthW(handle) + 1)
+                        user32.GetWindowTextW(handle, text, len(text))
+                        if user32.IsWindowVisible(handle) and "extensions in developer mode" in text.value.lower():
+                            bubbles.append((handle, text.value))
+                        return True
+                    user32.EnumWindows.argtypes = [callback, wintypes.LPARAM]
+                    user32.EnumWindows(visit, 0)
+                    for handle, text in bubbles:
+                        user32.PostMessageW(handle, 0x0010, 0, 0)          # WM_CLOSE
+                        report.setdefault("dev_mode_bubbles_dismissed", []).append(text)
+                    return len(bubbles)
+
+                def invoke(page, attempts=3):
+                    for attempt in range(attempts):
+                        try:
+                            return invoke_once(page)
+                        except ToolbarRetry as error:
+                            report.setdefault("toolbar_retries", []).append(str(error))
+                            if attempt == attempts - 1:
+                                raise AssertionError(str(error)) from None
+                            page.wait_for_timeout(500)
+
+                def invoke_once(page):
+                    if dismiss_dev_mode_bubbles():
+                        page.wait_for_timeout(300)
                     page.bring_to_front()
                     if sys.platform == "win32":
                         # Renderer events do not grant activeTab; invoke the
@@ -415,7 +460,8 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                         foreground = user32.GetForegroundWindow()
                         report.setdefault("window_focus", []).append({"requested": desired, "foreground": title(foreground), "matched": foreground == handle})
                         if foreground != handle:
-                            raise AssertionError("Windows did not focus the actual browser window")
+                            dismiss_dev_mode_bubbles()
+                            raise ToolbarRetry("Windows did not focus the actual browser window")
                         for key in [0x11, 0x10, 0x59]:
                             user32.keybd_event(key, 0, 0, 0)
                         for key in [0x59, 0x10, 0x11]:
@@ -459,9 +505,8 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                         for target in cdp.send("Target.getTargets")["targetInfos"]
                     ]
                     cdp.detach()
-                    raise AssertionError(
-                        "Browser toolbar action did not open its real popup"
-                    )
+                    dismiss_dev_mode_bubbles()
+                    raise ToolbarRetry("Browser toolbar action did not open its real popup")
 
                 report["toolbar_commands"] = worker.evaluate("chrome.commands.getAll()")
                 observed = []
