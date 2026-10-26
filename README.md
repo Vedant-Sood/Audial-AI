@@ -31,8 +31,10 @@ prepared but untested with hardware.
   [firmware/kandha/](firmware/kandha/README.md) · demo video script:
   [DEMO_SCRIPT.md](docs/kandha/DEMO_SCRIPT.md).
 
-The official 0.5.0 source is on `main`, tagged `v0.5.0`. Windows installer
-publication runs from that tag and requires its acceptance checks to pass.
+Audial-AI 0.5.0 is tagged `v0.5.0`, and its CPU and NVIDIA installers are on the
+[v0.5.0 release](https://github.com/Vedant-Sood/Audial-AI/releases/tag/v0.5.0).
+`main` now carries 0.6.0 (Kandha), which has no tagged release yet. Windows
+installer publication runs from a version tag and requires its acceptance checks to pass.
 
 ## Windows installation
 
@@ -42,21 +44,18 @@ NVIDIA drivers and falls back to CPU when the GPU is unavailable. Use it for an
 RTX 4060 Laptop GPU; actual performance on that laptop has not been established.
 End users do not install Python, Git, Node or build tools.
 
-Download only a successfully validated `Audial-AI-Windows-x64-*-Setup` artifact
+Download `Audial-AI-0.5.0-Windows-x64-CPU-Setup.exe` (468 MB) or
+`Audial-AI-0.5.0-Windows-x64-NVIDIA-Setup.exe` (2.06 GB) and the matching `.sha256`
+from the [v0.5.0 release](https://github.com/Vedant-Sood/Audial-AI/releases/tag/v0.5.0),
+published on October 21 after the tag's Windows acceptance checks passed. Both
+runtime variants also passed installed Windows lifecycle, offline inference and
+real software-fed streaming inference at source `b9143e6`; the corrected browser
+suite passed Edge and Chromium on October 21. See the
+[validation report](docs/validation-0.5.0.md) for its recorded observations.
+Untagged builds of `main` are available as `Audial-AI-Windows-x64-*-Setup` artifacts
 from [Windows Actions](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml)
-or a published [release](https://github.com/Vedant-Sood/Audial-AI/releases).
-Both runtime variants passed installed Windows lifecycle, offline inference and
-real software-fed streaming inference at source `b9143e6`:
-[CPU installer artifact](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39313088342/artifacts/12217668150)
-(446 MB) or [NVIDIA installer artifact](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39313088342/artifacts/12218529231)
-(1.92 GB). Artifact ZIPs include Setup.exe, its checksum, build metadata and
-`acceptance-status.json`. GitHub sign-in may be required; retention is 30 days.
-The October 19 Edge discard check failed and prevented installer publication.
-The corrected browser suite passed Edge and Chromium on October 21. See the
-[validation report](docs/validation-0.5.0.md) for its recorded observations and
-[Windows Actions](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml)
-for the current tag's results before choosing a build.
-The older 0.4.1 ZIP release does not contain these changes.
+(GitHub sign-in may be required; retention is 30 days); check that run's results
+before choosing one. The older 0.4.1 ZIP release does not contain these changes.
 
 1. Check the adjacent `.sha256` with `Get-FileHash`, then run Setup.exe.
    The installer is **unsigned**. Signing status is recorded by acceptance checks.
@@ -99,7 +98,10 @@ Chrome for Testing 156 and Edge Stable 155.0.4283.62 passed the full Windows
 transport suite, including suspend/restore. The Edge check detaches Playwright
 before discarding the tab, then verifies actual browser API observations and
 matching native bridge state. This avoids the browser's crash when discarding
-a debugged tab. Behavior on a physical Windows laptop is unverified.
+a debugged tab. Behavior on a physical Windows laptop is unverified. On `main`,
+the installer workflow's Edge capture check (CPU job) now fails on Edge 156
+([run 39821972598](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39821972598));
+that failure is open.
 
 ## Voice view in the companion (who is speaking, tone cues, queue light)
 

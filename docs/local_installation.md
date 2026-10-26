@@ -1,8 +1,8 @@
 # Local installation
 
-For normal Windows use, download a validated CPU or NVIDIA Setup.exe and its
-SHA256 from the [Windows Actions workflow](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml)
-or a published release. The installer includes Python, Qt, inference libraries,
+For normal Windows use, download the CPU or NVIDIA Setup.exe and its SHA256 from
+the [v0.5.0 release](https://github.com/Vedant-Sood/Audial-AI/releases/tag/v0.5.0),
+or an untagged build from the [Windows Actions workflow](https://github.com/Vedant-Sood/Audial-AI/actions/workflows/windows-release.yml). The installer includes Python, Qt, inference libraries,
 Start menu access and uninstall; a separate developer toolchain is unnecessary.
 See [current validation](validation-0.5.0.md) for actual platform acceptance.
 

@@ -86,13 +86,15 @@ browser blocking unpacked extensions requires its administrator's approved
 installation route. Manual **Share tab / app audio** is still a supported picker;
 it never substitutes the microphone silently.
 
-Chrome for Testing 156 passed the full transport lifecycle on hosted Windows.
-Edge Stable 155.0.4283.62 passes capture, source switching and reconnection there,
-but its discard test crashes the browser with 0xC0000005. The same failure occurs
-with an independent minimal tabs-only extension without Audial JS/native/audio.
-This check remains failed in the Windows Server/Playwright environment; behavior
-on a physical laptop is unverified. See [exact evidence](validation-0.5.0/windows-browser-edge.json)
-and the standalone reproduction in `scripts/diagnose_browser_discard.py`.
+Chrome for Testing 156 and Edge Stable 155.0.4283.62 passed the full transport
+lifecycle on hosted Windows on October 21, including suspend/restore. Edge 155
+crashes with 0xC0000005 when a tab is discarded while Playwright's debugger is
+attached; the same happens with an independent minimal tabs-only extension, so
+the check now detaches the debugger before discarding. See the
+[historical evidence](validation-0.5.0/windows-browser-edge.json) and the
+standalone reproduction in `scripts/diagnose_browser_discard.py`. On `main`, the
+installer workflow's Edge capture check now fails on Edge 156; that is open.
+Behavior on a physical laptop is unverified.
 
 **Source development: Python not found:** install Python 3.11 or 3.12 x64 with
 its launcher and rerun `setup.bat`. The project uses its own `.venv` and leaves
