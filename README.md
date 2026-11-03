@@ -1,5 +1,7 @@
 # Audial-AI 0.6.0 · with Kandha
 
+[Documentation index](docs/README.md)
+
 A private Windows workspace for local captions, Indian Sign Language (ISL),
 objective voice measurements and optional vocal-expression estimates. Processing
 uses your computer; no paid inference API is required. Microphone, camera and tab
