@@ -528,6 +528,24 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                             page.wait_for_timeout(500)
                             popup = invoke(page)
 
+                def reopen_if_closed(popup, page):
+                    # Edge 157 sometimes closes the toolbar popup once capture starts (the popup
+                    # closes when its window loses focus). Capture keeps running in the offscreen
+                    # document, so reopen the popup from the same tab to check and stop it.
+                    try:
+                        popup.evaluate("1")
+                        return popup
+                    except Exception as error:
+                        report.setdefault("toolbar_retries", []).append("Popup closed during capture: " + str(error).splitlines()[0])
+                    if isinstance(popup, ToolbarPopup):
+                        try:
+                            popup.cdp.detach()
+                        except Exception:
+                            pass
+                    dismiss_dev_mode_bubbles()
+                    page.wait_for_timeout(500)
+                    return invoke(page)
+
                 report["toolbar_commands"] = worker.evaluate("chrome.commands.getAll()")
                 observed = []
                 report["source_capture_and_switching"] = observed
@@ -556,6 +574,7 @@ document.querySelector('button').onclick=async()=>{{window.ctx=new AudioContext(
                         }
                     )
                     assert abs(frequency - expected) < 10, (expected, frequency)
+                    popup = reopen_if_closed(popup, source)
                     popup.screenshot(
                         path=str(args.output / f"extension-capturing-{expected}.png")
                     )
