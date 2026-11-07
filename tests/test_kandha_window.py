@@ -12,7 +12,7 @@ import pytest
 
 from PySide6.QtCore import QUrl
 
-from app.ui.kandha_window import _is_loopback, prepare_chromium_flags
+from app.ui.kandha_window import _is_companion, _is_loopback, prepare_chromium_flags
 from app.utils.paths import project_root
 
 
@@ -23,6 +23,14 @@ def test_loopback_origins_and_chromium_flags(monkeypatch):
     flags = prepare_chromium_flags()
     assert "--disable-gpu" in flags and "--autoplay-policy=no-user-gesture-required" in flags
     assert prepare_chromium_flags().count("--autoplay-policy") == 1
+
+
+def test_microphone_is_granted_only_to_the_loaded_companion_origin():
+    base = QUrl("http://127.0.0.1:8765")
+    assert _is_companion(QUrl("http://127.0.0.1:8765/kandha/"), base)
+    assert not _is_companion(QUrl("http://127.0.0.1:9000/"), base)      # another local service
+    assert not _is_companion(QUrl("https://127.0.0.1:8765/"), base)
+    assert not _is_companion(QUrl("http://example.org:8765/"), base)
 
 
 @pytest.mark.skipif(os.environ.get("KANDHA_SKIP_WEBENGINE") == "1", reason="QtWebEngine not available here")
