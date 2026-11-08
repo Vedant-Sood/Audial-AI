@@ -92,8 +92,9 @@ crashes with 0xC0000005 when a tab is discarded while Playwright's debugger is
 attached; the same happens with an independent minimal tabs-only extension, so
 the check now detaches the debugger before discarding. See the
 [historical evidence](validation-0.5.0/windows-browser-edge.json) and the
-standalone reproduction in `scripts/diagnose_browser_discard.py`. On `main`, the
-installer workflow's Edge capture check now fails on Edge 156; that is open.
+standalone reproduction in `scripts/diagnose_browser_discard.py`. Edge 156 and
+later show a "Turn off extensions in developer mode" bubble that can close the
+toolbar popup; close it (or invoke the toolbar again) before **Capture this tab**.
 Behavior on a physical laptop is unverified.
 
 **Source development: Python not found:** install Python 3.11 or 3.12 x64 with

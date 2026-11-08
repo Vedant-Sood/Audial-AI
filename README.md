@@ -100,10 +100,10 @@ Chrome for Testing 156 and Edge Stable 155.0.4283.62 passed the full Windows
 transport suite, including suspend/restore. The Edge check detaches Playwright
 before discarding the tab, then verifies actual browser API observations and
 matching native bridge state. This avoids the browser's crash when discarding
-a debugged tab. Behavior on a physical Windows laptop is unverified. On `main`,
-the installer workflow's Edge capture check (CPU job) now fails on Edge 156
-([run 39821972598](https://github.com/Vedant-Sood/Audial-AI/actions/runs/39821972598));
-that failure is open.
+a debugged tab. Edge 156 and later show a "Turn off extensions in developer
+mode" bubble that can take focus and close the toolbar popup; the check closes
+that bubble and reopens the popup, and the full installer workflow passed on
+Edge with it ([run 42398612722](https://github.com/Vedant-Sood/Audial-AI/actions/runs/42398612722)). Behavior on a physical Windows laptop is unverified.
 
 ## Voice view in the companion (who is speaking, tone cues, queue light)
 
