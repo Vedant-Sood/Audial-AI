@@ -294,7 +294,7 @@
     if (!x || x.relative === 'learning') return '';
     if (x.relative === 'usual' && !x.accepted && !opts.showUsual) return '';
     const info = TONE_INFO[x.relative];
-    const est = x.accepted ? `<span class="est">Estimate: ${EMOTION_NAME[x.label] || x.label} ${Math.round(x.confidence * 100)}%${x.demo ? ' (scripted)' : ''}</span>` : (x.demo ? '<span class="est">scripted</span>' : '');
+    const est = x.accepted ? `<span class="est">Estimate: ${esc(EMOTION_NAME[x.label] || x.label)} ${Math.round(x.confidence * 100)}%${x.demo ? ' (scripted)' : ''}</span>` : (x.demo ? '<span class="est">scripted</span>' : '');
     return `<span class="tone-chip" title="Tone estimate: how this voice sounded compared with how this person usually sounds. A hint, not a fact about feelings."><svg viewBox="0 0 24 24" aria-hidden="true">${info.icon}</svg><span><span class="visually-hidden">Tone: </span><b>${info.label}</b></span>${est}</span>`;
   }
   function toneText(x) {
@@ -328,13 +328,13 @@
     if (l.kind === 'queue') return `<li class="event event--queue" data-uid="${l.uid}"><b>${esc(l.text)}</b><span class="line__time">${clock(l.t)}</span></li>`;
     if (l.kind === 'seat') return `<li class="event event--seat" data-uid="${l.uid}"><b>${esc(nameOf(l.speakerId))}</b><span>${l.zone === 'me' ? 'is you' : l.zone ? 'seated ' + esc(ZONE_NAME[l.zone]) : 'seat cleared'}</span><span class="line__time">${clock(l.t)}</span></li>`;
     const textHTML = l.spans && l.spans.length ? withTerms(l.text, l.spans) : esc(l.text);
-    const orig = l.orig && settings.showOriginal ? `<p class="line__orig" lang="${settings.speechLang}">${esc(l.orig)}</p>` : '';
+    const orig = l.orig && settings.showOriginal ? `<p class="line__orig" lang="${esc(settings.speechLang)}">${esc(l.orig)}</p>` : '';
     const showTone = where === 'review' ? settings.toneReview : settings.toneLive;
     const tone = showTone ? toneChipHTML(toneForLine(l)) : '';
     return `<li class="line" data-uid="${l.uid}" style="--c:${colourVar(l.speakerId)}">
       <button class="line__who" data-line="${l.uid}" title="Fix who said this" aria-label="${esc(l.speakerId != null ? nameOf(l.speakerId) : 'Someone')}: fix who said this">${badgeHTML(l.speakerId, true)}<span>${esc(l.speakerId != null ? nameOf(l.speakerId) : 'Someone')}</span></button>
       <span class="line__time">${clock(l.t)}</span>
-      <p class="line__text" lang="${l.lang || 'en'}">${textHTML}</p>${orig}${tone}</li>`;
+      <p class="line__text" lang="${esc(l.lang || 'en')}">${textHTML}</p>${orig}${tone}</li>`;
   }
   function withTerms(text, spans) {
     let out = '', pos = 0;
