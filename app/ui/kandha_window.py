@@ -35,6 +35,12 @@ def _is_loopback(url):
     return url.host() in LOOPBACK_HOSTS
 
 
+def _is_companion(url, base):
+    """Only the companion origin this window loaded, not any other loopback service or port."""
+    return (_is_loopback(url) and url.scheme() == base.scheme()
+            and url.port() == base.port() and url.host() == base.host())
+
+
 class KandhaWindow(QMainWindow):
     def __init__(self, base_url, parent=None, path="/kandha/"):
         super().__init__(parent)
@@ -47,6 +53,7 @@ class KandhaWindow(QMainWindow):
         if icon.is_file():
             self.setWindowIcon(QIcon(str(icon)))
         self.base_url = base_url.rstrip("/")
+        self.base_qurl = QUrl(self.base_url)
         self.profile = QWebEngineProfile("kandha", self)
         self.profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.NoPersistentCookies)
         self.page = QWebEnginePage(self.profile, self)
@@ -79,7 +86,7 @@ class KandhaWindow(QMainWindow):
     def _on_permission(self, permission):
         kind = permission.permissionType()
         origin = permission.origin()
-        if kind in self._audio_types and _is_loopback(origin):
+        if kind in self._audio_types and _is_companion(origin, self.base_qurl):
             permission.grant()
             self.granted.append(("microphone", origin.toString()))
         else:
@@ -87,7 +94,7 @@ class KandhaWindow(QMainWindow):
 
     def _on_feature_permission(self, origin, feature):
         from PySide6.QtWebEngineCore import QWebEnginePage
-        policy = QWebEnginePage.PermissionPolicy.PermissionGrantedByUser if (feature in self._audio_types and _is_loopback(origin)) else QWebEnginePage.PermissionPolicy.PermissionDeniedByUser
+        policy = QWebEnginePage.PermissionPolicy.PermissionGrantedByUser if (feature in self._audio_types and _is_companion(origin, self.base_qurl)) else QWebEnginePage.PermissionPolicy.PermissionDeniedByUser
         self.page.setFeaturePermission(origin, feature, policy)
         if policy == QWebEnginePage.PermissionPolicy.PermissionGrantedByUser:
             self.granted.append(("microphone", origin.toString()))
