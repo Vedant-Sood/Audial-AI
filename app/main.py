@@ -22,7 +22,8 @@ def main():
     p.add_argument("--kandha-timeout", type=float, default=150, help="Seconds --kandha-check waits for the page (a cold QtWebEngine start on a slow machine can take over a minute)")
     p.add_argument("--browser", action="store_true")
     p.add_argument("--open-browser", action="store_true")
-    p.add_argument("--port", type=int, default=8765)
+    # None means "not given": --browser then uses 8765, --kandha a free port; an explicit value is always honoured
+    p.add_argument("--port", type=int, default=None, help="Companion port (default: 8765 for --browser, a free port for --kandha)")
     p.add_argument("--smoke-test", action="store_true", help="Validate native startup and bundled models without recording")
     p.add_argument("--verify-emotion", action="store_true", help="Run the installed WavLM model on the supplied speech recording without capturing audio")
     p.add_argument("--verify-inference", action="store_true", help="Run real captions, expression and prosody offline without recording")
@@ -79,10 +80,10 @@ def main():
         return
     if args.kandha or args.kandha_check:
         from app.ui.kandha_window import launch
-        sys.exit(launch(check=args.kandha_check, port=args.port if args.port != 8765 else 0, timeout_s=args.kandha_timeout))
+        sys.exit(launch(check=args.kandha_check, port=args.port if args.port is not None else 0, timeout_s=args.kandha_timeout))
     if args.browser:
         from app.services.browser import main as browser_main
-        browser_main(args.port, args.open_browser)
+        browser_main(args.port if args.port is not None else 8765, args.open_browser)
         return
     if args.train_task:
         import yaml

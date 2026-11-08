@@ -20,6 +20,11 @@ try {
     if (-not $PayloadDir) { $PayloadDir = Join-Path $root 'dist\AccessibilityAI' }
     $PayloadDir = (Resolve-Path $PayloadDir).Path
     if (-not (Test-Path (Join-Path $PayloadDir 'Kandha.exe'))) { throw 'Kandha.exe is missing from the payload; run scripts/build_windows.ps1 first.' }
+    # Never package a Kandha whose Bluetooth link cannot work: bleak, its WinRT backend and their metadata must be inside.
+    python packaging/kandha_bluetooth.py --payload $PayloadDir --os windows
+    if ($LASTEXITCODE -ne 0) { throw 'The Kandha payload is missing bleak or its WinRT backend; install requirements.txt and rebuild.' }
+    # The Start-menu guide entry opens this HTML copy (stock Windows has no program for .md files).
+    if (-not (Test-Path (Join-Path $PayloadDir '_internal\docs\kandha\USER_GUIDE.html'))) { throw 'USER_GUIDE.html is missing from the payload; rebuild with packaging/AccessibilityAI.spec.' }
     & $InnoCompiler "/DAppVersion=$Version" "/DRuntime=$Runtime" "/DPayloadDir=$PayloadDir" packaging/kandha-installer.iss
     if ($LASTEXITCODE -ne 0) { throw 'Kandha installer compilation failed' }
     $installer = Join-Path $root "dist\installers\Kandha-Setup-$Version.exe"

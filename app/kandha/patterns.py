@@ -2,7 +2,16 @@
 
 `PatternTable` loads browser/sanket/kandha-patterns.json. `PatternPlayer` mirrors the firmware's
 pattern engine (firmware/kandha/pattern_engine.h): the same steps, the same replacement rule,
-the same intensity arithmetic. The virtual stole and the parity tests use it.
+the same intensity arithmetic. It does not model the firmware's 60/255 motor floor or its 15 ms
+spin-up kick. The virtual stole, the mock stole and the parity tests use it.
+
+tests/test_kandha_firmware_host.py builds the real C++ engine (and touch_pads.h and the whole
+kandha.ino sketch) on this computer and runs it: for every built-in pattern, played once and
+twice, and for CONFIG scaling, mirror, mute, a command replacing another, stop and late loop()
+ticks, each motor's level, millisecond by millisecond (or tick by tick), must equal this
+player's level with the floor and the kick added on top. It also checks the duplicate-seq
+filter (forgotten on each new connection) and the pad gestures. The ESP32-S3 build itself is
+compiled in CI.
 """
 from dataclasses import dataclass
 import json
@@ -123,7 +132,8 @@ def mask_zones(mask):
 
 
 def effective_level(level, intensity, scale=255):
-    """The duty the motor sees: level x intensity / 255 x zone scale / 255 (firmware arithmetic)."""
+    """The duty from level x intensity / 255 x zone scale / 255 (the firmware's arithmetic, before its
+    60/255 floor and 15 ms spin-up kick)."""
     return (level * intensity * scale) // (255 * 255)
 
 
@@ -132,7 +142,7 @@ class PatternPlayer:
 
     `start(command, now_ms)` replaces whatever is playing. `levels(now_ms)` gives the duty per
     zone at that moment. `timeline()` lists what was played as (zone letter, start, end, level),
-    which the parity tests compare between the virtual stole and the firmware simulation.
+    which the parity tests compare between the virtual stole and the mock stole (both use this player).
     """
 
     def __init__(self, table_=None, config=None):

@@ -4,8 +4,10 @@
 //   node scripts/kandha_tap_budget.mjs docs/kandha/validation/tap_budget_intents.json
 //
 // Fixtures: the three LibriSpeech readers (tests/fixtures/sanket), each played at five gains
-// (0, -2, +2, -1, +1 dB) as in tests/sanket.test.js: about 3.8 minutes per reader of calm
-// reading, and a stitched "seminar" where the three readers take turns.
+// (0, -2, +2, -1, +1 dB) as in tests/sanket.test.js: 1.22, 1.45 and 1.30 minutes of calm
+// reading (each case's minutes are in docs/kandha/validation/tap_budget.json), and a stitched
+// "seminar" of about 3.9 minutes where the three readers take turns.
+// The intent layer gets the engine's silence setting, as the page passes it.
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname } from "node:path";
@@ -31,7 +33,7 @@ const quiet = s => Float32Array.from({ length: Math.round(s * S) }, () => (rnd()
 const gain = (x, db) => x.map(v => v * 10 ** (db / 20));
 
 function run(signal, settings) {
-  const source = new IntentSource({ minTurn: table.scheduler.min_turn_s, wall: () => engine.t });
+  const source = new IntentSource({ minTurn: table.scheduler.min_turn_s, silenceSec: E.DEFAULTS.silenceSec, wall: () => engine.t });
   const cues = [];
   const engine = new E.VoiceEngine({ toneModel: model, settings, onEvent: e => { if (e.type === "cue") cues.push(e.kind); source.handle(e); } });
   for (let i = 0; i < signal.length; i += 256) engine.process(signal.subarray(i, i + 256));

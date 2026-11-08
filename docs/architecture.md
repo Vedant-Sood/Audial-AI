@@ -68,10 +68,16 @@ and leaves subsequent signs usable.
 
 ## Sanket voice view
 
-`browser/sanket/` holds Sanket's voice engine (`engine.js`), tone features and estimator
-(`tone.js`), and its full app, served under `/sanket/`. These are classic UMD scripts, so Node
-tests and `training/sanket/` run the same files. `browser/voice-session.js` runs the engine
-on the `pcm-worklet.js` tap (opt-in through `processorOptions.tap`, on the same sample clock as
+`browser/sanket/` holds only the shared voice-engine libraries that the companion and Kandha
+load: the engine (`engine.js`), tone features and estimator (`tone.js`), caption assembly
+(`captions.js`), the browser recognizer (`recognizer.js`), the translator (`translator.js`),
+local Whisper captions (`local-captions.js`) and the worklet (`worklet.js`), plus the Kandha
+pattern table (`kandha-patterns.json`, served as `/kandha/patterns.json`). Sanket's own app
+moved to `browser/kandha/` (its `index.html`, `app.js`, `styles.css` and the retired `band.js`
+are gone): only the seven library scripts and the tone model are served under `/sanket/`, and
+`/sanket/` itself redirects to `/kandha/`. These are classic UMD scripts, so Node tests and
+`training/sanket/` run the same files. `browser/voice-session.js` runs the engine on the
+`pcm-worklet.js` tap (opt-in through `processorOptions.tap`, on the same sample clock as
 upload packets). It runs in the companion page and in the extension offscreen document, and
 batches compact voice, cue and tone events. `app/services/voice_view.py` validates them;
 `BrowserService.add_voice_events` accepts them only from the owning capture session (page
@@ -84,13 +90,17 @@ captions by voice. The tone model is served only when its SHA-256 matches
 ## Kandha
 
 `browser/kandha/` is the Kandha app (the evolution of Sanket's app): `index.html`, `app.js`,
-`views.js` (virtual stole, room diagram, review timeline), `demo.js`, `kandha-intents.js`
-(engine events to haptic intents, with the back-channel hold) and the bundled Atkinson
-Hyperlegible font. It is served at `/kandha/` under the same CSP as `/sanket/` was, loads the
-shared engine from `/sanket/`, and talks to `app/kandha/` through `/api/kandha/*` and a
-server-sent event stream.
+`views.js` (virtual stole and its pads, room diagram, review timeline), `demo.js`,
+`kandha-intents.js` (engine events to haptic intents, with the back-channel hold and the rule
+for the first turn after a long silence) and the bundled Atkinson Hyperlegible font. It is
+served at `/kandha/` under the same CSP as `/sanket/` was, loads the shared engine from
+`/sanket/`, and talks to `app/kandha/` through `/api/kandha/*` and a server-sent event stream.
+Each live session or demo is also a record in `BrowserService` (`/api/kandha/session/new`,
+`/session/events`, `/session/save` and `/api/export?session=<id>`), kept in memory until a
+consented save; see `docs/kandha/DESIGN.md` section 2.2.
 
-`app/kandha/` holds the pattern table loader and firmware-parity player (`patterns.py`), the
+`app/kandha/` holds the pattern table loader and the Python pattern player (`patterns.py`; the
+firmware's formula and timing, without its motor floor and spin-up kick), the
 protocol bytes (`protocol.py`), the pure `HapticScheduler` and `QueueTracker` (`scheduler.py`),
 the `SeatMap` with saved rooms and the `SeatSource` interface (`seatmap.py`), the
 `VirtualStole` (`virtual.py`), the Bluetooth `StoleBridge` with its mock and simulated devices
@@ -98,11 +108,17 @@ the `SeatMap` with saved rooms and the `SeatSource` interface (`seatmap.py`), th
 source of the tap language is `browser/sanket/kandha-patterns.json`;
 `scripts/generate_kandha_patterns.py` writes `firmware/kandha/patterns.h` from it.
 
-`app/ui/kandha_window.py` is a `QWebEngineView` over `/kandha/` that grants the microphone to
-the loopback origin; `python -m app.main --kandha` opens it, `--kandha-check` loads it
-headlessly and reports readiness. The desktop navigation has a Kandha page. The firmware for
-the stole is in `firmware/kandha/` (compiled by CI, untested on hardware). Design, protocol,
-decisions and validation records are under `docs/kandha/`.
+`app/ui/kandha_window.py` is a `QWebEngineView` over `/kandha/` that grants the microphone
+only to the companion's exact origin (`http://127.0.0.1:<port>`) and refuses to navigate
+anywhere else. Its web profile is off the record; the page's settings are kept in
+`<data root>/kandha/page-settings.json`. It saves the page's exports to the Downloads folder,
+shows a caption-model bar that starts Audial-AI's model setup while Whisper is missing, and on
+close stops listening and lets an export finish before freeing the page.
+`python -m app.main --kandha` opens it, `--kandha-check` loads it headlessly and reports
+readiness. The desktop navigation has a Kandha page. The firmware for the stole is in
+`firmware/kandha/`: compiled for the ESP32-S3 by CI and run on the host by
+`tests/test_kandha_firmware_host.py`, untested on hardware. Design, protocol, decisions and
+validation records are under `docs/kandha/`.
 
 ## Training and packaging
 
@@ -114,11 +130,17 @@ trusted trained result. `training/` retains the uploaded sign/prosody experiment
 `scripts/package_project.py` builds and verifies a source ZIP manifest.
 `scripts/package_windows_portable.py` obtains official Windows Python with a
 pinned SHA512, resolves Windows wheels and verifies their RECORD contents before
-assembling a portable desktop. `packaging/AccessibilityAI.spec` builds native
+assembling a portable desktop. It resolves the win_amd64 / CPython 3.12 wheels on any
+host in two `pip download` passes: `requirements-portable.txt` with `requirements.txt`
+expanded and the `bleak` line set apart, then `bleak` alone with `--no-deps`, because
+pip reads `bleak`'s dependency markers for the build host. `requirements-portable.txt`
+therefore lists `bleak`'s Windows backend (`winrt-runtime` and the `winrt-Windows.*`
+packages) itself; `tests/test_kandha_packaging.py` keeps the two in step. `packaging/AccessibilityAI.spec` builds native
 executables on Windows (`AccessibilityAI.exe`, the console worker and `Kandha.exe`);
 `.github/workflows/windows-release.yml` gates native release publication on its Windows tests,
 builds `Kandha-Setup-<version>.exe` and the portable ZIP from the same payload, and publishes
-them with the firmware on `kandha-v*` tags. Packaging never implies a new model
+them with the firmware zip on `kandha-v*` tags, each with a `.sha256` beside it and one
+`SHA256SUMS.txt`. Packaging never implies a new model
 accuracy result or a successful test on the user's hardware.
 
 

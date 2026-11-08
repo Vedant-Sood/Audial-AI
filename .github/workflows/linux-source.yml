@@ -52,6 +52,7 @@ jobs:
           python -m playwright install --with-deps chromium
           browser_path="$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')"
           python -m scripts.verify_sanket --browser "$browser_path" --output artifacts/source-validation/sanket
+          python -m scripts.verify_kandha --browser "$browser_path" --output artifacts/source-validation/kandha
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         if: always()
         with:

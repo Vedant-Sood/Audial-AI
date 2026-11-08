@@ -13,7 +13,7 @@ def test_uuids_come_from_the_table_and_never_reuse_the_band():
     assert set(ids) == {"service", "haptic", "patterns", "input", "status", "config"}
     assert len(set(ids.values())) == 6 and all(len(u) == 36 for u in ids.values())
     assert not any(u.startswith("a7c2f3e0") for u in ids.values())
-    assert name_prefix() == "KandhaStole-"
+    assert name_prefix() == "Kandha-", "the brief: devices advertise as Kandha-XXXX"
 
 
 def test_haptic_command_is_five_bytes_in_order():

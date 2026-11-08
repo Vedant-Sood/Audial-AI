@@ -23,16 +23,19 @@ hiddenimports += [name for name in collect_submodules('scripts') if name not in 
 # modules are imported) and the Bluetooth bridge with its platform backend.
 hiddenimports += ['PySide6.QtWebEngineWidgets', 'PySide6.QtWebEngineCore', 'PySide6.QtWebChannel', 'PySide6.QtNetwork',
                   'PySide6.QtPositioning', 'PySide6.QtPrintSupport']
-if find_spec('bleak') is not None:
-    d, b, h = collect_all('bleak')
-    datas += d
-    binaries += b
-    hiddenimports += h
-    for backend in ['winrt', 'bleak_winrt', 'winrt.windows.devices.bluetooth', 'winrt.windows.devices.bluetooth.advertisement',
-                    'winrt.windows.devices.bluetooth.genericattributeprofile', 'winrt.windows.devices.enumeration',
-                    'winrt.windows.foundation', 'winrt.windows.foundation.collections', 'winrt.windows.storage.streams']:
-        if find_spec(backend.split('.')[0]) is not None:
-            hiddenimports += collect_submodules(backend)
+def packaging_module(name):
+    """A helper from packaging/ (not importable by name: the `packaging` library owns that name)."""
+    from importlib.util import module_from_spec, spec_from_file_location
+    found = spec_from_file_location(name, project / 'packaging' / f'{name}.py')
+    module = module_from_spec(found)
+    found.loader.exec_module(module)
+    return module
+# bleak and its platform backend (WinRT on Windows) with their licence metadata. A build machine
+# without them stops here instead of shipping a Kandha whose Bluetooth setting cannot work.
+d, b, h = packaging_module('kandha_bluetooth').collect()
+datas += d
+binaries += b
+hiddenimports += h
 hiddenimports += collect_submodules('accessibilityai_upgrade')
 if find_spec('pyannote') is not None and find_spec('pyannote.audio') is not None:
     d, b, h = collect_all('pyannote.audio')
@@ -43,15 +46,19 @@ if find_spec('pyannote') is not None and find_spec('pyannote.audio') is not None
 from PyInstaller.utils.hooks import copy_metadata
 for package in ['faster-whisper', 'speechbrain', 'torch', 'torchaudio', 'ctranslate2',
                 'mediapipe', 'PySide6', 'numpy', 'scipy', 'scikit-learn', 'soundfile',
-                'sounddevice', 'pyttsx3', 'pyannote.audio', 'filelock', 'bleak']:
+                'sounddevice', 'pyttsx3', 'pyannote.audio', 'filelock']:
     try:
         datas += copy_metadata(package, recursive=True)
     except Exception:
-        if package not in {'pyannote.audio', 'bleak'}:
+        if package != 'pyannote.audio':
             raise
 datas += [(str(project / 'assets'), 'assets'), (str(project / 'training'), 'training'),
           (str(project / 'browser'), 'browser'), (str(project / 'docs'), 'docs'),
           (str(project / 'models'), 'models'), (str(project / 'firmware'), 'firmware')]
+# The Start-menu "Kandha user guide" opens this HTML copy: stock Windows has no program for .md files.
+guide = packaging_module('render_user_guide').write(project / 'docs' / 'kandha' / 'USER_GUIDE.md',
+                                                    Path(workpath) / 'kandha-guide' / 'USER_GUIDE.html')
+datas += [(str(guide), 'docs/kandha')]
 icon_path = project / 'assets' / 'icon.ico'
 icon = str(icon_path) if icon_path.is_file() else None
 a = Analysis([str(project / 'launcher.py')], pathex=[str(project)], binaries=binaries,

@@ -22,7 +22,10 @@ psychology student who lip-reads). It adds four things to Audial-AI's browser ca
 
 The full app (lecture, seminar and practicum modes, review timeline, Hindi captions, demos,
 seats and the stole) is Kandha, served at `http://127.0.0.1:<port>/kandha/`; `/sanket/`
-redirects there. It takes captions from Audial's local Whisper model.
+redirects there. It takes captions from Audial's local Whisper model; in a browser tab without
+Whisper, the browser's own speech service captions only if the user turns it on in Kandha's
+Settings › Privacy (off by default, because the browser may send the audio to its maker's
+servers).
 
 ## Where it runs
 
@@ -35,11 +38,12 @@ unchanged.
 |---|---|---|
 | Companion page: Share tab audio / microphone | the companion page (`browser/voice-session.js`) | `POST /api/voice-events` with the session ID |
 | Extension tab capture | the extension's offscreen document | `voice` bridge message from the owning capture |
-| Kandha at `/kandha/` (window or tab) | the Kandha page | local captions use `/api/start`, `/api/audio`, `/api/events`; taps go to `/api/kandha/intents` |
+| Kandha at `/kandha/` (window or tab) | the Kandha page | local captions use `/api/start`, `/api/audio`, `/api/events`; taps go to `/api/kandha/intents`; the session record (captions and voice, cue, tone, queue, haptic and seat events) goes to `/api/kandha/session/events` |
 | Desktop microphone / system audio / files | not available yet (the engine is JavaScript) | — |
 
 The app validates every batch (`app/services/voice_view.py`): known kinds, finite times, voice
-numbers 1–64, at most 200 events per batch and 20,000 per session, and named estimates only
+numbers from 1 to 1,000,000 (the page numbers voices for the session and never reuses one), at
+most 200 events per batch and 20,000 per session, and named estimates only
 at confidence ≥ 0.8. Only the capture that owns the session can add events. The app stores
 the events with the session and republishes them as `voice` events, so every open page draws
 the same view. Event times are audio seconds since the first captured sample, the same clock

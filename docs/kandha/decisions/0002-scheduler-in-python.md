@@ -4,7 +4,8 @@
 
 1. `browser/kandha/kandha-intents.js` turns engine events into *intents* (`speaker`,
    `new_voice`, `cue`, `silence`, `voice_resumes`). It is the only place that knows engine
-   timing, so it owns the back-channel hold and the "voice resumes after silence" timer.
+   timing, so it owns the back-channel hold and the rule for the first turn after a long
+   silence (DESIGN.md section 7.3).
 2. `app/kandha/scheduler.py` (`HapticScheduler`) owns priorities, stale dropping, rate limits,
    modes, pre-emption, mirror and the seat lookup, and emits the five-byte HAPTIC commands.
    It is pure: time is passed in, no threads, no I/O.

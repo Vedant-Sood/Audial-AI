@@ -84,7 +84,9 @@
         const status = await this._json('/api/status');
         if (gen !== this.generation) return false;
         if (!status.asr_installed) {
-          this.h.onError && this.h.onError('local-missing', `Local captions need ${status.asr_model || 'a Whisper model'} installed in AccessibilityAI (Models page). Voice colours and tone cues keep working; or choose Browser speech service in Settings.`);
+          // how Kandha gets the model: "Get the caption model" above the page in the Kandha window,
+          // or Audial-AI's Setup & models; the browser's own service is an opt-in, never a fallback
+          this.h.onError && this.h.onError('local-missing', `Local captions need the Whisper caption model (${status.asr_model || 'Whisper'}) on this computer: Get the caption model in the Kandha window, or Setup & models in Audial-AI. Voice colours and stole taps keep working. In a Chrome or Edge tab you can instead turn on the browser's speech service in Settings › Privacy (off by default: the browser may send the audio to its maker's servers).`);
           return false;
         }
         if (status.running) {

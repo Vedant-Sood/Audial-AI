@@ -1,12 +1,13 @@
 // Kandha: the shared pattern table, and the page-side intent layer on real LibriSpeech turns.
-import test from "node:test";
+import test, { mock } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 const E = require("../browser/sanket/engine.js");
-const { IntentSource } = require("../browser/kandha/kandha-intents.js");
+const { IntentSource, ENGINE_TIMING, FINAL_MARGIN_FRAMES, REJUDGE_WAIT_SEC } = require("../browser/kandha/kandha-intents.js");
+const { StoleView, PAD_TIMING } = require("../browser/kandha/views.js");
 const read = path => readFileSync(new URL(path, import.meta.url));
 const table = JSON.parse(read("../browser/sanket/kandha-patterns.json"));
 
@@ -23,12 +24,29 @@ const concat = parts => { const out = new Float32Array(parts.reduce((a, p) => a 
 let seed = 3; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
 const quiet = s => Float32Array.from({ length: Math.round(s * S) }, () => (rnd() * 2 - 1) * 3e-4);
 
-function run(signal, options = {}) {
-  const source = new IntentSource({ minTurn: table.scheduler.min_turn_s, wall: () => 0 });
+// actions: [[seconds, (engine, source) => ...]] run between audio blocks, like a button press in
+// the page; intentOptions as the page passes them (silenceSec: the engine's setting)
+function run(signal, options = {}, actions = [], intentOptions = {}) {
+  const source = new IntentSource({ minTurn: table.scheduler.min_turn_s, wall: () => 0, onIntent: i => { i.at = source.engineT; }, ...intentOptions });
   const events = [];
   const engine = new E.VoiceEngine({ onEvent: e => { events.push(e); source.handle(e); }, ...options });
-  for (let i = 0; i < signal.length; i += 256) engine.process(signal.subarray(i, i + 256));
-  return { source, events };
+  const todo = actions.slice();
+  for (let i = 0; i < signal.length; i += 256) {
+    while (todo.length && i / S >= todo[0][0]) todo.shift()[1](engine, source);
+    engine.process(signal.subarray(i, i + 256));
+  }
+  return { source, events, engine };
+}
+// what browser/kandha/app.js gives the engine and the intents alike (engineSettings, configureEngine)
+const pageSettings = (silenceSec, silenceCue = true) => ({ singleSpeaker: false, maxSpeakers: 6, sensitivity: 1, silenceSec, cues: { drop: true, rise: true, hesitation: true, silence: silenceCue } });
+// run() wired as the page wires it: the setting passed to IntentSource, then configure() with the engine's settings
+const asPage = (signal, settings, actions = []) => run(signal, { settings }, [[0, (engine, source) => source.configure(settings)], ...actions], { silenceSec: settings.silenceSec });
+const SEAT = new Set(["speaker", "new_voice", "voice_resumes"]);
+// seat intents emitted from the first speech after a silence of at least `gap` seconds
+function seatTapsAfterSilence(source, events, gap = 4) {
+  const start = events.find(e => e.type === "speech-start" && e.gap != null && e.gap >= gap);
+  assert.ok(start, "the signal has a long silence");
+  return source.intents.filter(i => SEAT.has(i.kind) && i.at >= start.t).map(i => [i.kind, i.voice]);
 }
 
 test("the pattern table is the documented tap language with the retired band's service gone", () => {
@@ -67,19 +85,250 @@ test("a 0.45 s interjection never taps but a real turn still does", () => {
   assert.ok(source.suppressed.some(s => s.voice === 2 && s.turn < table.scheduler.min_turn_s), "the interjection was held and dropped");
 });
 
-test("after a long silence the same voice starting again asks for a resume tap, once", () => {
-  const source = new IntentSource({ minTurn: 0.6, wall: () => 42 });
+// level events every second frame (32 ms), as the engine sends them
+const levels = (from, to, speaking = true) => { const out = []; for (let k = 0; from + k * 0.032 <= to + 1e-9; k++) out.push({ type: "level", t: +(from + k * 0.032).toFixed(3), speaking }); return out; };
+
+test("after a long silence the same voice starting again asks for a resume tap, once, after the engine's final say", () => {
+  const source = new IntentSource({ minTurn: 0.6, wall: () => 42, silenceSec: 4 });
   const feed = (...events) => events.flatMap(e => source.handle(e));
   feed({ type: "speech-start", t: 0.5, gap: null }, { type: "level", t: 1.2 });
   assert.deepEqual(feed({ type: "speaker", id: 1, isNew: true, t: 0.5 }).map(i => i.kind), ["new_voice"]);
   feed({ type: "speech-end", t: 4.0 });
-  assert.deepEqual(feed({ type: "cue", kind: "silence", t: 8.0, speakerId: 1 }).map(i => i.kind), ["silence"]);
+  // no silence cue at all (switched off, or swallowed by the engine's cue cooldown): the gap is enough
   feed({ type: "speech-start", t: 9.0, gap: 5.0 });
-  assert.deepEqual(feed({ type: "level", t: 9.3 }), [], "not yet: the resume waits for the hold");
-  const resumed = feed({ type: "level", t: 9.62 });
+  // the engine decides at its 90th speech frame at the earliest: 9.0 + 0.032 + 89 x 0.016 = 10.456
+  assert.deepEqual(feed(...levels(9.032, 10.456)), [], "not before the engine could have named another voice");
+  const resumed = feed(...levels(10.488, 10.6));
   assert.deepEqual(resumed.map(i => [i.kind, i.voice, i.t]), [["voice_resumes", 1, 9.0]]);
-  assert.deepEqual(feed({ type: "level", t: 12 }), [], "only once");
+  assert.deepEqual(feed(...levels(10.632, 12)), [], "only once");
   assert.equal(source.intents.at(-1).created, 42);
+  assert.ok(FINAL_MARGIN_FRAMES >= 4 && FINAL_MARGIN_FRAMES <= 8, "a few frames past the engine's decision, not a noticeable delay");
+});
+
+test("the intents use the engine's own timing and the wearer's silence setting", () => {
+  assert.deepEqual(ENGINE_TIMING, { frameSec: E.FRAME_SEC, vadOnFrames: E.TUNING.vadOnFrames, vadOnDb: E.TUNING.vadOnDb, vadAbsMin: E.TUNING.vadAbsMin,
+    turnGapSec: E.TUNING.turnGapSec, finalFrames: E.TUNING.finalFrames, recheckEvery: E.TUNING.recheckEvery, recheckWindow: E.TUNING.recheckWindow,
+    cueCooldownSec: E.DEFAULTS.cueCooldownSec, cueGapSec: E.DEFAULTS.cueGapSec });
+  const source = new IntentSource({ silenceSec: 6 });
+  assert.equal(source.silenceSec, 6);
+  source.configure({ silenceSec: 8 });
+  assert.equal(source.silenceSec, 8);
+  // a 5 s gap is not a long silence when the wearer chose 8 s
+  source.handle({ type: "speech-start", t: 0, gap: null });
+  source.handle({ type: "level", t: 1 });
+  source.handle({ type: "speaker", id: 1, isNew: true, t: 0 });
+  source.handle({ type: "speech-end", t: 3 });
+  source.handle({ type: "speech-start", t: 8, gap: 5 });
+  assert.equal(source.resume, null);
+  // the page's setting: the gap alone counts. The engine's own test runs one frame later than the
+  // gap, so a gap one frame short of the setting is long, and two frames short is not.
+  const passed = new IntentSource({ silenceSec: 5 });
+  for (const e of [{ type: "speech-start", t: 0, gap: null }, { type: "speech-end", t: 3 }, { type: "speech-start", t: 7.968, gap: 4.968 }]) passed.handle(e);
+  assert.equal(passed.resume, null);
+  for (const e of [{ type: "speech-end", t: 9 }, { type: "speech-start", t: 13.984, gap: 4.984 }]) passed.handle(e);
+  assert.deepEqual(passed.resume, { since: 13.984 });
+  // a cue that agrees with it does not replace it
+  for (const e of [{ type: "speech-end", t: 15 }, { type: "cue", kind: "silence", t: 20 }]) passed.handle(e);
+  assert.equal(passed.silenceFrom, "page");
+  // not told the setting: only the silence cue counts, and the cue shows the setting
+  const unset = new IntentSource();
+  assert.equal(unset.silenceSec, null);
+  for (const e of [{ type: "speech-start", t: 0, gap: null }, { type: "speech-end", t: 3 }, { type: "speech-start", t: 8, gap: 5 }]) unset.handle(e);
+  assert.equal(unset.resume, null, "a 5 s gap with no cue: the setting may be longer");
+  unset.handle({ type: "speech-end", t: 9 });
+  unset.handle({ type: "cue", kind: "silence", t: 14 });
+  assert.equal(unset.silenceSec, 5);
+  unset.handle({ type: "speech-start", t: 15, gap: 6 });
+  assert.deepEqual(unset.resume, { since: 15 });
+  unset.resume = null;
+  // no cue this time: it would have come at 21, 7 s after the last, inside the engine's 8 s
+  // cooldown, so the gap counts
+  unset.handle({ type: "speech-end", t: 16 });
+  unset.handle({ type: "speech-start", t: 21.5, gap: 5.5 });
+  assert.deepEqual(unset.resume, { since: 21.5 });
+  unset.resume = null;
+  // a tone cue 2 s before the silence point: the engine's 3 s between any two cues held it back
+  for (const e of [{ type: "speech-end", t: 23 }, { type: "cue", kind: "rise", t: 26 }, { type: "speech-start", t: 28.5, gap: 5.5 }]) unset.handle(e);
+  assert.deepEqual(unset.resume, { since: 28.5 });
+  unset.resume = null;
+  // a silence that long with no cue and nothing to hold one back: the wearer changed the setting
+  // (or switched the cue off). The gap stops counting until a cue shows the setting again.
+  for (const e of [{ type: "speech-end", t: 30 }, { type: "speech-start", t: 36, gap: 6 }]) unset.handle(e);
+  assert.equal(unset.resume, null);
+  assert.equal(unset.silenceSec, null);
+  for (const e of [{ type: "speech-end", t: 37 }, { type: "cue", kind: "silence", t: 45 }]) unset.handle(e);
+  assert.equal(unset.silenceSec, 8);
+  // a new session forgets a setting seen on the cue; the page's stays
+  unset.reset();
+  assert.equal(unset.silenceSec, null);
+  source.reset();
+  assert.equal(source.silenceSec, 8);
+});
+
+test("raising the silence setting mid-session does not leave the old one tapping", () => {
+  const a = wav("198-209-0000");
+  const seat = source => source.intents.filter(i => SEAT.has(i.kind)).map(i => [i.kind, i.voice]);
+  // setting 4 s: the first 5 s pause shows it on the cue and taps. The wearer raises it to 8 s
+  // during the next turn; the 5.5 s pause after that is not a long silence any more.
+  const raise = (engine, source, page) => { engine.configure({ silenceSec: 8 }); if (page) source.configure({ silenceSec: 8 }); };
+  // intents not told the setting: the missing cue gives the change away
+  const late = concat([quiet(0.6), a.subarray(0, 4 * S), quiet(5), a.subarray(4.5 * S, 9 * S), quiet(5.5), a.subarray(9.5 * S, 13.5 * S), quiet(1)]);
+  const r1 = run(late, { settings: { silenceSec: 4 } }, [[12.5, (engine, source) => raise(engine, source, false)]]);
+  assert.equal(r1.events.filter(e => e.type === "cue" && e.kind === "silence").length, 1);
+  assert.deepEqual(seat(r1.source), [["new_voice", 1], ["voice_resumes", 1]]);
+  // sooner after the cue the engine's cooldown could explain it, so the page passes the setting
+  // (configureEngine: intents.configure next to engine.configure)
+  const soon = concat([quiet(0.6), a.subarray(0, 4 * S), quiet(5), a.subarray(4.5 * S, 7 * S), quiet(5.5), a.subarray(8 * S, 12 * S), quiet(1)]);
+  const r2 = run(soon, { settings: { silenceSec: 4 } }, [[12.5, (engine, source) => raise(engine, source, true)]], { silenceSec: 4 });
+  assert.deepEqual(seat(r2.source), [["new_voice", 1], ["voice_resumes", 1]]);
+  // and as the page does it, with the whole of its engine settings
+  const r3 = asPage(soon, pageSettings(4), [[12.5, (engine, source) => { const s = pageSettings(8); source.configure(s); engine.configure(s); }]]);
+  assert.deepEqual(seat(r3.source), [["new_voice", 1], ["voice_resumes", 1]]);
+  assert.equal(r3.source.silenceSec, 8);
+});
+
+test("after a long silence a different voice gets only its own tap, never the previous voice's seat first", () => {
+  const a = wav("198-209-0000"), b = wav("3436-172162-0000");
+  for (const sil of [4.5, 6]) {
+    const cases = [
+      // a voice never heard before: the new-voice taps only
+      [[a.subarray(0, 8 * S), quiet(sil), b.subarray(0, 8 * S)], [["new_voice", 2]]],
+      // a known voice comes back after B: its own seat, once (the engine's decision, sent as a resume)
+      [[a.subarray(0, 8 * S), quiet(0.8), b.subarray(0, 8 * S), quiet(sil), a.subarray(8 * S, 14 * S)], [["voice_resumes", 1]]],
+      // the same voice goes on: the resume tap still plays
+      [[a.subarray(0, 8 * S), quiet(0.8), b.subarray(0, 8 * S), quiet(sil), b.subarray(8 * S, 14 * S)], [["voice_resumes", 2]]],
+      [[a.subarray(0, 8 * S), quiet(sil), a.subarray(8 * S, 13 * S)], [["voice_resumes", 1]]],
+    ];
+    for (const [parts, expected] of cases) {
+      const { source, events } = run(concat([quiet(0.6), ...parts, quiet(2)]));
+      assert.deepEqual(seatTapsAfterSilence(source, events), expected, `silence ${sil} s`);
+    }
+  }
+});
+
+test("the resume tap follows the silence itself, not the rate-limited, switchable silence cue", () => {
+  const a = wav("198-209-0000");
+  const silenceCues = events => events.filter(e => e.type === "cue" && e.kind === "silence").length;
+  const resumes = source => source.intents.filter(i => i.kind === "voice_resumes").map(i => i.voice);
+  const noCue = silenceSec => ({ settings: { silenceSec, cues: { drop: true, rise: true, hesitation: true, silence: false } } });
+  // two long silences 6.5 s apart: the engine's 8 s cooldown swallows the second silence cue;
+  // the first cue shows the setting even when the page has not passed it
+  const twice = (sil, gap) => concat([quiet(0.6), a.subarray(0, 8 * S), quiet(sil), a.subarray(8 * S, 8 * S + gap * S), quiet(sil), a.subarray(10 * S, 13 * S), quiet(1)]);
+  for (const silenceSec of [3, 4]) {
+    const { source, events } = run(twice(silenceSec + 0.5, 2), { settings: { silenceSec } });
+    assert.equal(silenceCues(events), 1);
+    assert.deepEqual(resumes(source), [1, 1], `setting ${silenceSec} s`);
+  }
+  // "Long silence" unticked in Settings: no floor-open tick, the voice still taps when it starts again
+  for (const silenceSec of [3, 4]) {
+    const { source, events } = run(twice(silenceSec + 0.5, 2), noCue(silenceSec), [], { silenceSec });
+    assert.equal(silenceCues(events), 0);
+    assert.deepEqual(resumes(source), [1, 1], `setting ${silenceSec} s, cue off`);
+  }
+  // pauses shorter than the wearer's setting are not long silences, with the cue on or off
+  for (const [settings, intentOptions] of [[{ silenceSec: 8 }, {}], [{ silenceSec: 8 }, { silenceSec: 8 }], [noCue(8).settings, { silenceSec: 8 }]]) {
+    for (const pause of [4.5, 7]) {
+      const { source, events } = run(concat([quiet(0.6), a.subarray(0, 8 * S), quiet(pause), a.subarray(8 * S, 13 * S), quiet(1)]), { settings }, [], intentOptions);
+      assert.equal(silenceCues(events), 0);
+      assert.deepEqual(source.intents.filter(i => SEAT.has(i.kind)).map(i => i.kind), ["new_voice"], `setting 8 s, pause ${pause} s`);
+    }
+  }
+});
+
+test("wired as the page wires it, the voice taps when it starts again after a long silence even when no silence cue fires", () => {
+  const a = wav("198-209-0000");
+  const silenceCues = events => events.filter(e => e.type === "cue" && e.kind === "silence").length;
+  const resumes = source => source.intents.filter(i => i.kind === "voice_resumes").map(i => i.voice);
+  const pausedTurns = pause => concat([quiet(0.6), a.subarray(0, 6 * S), quiet(pause), a.subarray(8.5 * S, 12.5 * S), quiet(1)]);
+  // "Long silence" unticked in Settings (or do-not-disturb): no floor-open tick, the tap stays
+  for (const silenceSec of [3, 4, 6]) {
+    const { source, events } = asPage(pausedTurns(silenceSec + 0.6), pageSettings(silenceSec, false));
+    assert.equal(silenceCues(events), 0);
+    assert.deepEqual(resumes(source), [1], `setting ${silenceSec} s, cue off`);
+    assert.equal(source.silenceFrom, "page");
+  }
+  // a tone cue 0.5 s after the turn (as a tone estimate gives one, through the engine's own cue
+  // limits) holds the silence cue back: the engine leaves 3 s between any two cues
+  for (const pause of [3.6, 4.5]) {
+    const toneCue = [7.1, engine => engine._cue("drop", engine.t, { source: "model" })];
+    const { source, events } = asPage(pausedTurns(pause), pageSettings(3), [toneCue]);
+    assert.ok(events.some(e => e.type === "cue" && e.kind === "drop" && e.t > 7), "the tone cue fired after the turn");
+    assert.equal(silenceCues(events), 0, "and the silence cue was held back");
+    assert.deepEqual(resumes(source), [1], `setting 3 s, pause ${pause} s`);
+  }
+  // the silence cue, when it does fire, agrees with the page's setting and does not replace it
+  const { source, events } = asPage(pausedTurns(4.6), pageSettings(4));
+  assert.equal(silenceCues(events), 1);
+  assert.deepEqual(resumes(source), [1]);
+  assert.deepEqual([source.silenceSec, source.silenceFrom], [4, "page"]);
+});
+
+test("a short noise after a long silence does not use up the tap for the real resumption", () => {
+  const a = wav("198-209-0000");
+  let r = 11; const noise = s => Float32Array.from({ length: Math.round(s * S) }, () => (((r = (r * 16807) % 2147483647) / 2147483647) * 2 - 1) * 0.1);
+  for (const burst of [noise(0.3), noise(0.5), a.slice(9 * S, 9.3 * S)]) {
+    const { source, events } = run(concat([quiet(0.6), a.subarray(0, 8 * S), quiet(5), burst, quiet(0.5), a.subarray(10 * S, 14 * S), quiet(1)]));
+    const real = events.filter(e => e.type === "speech-start" && e.gap != null && e.gap >= 0.4).at(-1);
+    const taps = source.intents.filter(i => SEAT.has(i.kind) && i.t > 13);
+    assert.deepEqual(taps.map(i => [i.kind, i.voice]), [["voice_resumes", 1]], "one tap, for the real turn");
+    assert.ok(taps[0].t >= real.t - 1e-9, "dated at the real turn, not the noise");
+    assert.ok(source.suppressed.some(s => s.turn < table.scheduler.min_turn_s), "the noise itself did not tap");
+  }
+});
+
+test("speech back so soon after a short burst that the engine keeps one segment still gets its one tap", () => {
+  const a = wav("198-209-0000"), b = wav("3436-172162-0000");
+  let r = 5; const noise = s => Float32Array.from({ length: Math.round(s * S) }, () => (((r = (r * 16807) % 2147483647) / 2147483647) * 2 - 1) * 0.1);
+  // 0.3 s of quiet after the burst: the engine's gap is 0.240 s, just under its 0.25 s segment gap,
+  // so it judges the burst in the pause and the real turn goes on in the same segment
+  // the noise case: the engine makes a voice from the noise and keeps it for A's speech, so that
+  // tap waits for the engine's next decision; A stops instead, and it comes after REJUDGE_WAIT_SEC
+  const cases = [[b.slice(9.1 * S, 9.3 * S), "voice_resumes", 1, false], [a.slice(9.1 * S, 9.45 * S), "voice_resumes", 1, false], [noise(0.45), "new_voice", 2, true]];
+  for (const [burst, kind, voice, waits] of cases) {
+    const { source, events, engine } = run(concat([quiet(0.6), a.subarray(0, 8 * S), quiet(6), burst, quiet(0.3), a.subarray(10 * S, 13.5 * S), quiet(1.5)]));
+    const real = events.find(e => e.type === "speech-start" && e.t > 15 && e.gap < E.TUNING.turnGapSec);
+    assert.ok(real && real.gap + E.FRAME_SEC >= E.TUNING.turnGapSec, "the speech came back one frame after the engine's pause check");
+    const taps = source.intents.filter(i => SEAT.has(i.kind) && i.t > 14);
+    assert.deepEqual(taps.map(i => [i.kind, i.voice]), [[kind, voice]], "one tap, for the voice the engine kept");
+    assert.equal(engine.current, voice);
+    assert.ok(taps[0].t >= real.t - 1e-9, "dated at the real turn");
+    const end = events.filter(e => e.type === "speech-end").at(-1).t;
+    if (waits) assert.ok(taps[0].at >= end + REJUDGE_WAIT_SEC && taps[0].at < end + REJUDGE_WAIT_SEC + 0.05, "sent once the quiet shows no next decision is coming");
+    else assert.ok(taps[0].at < real.t + 2.5, "sent during the turn");
+  }
+});
+
+test("a voice the engine made from a burst after the silence gets no tap before the engine gives the speaker back", () => {
+  const a = wav("198-209-0000"), b = wav("3436-172162-0000");
+  let r = 9; const noise = s => Float32Array.from({ length: Math.round(s * S) }, () => (((r = (r * 16807) % 2147483647) / 2147483647) * 2 - 1) * 0.1);
+  // A, B, a long silence, 0.5 s of noise and 0.28 s of quiet (one segment again), then B goes on.
+  // The engine makes voice 3 from the noise, learns it from B's speech, and names B again only at
+  // its next segment: B's seat taps once, voice 3 never does. The same with two bursts, the
+  // second running into B's speech (0.26 s: the engine's gap is under its pause check).
+  const pre = [quiet(0.6), a.subarray(0, 8 * S), quiet(0.8), b.subarray(0, 8 * S)];
+  for (const [sil, n, bursts] of [[4.5, 1, () => [noise(0.5), quiet(0.28)]], [6, 1, () => [noise(0.5), quiet(0.3)]], [4.5, 2, () => [noise(0.5), quiet(0.5), noise(0.5), quiet(0.26)]]]) {
+    const { source, events } = run(concat([...pre, quiet(sil), ...bursts(), b.subarray(10 * S, 14 * S), quiet(1.5)]));
+    assert.ok(events.some(e => e.type === "speaker" && e.id === 3 && e.isNew), "the engine made a voice from the noise");
+    assert.deepEqual(seatTapsAfterSilence(source, events), [["voice_resumes", 2]], `silence ${sil} s, ${n} burst(s)`);
+  }
+});
+
+test("New voice pressed in a pause taps at once, so the seat window opens", () => {
+  const a = wav("198-209-0000"), b = wav("3436-172162-0000");
+  let forced = null;
+  // reader A, then a pause; the wearer presses N 0.6 s into it (after the engine's speech-end)
+  const { source, events } = run(concat([quiet(0.6), a.subarray(0, 5 * S), quiet(1.2), b.subarray(0, 4 * S), quiet(1)]), {},
+    [[6.2, engine => { assert.equal(engine.speaking, false); forced = { id: engine.forceNewSpeaker(), t: engine.t }; }]]);
+  assert.ok(events.some(e => e.type === "speech-end" && e.t < forced.t));
+  const tap = source.intents.find(i => i.voice === forced.id);
+  assert.ok(tap && tap.kind === "new_voice" && tap.at === forced.t, "the new-voice intent is sent at the press");
+  assert.ok(!source.suppressed.some(s => s.voice === forced.id), "a press is not a back-channel");
+  // an engine decision about speech already heard is still held to the back-channel rule
+  const s2 = new IntentSource({ minTurn: 0.6 });
+  for (const e of [{ type: "speech-start", t: 0 }, { type: "level", t: 1 }, { type: "speaker", id: 1, isNew: true, t: 0 }, { type: "speech-end", t: 5 },
+    { type: "speech-start", t: 5.3 }, { type: "speech-end", t: 5.75 }, { type: "level", t: 5.8, speaking: false }]) s2.handle(e);
+  assert.deepEqual(s2.handle({ type: "speaker", id: 2, isNew: true, t: 5.3 }), []);
+  assert.deepEqual(s2.handle({ type: "speaker", id: 3, isNew: true, t: 5.8 }).map(i => [i.kind, i.voice]), [["new_voice", 3]], "stamped now: a press");
 });
 
 test("a new speaker within the hold replaces the resume tap: never two taps for one start", () => {
@@ -119,4 +368,79 @@ test("cues become cue and silence intents with the speaker attached", () => {
   assert.deepEqual(source.handle({ type: "cue", kind: "silence", t: 9 }).map(i => [i.kind, i.voice]), [["silence", null]]);
   assert.deepEqual(source.handle({ type: "cue", kind: "sarcasm", t: 10 }), []);
   assert.deepEqual(source.handle({ type: "level", t: 11, db: -40 }), []);
+});
+
+// ------------------------------------------------------------------ on-screen stole pads
+// StoleView.wirePad against docs/kandha/PROTOCOL.md, on a fake pad node with mocked timers.
+// script: [[ms, pad, "down"|"up"|"leave"|"cancel"|"blur"|"keydown"|"keyup"]]; returns [[ms, pad, gesture]]
+function playPads(script, until = 5000) {
+  mock.timers.enable({ apis: ["setTimeout", "Date"], now: 0 });
+  const now = mock.method(performance, "now", () => Date.now());
+  try {
+    const got = [], nodes = {};
+    const view = { onPad: (pad, gesture) => got.push([Date.now(), pad, gesture]) };
+    const node = pad => nodes[pad] || (nodes[pad] = (() => {
+      const on = {};
+      const n = { classList: { add() {}, remove() {} }, addEventListener: (type, fn) => { on[type] = fn; }, fire: type => on[type] && on[type]({ preventDefault() {}, key: "Enter", repeat: false }) };
+      StoleView.prototype.wirePad.call(view, n, pad);
+      return n;
+    })());
+    // 1 ms at a time: a timer callback reads the clock at the end of the tick that ran it
+    const advance = ms => { for (let i = 0; i < ms; i++) mock.timers.tick(1); };
+    const TYPE = { down: "pointerdown", up: "pointerup", leave: "pointerleave", cancel: "pointercancel" };
+    let t = 0;
+    for (const [at, pad, what] of script.slice().sort((x, y) => x[0] - y[0])) {
+      node(pad);
+      advance(at - t); t = at;
+      nodes[pad].fire(TYPE[what] || what);
+    }
+    advance(until - t);
+    return got;
+  } finally { now.mock.restore(); mock.timers.reset(); }
+}
+const touch = (from, ms, pad = "L") => [[from, pad, "down"], [from + ms, pad, "up"]];
+const gestures = got => got.map(x => x[2]);
+
+test("on-screen pads use the stole's gesture timing", () => {
+  assert.deepEqual(PAD_TIMING, { TAP_MAX_MS: 400, DOUBLE_GAP_MS: 300, LONG_MS: 700 });
+  // a touch shorter than 400 ms is a tap, sent once no second touch can start (300 ms after it ends)
+  const tap = playPads(touch(1000, 100));
+  assert.deepEqual(gestures(tap), ["tap"]);
+  assert.ok(tap[0][0] >= 1400 && tap[0][0] <= 1420, `tap sent at ${tap[0][0]} ms`);
+  assert.deepEqual(gestures(playPads(touch(1000, 390))), ["tap"]);
+  // a touch of 400-699 ms is no gesture
+  for (const ms of [400, 450, 550, 690]) assert.deepEqual(playPads(touch(1000, ms)), [], `${ms} ms`);
+  // held 700 ms: a long press, sent once on the 700 ms mark, never also a tap
+  assert.deepEqual(playPads(touch(1000, 1500)), [[1700, "L", "long"]]);
+  assert.deepEqual(gestures(playPads(touch(1000, 3000))), ["long"]);
+});
+
+test("on-screen pads: a second touch starting within 300 ms of a tap's end makes a double", () => {
+  for (const gap of [50, 200, 290]) {
+    const got = playPads([...touch(1000, 100), ...touch(1100 + gap, 100)]);
+    assert.deepEqual(got, [[1200 + gap, "L", "double"]], `gap ${gap} ms`);
+  }
+  // later than that: two taps
+  assert.deepEqual(gestures(playPads([...touch(1000, 100), ...touch(1420, 100)])), ["tap", "tap"]);
+  // three quick touches: a double, then a tap
+  assert.deepEqual(gestures(playPads([...touch(1000, 80), ...touch(1180, 80), ...touch(1360, 80)])), ["double", "tap"]);
+  // a second touch held 400-699 ms is nothing, and the first tap still counts
+  assert.deepEqual(gestures(playPads([...touch(1000, 100), ...touch(1200, 500)])), ["tap"]);
+  // a second touch held into a long press: the long press only
+  assert.deepEqual(gestures(playPads([...touch(1000, 100), ...touch(1200, 900)])), ["long"]);
+  // pads are timed independently
+  const got = playPads([...touch(1000, 100, "L"), ...touch(1150, 100, "R"), ...touch(1300, 100, "L")]);
+  assert.deepEqual(got.filter(x => x[2] === "double").map(x => x[1]), ["L"]);
+  assert.deepEqual(got.filter(x => x[2] === "tap").map(x => x[1]), ["R"]);
+});
+
+test("on-screen pads: the keyboard follows the same rules, and a touch that is left or cancelled sends nothing", () => {
+  assert.deepEqual(gestures(playPads([[1000, "L", "keydown"], [1100, "L", "keyup"], [1250, "L", "keydown"], [1350, "L", "keyup"]])), ["double"]);
+  assert.deepEqual(playPads([[1000, "L", "keydown"], [1600, "L", "keyup"]]), []);
+  assert.deepEqual(gestures(playPads([[1000, "L", "keydown"], [1800, "L", "keyup"]])), ["long"]);
+  for (const end of ["leave", "cancel", "blur"]) {
+    assert.deepEqual(playPads([[1000, "L", "down"], [1100, "L", end]]), [], `${end} mid-touch`);
+    // the pad is not left stuck: the next touch is a tap again
+    assert.deepEqual(gestures(playPads([[1000, "L", "keydown"], [1800, "L", end], [3000, "L", "keydown"], [3100, "L", "keyup"]])), ["long", "tap"], `${end} after a long press`);
+  }
 });

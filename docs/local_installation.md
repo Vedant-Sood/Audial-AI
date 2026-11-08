@@ -46,7 +46,9 @@ verification. Source developers wanting Community-1 install
 terms and a local read token are separate user prerequisites.
 
 `run_browser.bat` starts the loopback companion on 8765. The desktop's companion
-uses a dynamic loopback port, obtained automatically by its native bridge. Source
+uses a dynamic loopback port, obtained automatically by its native bridge.
+`python -m app.main --kandha` (and `Kandha.exe`) also uses a free port unless
+`--port` is given; an explicit `--port`, 8765 included, is always honoured. Source
 extension generation uses `python -m scripts.package_extension`; normal installer
 users receive that generated folder already.
 

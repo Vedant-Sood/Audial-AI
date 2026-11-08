@@ -12,7 +12,12 @@ Sanket app evolved (`browser/kandha/`), served under the same CSP rules as `/san
 - QtWebEngine (PySide6-Addons 6.8.3, Chromium 122) supports `getUserMedia`, `AudioWorklet`,
   `<dialog>`, CSS `color-mix` and everything the page uses. Microphone permission is granted
   programmatically with the Qt 6.8 `QWebEnginePermission` API (with the deprecated
-  `featurePermissionRequested` kept as a fallback), scoped to the loopback origin.
+  `featurePermissionRequested` kept as a fallback), only to the companion's exact origin
+  (`http://127.0.0.1:<port>`: same scheme, host and port). It is granted when the window opens,
+  so the page can list the microphones by name; the microphone itself opens only on Start. The
+  view refuses to go to any other address. Its profile is off the record, so the web view
+  writes nothing to disk; the window keeps the page's settings in one file
+  (`<data>/kandha/page-settings.json`).
 - People who prefer a browser tab keep `/kandha/` in Chrome or Edge; `/sanket/` redirects there.
 
 **Cost.** QtWebEngine adds roughly 150–200 MB to the Windows installer. The build already

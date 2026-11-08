@@ -124,6 +124,8 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .welcome__fine { font-size: 14px; }
 .check { display: inline-flex; align-items: center; gap: 8px; color: var(--text); font-size: 16px; }
 .check input { width: 20px; height: 20px; accent-color: var(--signal); }
+/* a label of two lines or more: the box stays by the first line */
+.check--top { align-items: flex-start; } .check--top input { flex: none; margin-top: 2px; }
 
 /* ---------------------------------------------------------------- side panels */
 .side { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
@@ -172,15 +174,23 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .room__you { fill: var(--text); } .room__youlabel { font: 700 12px var(--font); fill: var(--bg); pointer-events: none; }
 .room__facing { fill: none; stroke: var(--muted); stroke-width: 2; stroke-dasharray: 3 4; }
 .room__chip { --c: var(--s0); cursor: grab; }
-.room__chip circle { fill: var(--c); stroke: var(--bg); stroke-width: 2; }
+.room__chip .room__dot { fill: var(--c); stroke: var(--bg); stroke-width: 2; }
 .room__chip text { font: 700 13px var(--font); fill: var(--bg); pointer-events: none; }
-.room__chip.is-current circle { stroke: var(--text); stroke-width: 3; }
-.room__chip.is-selected circle { stroke: var(--focus); stroke-width: 4; }
-.room__chip:focus { outline: none; } .room__chip:focus circle { stroke: var(--focus); stroke-width: 4; }
+.room__chip.is-current .room__dot { stroke: var(--text); stroke-width: 3; }
+/* focus, selection and "speaking now" each have their own look, so one never hides another:
+   focus is the outer blue ring, a selected voice wears a tick (like a pressed button) */
+.room__ring { fill: none; stroke: none; pointer-events: none; }
+.room__chip:focus { outline: none; } .room__chip:focus .room__ring { stroke: var(--focus); stroke-width: 3; }
+.room__tick { pointer-events: none; }
+.room__tick circle { fill: var(--text); stroke: var(--bg); stroke-width: 2; }
+.room__tick path { fill: none; stroke: var(--bg); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { --c: var(--s0); display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 999px; border: 2px solid var(--c); background: var(--surface-2); cursor: grab; font-weight: 700; }
-.chip i { width: 22px; height: 22px; border-radius: 50%; background: var(--c); display: inline-block; }
-.chip.is-selected { outline: 3px solid var(--focus); outline-offset: 2px; }
+.chip i { width: 22px; height: 22px; border-radius: 50%; background: var(--c); display: inline-grid; place-items: center; }
+.chip i svg { width: 16px; height: 16px; }
+/* selected looks pressed, like the page's other toggle buttons, and wears a tick; the focus
+   outline stays the page's own, so the two can be told apart */
+.chip.is-selected { background: var(--text); color: var(--bg); }
 
 .lastcue { display: grid; gap: 2px; min-width: 0; }
 .lastcue__label { font-size: 20px; font-weight: 700; }
@@ -231,6 +241,8 @@ dialog::backdrop { background: rgba(5, 8, 12, .6); }
 .dlg__head { display: flex; align-items: center; gap: 12px; } .dlg__head h2 { font-size: 22px; }
 .dlg__close { margin-left: auto; }
 .dlg__foot { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+.dlg__text { margin: 0; }
+.dlg__text:focus-visible { outline-offset: 8px; }   /* a dialog that starts on its description (Demos) */
 .field { display: grid; gap: 6px; } .field > span { font-weight: 700; }
 .field small { color: var(--muted); font-size: 14px; }
 .field input[type="text"], .field select, .field textarea, .row input[type="text"] { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); min-height: 44px; }

@@ -28,7 +28,18 @@ try {
     if (-not (Test-Path "$target\_internal\firmware\kandha\kandha.ino")) { throw 'Firmware sources missing from the payload' }
     if (-not (Test-Path "$target\_internal\browser\kandha\fonts\AtkinsonHyperlegible-Regular.ttf")) { throw 'Bundled font missing' }
     if (-not (Test-Path "$target\_internal\models\sanket\tone_model.json")) { throw 'Tone model missing' }
+    # The guide entry must open a page stock Windows can show (.html in the browser), not a .md file.
+    $guideLink = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Kandha\Kandha user guide.lnk"
+    if (-not (Test-Path $guideLink)) { throw 'Start menu entry "Kandha user guide" missing' }
+    $guideTarget = (New-Object -ComObject WScript.Shell).CreateShortcut($guideLink).TargetPath
+    if ([IO.Path]::GetExtension($guideTarget) -ne '.html' -or -not (Test-Path $guideTarget)) { throw "Kandha user guide entry does not open an HTML page: $guideTarget" }
+    if (-not (Select-String -Path $guideTarget -Pattern '<h1' -Quiet)) { throw 'Installed USER_GUIDE.html has no content' }
+    $report.user_guide = [ordered]@{ shortcut_target = $guideTarget; html = 'PASS' }
     $report.install_and_shortcuts = 'PASS'
+    # The Bluetooth link ships: bleak, its WinRT backend and their licence metadata are in the installed payload.
+    python (Join-Path (Split-Path $PSScriptRoot -Parent) 'packaging\kandha_bluetooth.py') --payload $target --os windows --output "$Output\kandha-bluetooth.json"
+    if ($LASTEXITCODE -ne 0) { throw 'Installed Kandha is missing bleak or its WinRT backend' }
+    $report.bluetooth_link_payload = Get-Content "$Output\kandha-bluetooth.json" -Raw | ConvertFrom-Json
     $check = Start-Process "$target\AccessibilityAIWorker.exe" -ArgumentList @('--kandha-check') -RedirectStandardOutput "$Output\kandha-check.txt" -RedirectStandardError "$Output\kandha-check-errors.txt" -PassThru
     if (-not $check.WaitForExit(180000)) { Stop-Process -Id $check.Id -Force; throw 'Packaged Kandha page check timed out' }
     $line = Get-Content "$Output\kandha-check.txt" | Where-Object { $_ -like '{*"ok"*' } | Select-Object -Last 1

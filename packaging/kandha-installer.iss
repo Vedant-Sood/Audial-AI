@@ -55,7 +55,8 @@ Type: filesandordirs; Name: "{app}\_internal"
 [Icons]
 Name: "{group}\Kandha"; Filename: "{app}\Kandha.exe"; WorkingDir: "{app}"; Comment: "Captions, who is speaking, and the Kandha Stole"
 Name: "{group}\Audial-AI workspace"; Filename: "{app}\AccessibilityAI.exe"; WorkingDir: "{app}"
-Name: "{group}\Kandha user guide"; Filename: "{app}\_internal\docs\kandha\USER_GUIDE.md"
+; HTML rendering made at build time (AccessibilityAI.spec): stock Windows opens .html in the browser but has no program for .md.
+Name: "{group}\Kandha user guide"; Filename: "{app}\_internal\docs\kandha\USER_GUIDE.html"; Comment: "Opens in your web browser; works offline"
 Name: "{group}\Uninstall Kandha"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\Kandha"; Filename: "{app}\Kandha.exe"; Tasks: desktopicon
 

@@ -22,12 +22,12 @@ from app.services.engine import AudioEngine
 from app.services.isl import ISLVocabulary, load_pose_frames
 from app.services.lexicon import ISL_LANGUAGE, SignLexicon
 from app.services.text_input import read_text_bytes
-from app.storage.transcript import Session
+from app.storage.transcript import Caption, Session
 from app.utils.config import PRESETS, Settings
 from app.utils.paths import project_root, data_root, atomic_json
 from app.services.browser_bridge import BrowserBridge
 from app.utils.palette import DEFAULT_EMOTION_COLORS, validate_palette
-from app.services.voice_view import clean_events
+from app.services.voice_view import MAX_EVENTS, clean_captions, clean_events
 from app.kandha.service import KandhaService
 
 # Sanket voice engine (browser/sanket/): shared library files the companion and Kandha load.
@@ -81,9 +81,6 @@ class BrowserService:
         self.settings = settings or Settings.load()
         self.engine = engine or AudioEngine(self.settings, queue_events=False)
         self.owns_engine = engine is None
-        # Kandha: haptic scheduling, seat map, queue, the virtual stole and the Bluetooth bridge.
-        # Captions never depend on it; a failure here is reported, not raised.
-        self.kandha = KandhaService(publish=self.on_event, backend=kandha_backend, start_bridge=kandha_bridge)
         self.vocabulary = vocabulary or ISLVocabulary()
         self.sign_media = {}
         self.port = port
@@ -93,6 +90,18 @@ class BrowserService:
         self.control_lock = threading.RLock()
         self.session_id = None
         self.id = 0
+        # The Kandha page's own session record (captions it showed and its events), apart from
+        # the Whisper capture above: it is what "Save to sessions" and the Kandha exports write.
+        self.kandha_session = None
+        # (record caption, engine caption, whole?) for Kandha lines that came from local Whisper
+        self.kandha_links = []
+        # held while a new Kandha session replaces the record and announces it (start_kandha_session)
+        self.kandha_start_lock = threading.Lock()
+        # Kandha: haptic scheduling, seat map, queue, the virtual stole and the Bluetooth bridge.
+        # Captions never depend on it; a failure here is reported, not raised. It is built after
+        # the event feed exists, because its bridge thread can publish (a remembered stole
+        # reconnecting) before this constructor returns.
+        self.kandha = KandhaService(publish=self.on_event, backend=kandha_backend, start_bridge=kandha_bridge)
         self.server = None
         self.thread = None
         self.unsubscribe = self.engine.subscribe(self.on_event)
@@ -128,6 +137,72 @@ class BrowserService:
         if clean:
             self.on_event("voice", {"events": clean})
         return {"stored": stored}
+
+    # ------------------------------------------------------------- the Kandha page's session record
+    def new_kandha_session(self):
+        """Start the record for a new Kandha session (live or demo); the unsaved previous one is dropped."""
+        with self.lock:
+            self.kandha_session = Session(title="Kandha session")
+            self.kandha_links = []
+            return self.kandha_session.id
+
+    def start_kandha_session(self, page=None):
+        """A new session on a Kandha page (live or demo): a new record, then the "session" event
+        that names the asking window. Both happen under one lock, so when two windows start at
+        once the events go out in the order the records were replaced: the window holding the
+        current record hears its own event last, and only the other window marks itself replaced.
+        Its own lock (not self.lock), since the Kandha service takes its lock before ours."""
+        with self.kandha_start_lock:
+            session_id = self.new_kandha_session()
+            return self.kandha.new_session(page) | {"session_id": session_id}
+
+    def kandha_record(self, session_id, require_content=False):
+        """The current Kandha record, only for the page session that started it. Hold self.lock."""
+        record = self.kandha_session
+        if record is None or not isinstance(session_id, str) or session_id != record.id:
+            raise PermissionError("This is not the current Kandha session. Start listening or watch a demo, then save it.")
+        if require_content and not record.captions and not record.voice_events:
+            raise ValueError("Nothing to save yet: this session has no captions, voices, cues or taps.")
+        return record
+
+    def kandha_saved_record(self, session_id):
+        """The record a consented save or export writes. Hold self.lock.
+
+        A line from local Whisper takes the engine caption's details as they are now (a tone
+        estimate can arrive after the page sent the line): word confidence and overlap always,
+        and the speaker similarity and voice measurements only when it shows the whole caption,
+        since a piece the page gave another voice is not that voice's tone."""
+        record = self.kandha_record(session_id, require_content=True)
+        for caption, source, whole in self.kandha_links:
+            caption.word_confidence, caption.overlap = source.word_confidence, source.overlap
+            if whole:
+                caption.speaker_similarity, caption.voice = source.speaker_similarity, dict(source.voice)
+        return record
+
+    def add_kandha_record(self, session_id, events=None, captions=None):
+        """Captions the Kandha page showed and its voice, cue, tone, queue, haptic and seat events.
+
+        Stored whatever the caption source (Whisper, the browser's captions or a demo), so the
+        saved session is the one on screen. Kept in memory until a consented save."""
+        clean = clean_events([] if events is None else events)
+        lines = clean_captions([] if captions is None else captions)
+        with self.lock:
+            record = self.kandha_record(session_id)
+            stored = record.add_voice_events(clean)
+            added = 0
+            for line in lines[:max(0, MAX_EVENTS - len(record.captions))]:
+                speaker = f"Voice {line['voice']}" if line["voice"] is not None else "Unattributed"
+                caption = Caption(line["start"], line["end"], line["text"], speaker)
+                record.add(caption)
+                added += 1
+                link = line["whisper"]
+                # only the capture still held here; an engine caption is matched by its exact times
+                if link and link["capture"] == self.session_id:
+                    source = next((c for c in reversed(self.session.captions[-400:]) if (c.start, c.end) == (link["start"], link["end"])), None)
+                    if source is not None:
+                        whole = abs(caption.start - source.start) <= 0.01 and abs(caption.end - source.end) <= 0.01
+                        self.kandha_links.append((caption, source, whole))
+        return {"stored": stored, "captions": added}
 
     def sign_plan(self, text):
         """Return every ordered step; each distinct pose is encoded only once.
@@ -336,9 +411,16 @@ class BrowserService:
                     elif parsed.path == "/api/export":
                         kind = query.get("format",["vtt"])[0]
                         if kind not in {"vtt","srt","json","txt","csv"}:raise ValueError("Unsupported export format.")
+                        # ?session=<id>: the Kandha page's own session record, never an older capture.
+                        # A blank ?session= (the page lost its id) is refused, not the companion's export.
+                        wanted = parse_qs(parsed.query, keep_blank_values=True).get("session", [None])[0]
                         with service.lock, tempfile.TemporaryDirectory() as directory:
+                            try:
+                                exported = service.session if wanted is None else service.kandha_saved_record(wanted)
+                            except PermissionError as error:
+                                self.respond(409, {"error": str(error)}); return
                             target = Path(directory)/("transcript."+kind)
-                            service.session.export(target,kind)
+                            exported.export(target,kind)
                             self.respond(200,target.read_bytes(),"text/vtt; charset=utf-8" if kind=="vtt" else "application/octet-stream","transcript."+kind)
                     elif parsed.path == "/sanket/tone-model.json":
                         self.respond(200, sanket_model())
@@ -355,7 +437,7 @@ class BrowserService:
                             self.respond(404,{"error":"Not found."});return
                         type_ = "text/html" if filename.endswith(".html") else "text/css" if filename.endswith(".css") else "text/javascript"
                         self.respond(200,(browser/filename).read_bytes(),type_+"; charset=utf-8")
-                except (ValueError,OSError) as error:
+                except (ValueError,OSError,ArithmeticError) as error:
                     self.respond(400,{"error":str(error)})
 
             def do_POST(self):
@@ -463,7 +545,8 @@ class BrowserService:
                             else:service.engine.pause(bool(options.get("paused")))
                         self.respond(200,{"ok":True})
                     else:self.respond(404,{"error":"Not found."})
-                except (ValueError,TypeError,KeyError,OSError,RuntimeError) as error:
+                # ArithmeticError: int()/float() of an infinite or huge JSON number (1e999, Infinity)
+                except (ValueError,TypeError,KeyError,OSError,RuntimeError,ArithmeticError) as error:
                     self.respond(400,{"error":str(error)})
 
             def kandha_post(self, action, options):
@@ -483,13 +566,13 @@ class BrowserService:
                 elif action == "rooms":
                     self.respond(200, k.rooms(options.get("action"), options.get("name")))
                 elif action == "test":
-                    self.respond(200, {"played": k.test(options.get("zone"), options.get("pattern"), int(options.get("repeat", 1)))})
+                    self.respond(200, {"played": k.test(options.get("zone"), options.get("pattern"), options.get("repeat", 1))})
                 elif action == "stop":
                     self.respond(200, {"played": k.stop_haptics()})
                 elif action == "pad":
                     self.respond(200, k.press_pad(options.get("pad"), options.get("gesture", "tap")))
                 elif action == "stole/scan":
-                    self.respond(200, {"devices": k.scan(float(options.get("timeout", 6)))})
+                    self.respond(200, {"devices": k.scan(options.get("timeout", 6))})
                 elif action == "stole/pair":
                     self.respond(200, {"connected": k.pair(options.get("address"), options.get("name")), "stole": k.snapshot()["stole"]})
                 elif action == "stole/forget":
@@ -497,16 +580,26 @@ class BrowserService:
                 elif action == "stole/simulate":
                     self.respond(200, k.simulate(options.get("action"), options.get("value")))
                 elif action == "session/new":
-                    self.respond(200, k.new_session())
+                    # a new session on the page (live or demo) gets a new record; session_id names it
+                    self.respond(200, service.start_kandha_session(options.get("page")))
+                elif action == "session/events":
+                    try:
+                        self.respond(200, service.add_kandha_record(options.get("session_id"), options.get("events"), options.get("captions")))
+                    except PermissionError as error:
+                        self.respond(409, {"error": str(error)})
                 elif action == "session/save":
                     if options.get("consent") is not True:
                         self.respond(403, {"error": "Saving needs everyone's consent: tick the consent box first."}); return
                     with service.lock:
-                        title = str(options.get("title") or service.session.title)[:120]
-                        service.session.title = title
-                        path = service.session.save()
-                    self.respond(200, {"saved": path.name, "title": title, "captions": len(service.session.captions),
-                                       "voice_events": len(service.session.voice_events)})
+                        try:
+                            record = service.kandha_saved_record(options.get("session_id"))
+                        except PermissionError as error:
+                            self.respond(409, {"error": str(error)}); return
+                        title = str(options.get("title") or record.title)[:120]
+                        record.title = title
+                        path = record.save()
+                        counts = len(record.captions), len(record.voice_events)
+                    self.respond(200, {"saved": path.name, "title": title, "captions": counts[0], "voice_events": counts[1]})
                 else:
                     self.respond(404, {"error": "Not found."})
 

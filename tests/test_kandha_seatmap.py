@@ -120,3 +120,33 @@ def test_the_wearers_own_voice_is_me_never_seated_and_never_saved(tmp_path):
     assert seat_map.zone_for(2) is None, "only one voice can be the wearer"
     assert seat_map.save_room("Lab")["slots"] == ["L"], "me is never stored in a room"
     assert ManualSeatSource(seat_map).angles() == {1: 270.0}
+
+
+def test_merge_closes_the_seat_window_of_the_dropped_voice(seat_map):
+    seat_map.assign(1, "L")
+    seat_map.new_voice(2, now=10.0)                     # the engine split voice 1: the window is for 2
+    assert seat_map.window_open(11.0)
+    assert seat_map.merge(keep=1, drop=2) is True
+    assert not seat_map.window_open(12.0) and seat_map.snapshot(12.0)["pending"] is None
+    assert seat_map.on_pad(PAD_L, GESTURE_TAP, 12.0) == {"action": "no-window", "voice": None, "zone": "L"}
+    assert seat_map.voices() == {1: "L"} and seat_map.order == [1], "the dropped voice does not come back"
+    assert seat_map.save_room("Room 4")["slots"] == ["L"]
+    # a window open for another voice is left alone
+    seat_map.new_voice(3, now=20.0)
+    seat_map.assign(4, "R")
+    seat_map.merge(keep=1, drop=4)
+    assert seat_map.window_open(21.0) and seat_map.pending[0] == 3 and seat_map.zone_for(1) == "L"
+
+
+def test_merging_a_voice_into_itself_changes_nothing(seat_map):
+    seat_map.assign(1, "L")
+    seat_map.new_voice(1, now=0.0)
+    assert seat_map.merge(keep=1, drop=1) is False
+    assert seat_map.voices() == {1: "L"} and seat_map.order == [1] and seat_map.window_open(1.0)
+
+
+def test_merge_into_an_unseated_voice_records_the_inherited_seat(seat_map):
+    seat_map.assign(2, "B")
+    seat_map.new_voice(5, now=0.0)
+    seat_map.merge(keep=5, drop=2)
+    assert seat_map.zone_for(5) == "B" and seat_map.changes[-1] == (5, "B", "merge")

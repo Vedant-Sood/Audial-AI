@@ -30,6 +30,12 @@ Kandha's tap language lives in `browser/sanket/kandha-patterns.json`; after edit
 `python scripts/generate_kandha_patterns.py` so `firmware/kandha/patterns.h` matches (a test
 checks). `python -m app.main --kandha-check` loads the Kandha page headlessly; see
 `docs/kandha/VALIDATION.md` for the Chromium end-to-end, tap-budget and accessibility scripts.
+`tests/test_kandha_firmware_host.py` builds the firmware with the host C++ compiler (`g++` or
+`clang++`; `CXX` overrides) and `tests/test_kandha_page.py` needs Playwright with Chromium
+(`KANDHA_CHROMIUM` overrides the path); both skip when those are missing, so install them to
+run the whole suite. A firmware change that uses a new Arduino or BLE call needs a matching
+stand-in in `tests/firmware_host/`. Keep `requirements-portable.txt`'s `winrt-*` lines in step
+with the `bleak` pin in `requirements.txt` (`tests/test_kandha_packaging.py` checks).
 
 See `docs/architecture.md` for the code map and `docs/indian_voice_training.md` for
 model training, provenance and activation. Every distributed dataset/model or

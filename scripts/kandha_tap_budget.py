@@ -1,7 +1,7 @@
 """Tap budget, part 2 (Python): how many taps per minute would the wearer feel in each mode?
 
     node scripts/kandha_tap_budget.mjs docs/kandha/validation/tap_budget_intents.json
-    python scripts/kandha_tap_budget.py docs/kandha/validation/tap_budget_intents.json docs/kandha/validation/tap_budget.json
+    python -m scripts.kandha_tap_budget docs/kandha/validation/tap_budget_intents.json docs/kandha/validation/tap_budget.json
 
 Runs the real HapticScheduler over the recorded intents in audio time, for Lecture, Seminar
 (cues off, the default), Seminar with cues on, Practicum and Do not disturb. Reports taps per

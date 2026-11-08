@@ -24,8 +24,8 @@
 
 #define PWM_FREQUENCY_HZ 20000
 #define PWM_RESOLUTION_BITS 8
-#define MOTOR_KICK_MS 15         // overdrive at full duty when a step starts from rest (ERM spin-up)
-#define MOTOR_MIN_DUTY 60        // below this an ERM does not start; levels are mapped above it
+#define MOTOR_KICK_MS 15         // full duty for this long when a motor starts from rest (ERM spin-up); a takeover keeps it
+#define MOTOR_MIN_DUTY 60        // below this an ERM does not start; a lower non-zero duty is raised to it (a floor)
 
 // Touch: on the ESP32-S3 the reading RISES when a pad is touched (it falls on the original ESP32)
 #define TOUCH_RISES_WHEN_PRESSED 1
