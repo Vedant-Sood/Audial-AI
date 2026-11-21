@@ -1,23 +1,21 @@
-# Kandha — Physical & Final Software
+# Kandha: physical and final software (v2)
 
-Work on Kandha v2: the physical stole prototype as built, stole microphones,
-a phone (Android) host, and private redacted summaries.
-
-## Contents
+Kandha v2 covers four things:
+- the bench stole as actually built;
+- making the app and firmware match the Final Project Summary;
+- the mic pod;
+- a phone host.
 
 | File | What it is |
 |---|---|
-| [`kandha-mics-phone.md`](kandha-mics-phone.md) | The Kandha v2 build prompt (stole microphones, phone host, private summaries). |
+| [`docs/prompts/kandha-v2.md`](../docs/prompts/kandha-v2.md) | The v2 build prompt (current) |
+| [`docs/kandha/FINAL_SUMMARY.pdf`](../docs/kandha/FINAL_SUMMARY.pdf) | Final Project Summary, 19 Nov 2026: the source of truth for behaviour and privacy |
+| [`docs/kandha/V2_DESIGN.md`](../docs/kandha/V2_DESIGN.md) | The v2 design, **waiting for approval**, with 17 open questions in §9 |
+| [`docs/kandha/decisions/`](../docs/kandha/decisions/) | Decisions 0013–0025 (proposed) |
+| [`BASELINE.md`](BASELINE.md) | Test baseline before any v2 code: npm 46/46, pytest 217 passed + 1 skipped |
+| [`kandha-mics-phone.md`](kandha-mics-phone.md) | An earlier, incomplete draft of the prompt. Superseded by `kandha-v2.md` |
 
 ## Status
 
-- The prompt is **incomplete**: it currently ends partway through §2 (the
-  as-built hardware table). §§3–9, which it refers to (files to read, design
-  sections, the vertical slices), still need to be added before it can be
-  carried out.
-- No implementation has started. The prompt asks for a design document
-  (`docs/kandha/V2_DESIGN.md`) and approval before any code is written.
-
-Related: [`docs/kandha/`](../docs/kandha/) (v1 design) and
-[`docs/prompts/sanket-kandha-app.md`](../docs/prompts/sanket-kandha-app.md)
-(the v1 prompt this one follows).
+- Steps 1 (read and baseline) and 2 (the design document and decision records) are done.
+- No implementation has started. The prompt says to stop here for approval.

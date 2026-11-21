@@ -24,3 +24,5 @@ I²C pins free.
 
 **Would change it.** User testing showing the 120 ms tap is not distinct from the 60 ms
 new-voice taps, which the driver's braking would fix.
+
+**Amended by [0013](0013-npn-motor-switch.md)** (proposed): the bench stole uses 2N2222A NPN switches.

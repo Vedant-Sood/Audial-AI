@@ -17,3 +17,16 @@ why, what was rejected and what would change the decision. New records get the n
 | [0010](0010-retire-band.md) | The Sanket wrist band is removed from code and UI |
 | [0011](0011-prototype-without-hardware.md) | The prototype runs without hardware: a simulated stole is the default link |
 | [0012](0012-own-voice.md) | A voice can be "me": the wearer's own speech never taps |
+| [0013](0013-npn-motor-switch.md) | Bench stole: ESP32-S3-Zero, 2N2222A NPN switches (amends 0003) · proposed |
+| [0014](0014-pin-budget-shared-i2s-clock.md) | Pin budget: shared I2S clock, MPU-6050 on GPIO 43/44 · proposed |
+| [0015](0015-seat-map-bearings.md) | Seat map stores bearings, fills from a SeatSource; pads override · proposed |
+| [0016](0016-tap-language-v2.md) | Tap language v2: retired ids never reused; crosstalk and off the record · proposed |
+| [0017](0017-direction-on-the-stole.md) | Direction computed on the stole; DIRECTION characteristic (protocol v2) · proposed |
+| [0018](0018-caption-memory-and-no-transcripts.md) | One 5-minute caption memory; no transcript save or export · proposed |
+| [0019](0019-off-the-record-detection.md) | "Kandha, off the record" detected in caption text · proposed |
+| [0020](0020-notes-encrypted-at-rest.md) | Bookmarks encrypted with AES-GCM, key in the OS keystore · proposed |
+| [0021](0021-redaction-spec.md) | Redaction: one deterministic spec, shared fixtures, Python and Kotlin · proposed |
+| [0022](0022-android-host.md) | Android host: Kotlin + WebView, golden vectors for the scheduler · proposed |
+| [0023](0023-phone-asr-and-mics.md) | Phone ASR on device; the stole link stays audio-free · proposed |
+| [0024](0024-one-host-at-a-time.md) | One host at a time; explicit hand-off · proposed |
+| [0025](0025-recap.md) | Extractive, redacted recap, wiped with the memory · proposed |
