@@ -25,6 +25,8 @@ $CoreVersion = "3.1.1"
 $CliVersion = "1.2.2"
 $CliSha256 = "bdd3ed88a361af8539e51a1cc0bf831b269be155ddfdd90cb96a900ce78723b7"   # arduino-cli_1.2.2_Windows_64bit.zip
 
+# arduino-cli waits only 60 s for a download to start; the ESP32 core files are large.
+if (-not $env:ARDUINO_NETWORK_CONNECTION_TIMEOUT) { $env:ARDUINO_NETWORK_CONNECTION_TIMEOUT = "300s" }
 function Step($text) { Write-Host ""; Write-Host "== $text" -ForegroundColor Cyan }
 
 # ------------------------------------------------------------------ 1. arduino-cli

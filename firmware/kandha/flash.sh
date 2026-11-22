@@ -22,6 +22,9 @@ for arg in "$@"; do
     *) PORT="$arg" ;;
   esac
 done
+# arduino-cli waits only 60 s for a download to start; the ESP32 core files are large and
+# GitHub can be slow to begin, so allow 5 minutes unless the caller set something else.
+export ARDUINO_NETWORK_CONNECTION_TIMEOUT="${ARDUINO_NETWORK_CONNECTION_TIMEOUT:-300s}"
 step() { printf '\n== %s\n' "$1"; }
 
 # ------------------------------------------------------------------ 1. arduino-cli
