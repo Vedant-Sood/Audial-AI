@@ -12,9 +12,10 @@ Built for Hackcessible India 2026 (Vikram's challenge).
 
 > **Prototype status.** Kandha runs entirely without hardware: the virtual stole shows every
 > tap and a simulated stole demonstrates pairing, battery and reconnection (decision 0011).
-> The physical stole, its firmware and the Bluetooth link are designed, written and tested
-> against mocks, but nothing has run on hardware. Measured results are summarised in
-> [VALIDATION.md](VALIDATION.md).
+> A bench stole now exists (November 2026; section 5 describes it as built), but no
+> measurement has been made on it yet, so every hardware number below is still a datasheet
+> estimate. Measured results are summarised in [VALIDATION.md](VALIDATION.md). The v2 design
+> (mic pod, automatic seat map, privacy layer, phone host) is in [V2_DESIGN.md](V2_DESIGN.md).
 
 ## 1. The rule behind every decision
 
@@ -166,7 +167,11 @@ Keyboard: `Q` queue, `S` start/pause, `M` what did I miss (last 30 s), `1`–`4`
 current voice to L/R/B/F, `N` new voice, `Esc` closes dialogs. Screens are tabs reachable with
 the arrow keys.
 
-## 5. The Kandha Stole (reference hardware)
+## 5. The Kandha Stole (reference hardware, as built on the bench)
+
+This section describes the bench stole as built in November 2026: a Waveshare ESP32-S3-Zero
+and 2N2222A transistor switches (decision 0013, amending 0003). The mic pod, the F pad and the
+1,200 mAh cell of the final design are not built yet; their pins are reserved (section 5.3).
 
 A cotton or khadi stole worn over both shoulders. The electronics sit in a zipped inner channel
 and come out for washing. Gender-neutral; ordinary clothing, not a medical device.
@@ -188,11 +193,11 @@ Prices are approximate Indian retail prices in 2026 for one unit, not quotations
 
 | Part | Qty | ₹ each | ₹ | Notes |
 |---|---|---|---|---|
-| ESP32-S3 mini board (e.g. ESP32-S3 SuperMini or Seeed XIAO ESP32S3) | 1 | 450–900 | 450–900 | native capacitive touch, BLE 5 |
+| Waveshare ESP32-S3-Zero (ESP32-S3FH4R2, 4 MB flash, 2 MB PSRAM, onboard WS2812 LED) | 1 | 450–900 | 450–900 | native capacitive touch, BLE 5; other ESP32-S3 boards work with a changed pin map |
 | 10 mm coin ERM vibration motor, 3 V | 6 | 40 | 240 | 2 per shoulder, 1 back, 1 front |
-| Logic-level N-MOSFET, SOT-23 (AO3400 or IRLML2502) | 4 | 15 | 60 | one per zone (decision 0003) |
-| Schottky flyback diode 1N5819 | 4 | 5 | 20 | across each motor group |
-| Resistors: 100 Ω gate × 4, 10 kΩ pull-down × 4, 100 kΩ × 2 (battery divider), 10 kΩ × 1 | 11 | 1 | 11 | |
+| 2N2222A NPN transistor, TO-92 | 4 | 5 | 20 | one per zone (decision 0013; AO3400 MOSFETs per decision 0003 remain an option) |
+| Schottky flyback diode 1N5819 | 6 | 5 | 30 | one across each motor |
+| Resistors: 330 Ω base × 4, 10 kΩ base pull-down × 4, 100 kΩ × 2 (battery divider), 10 kΩ × 1 (CHRG pull-up) | 11 | 1 | 11 | |
 | 47 µF electrolytic across the motor supply | 1 | 5 | 5 | |
 | TP4056 USB-C charger module with DW01 protection | 1 | 60 | 60 | |
 | 3.7 V LiPo 800 mAh (slim, with protection) | 1 | 350 | 350 | 600–1000 mAh acceptable |
@@ -205,7 +210,7 @@ Prices are approximate Indian retail prices in 2026 for one unit, not quotations
 | **Total** | | | **≈ ₹2,200–2,650** | |
 
 Electronics weight estimate (datasheet masses): board 5 g, LiPo 800 mAh 16 g, charger 2 g,
-6 motors 7 g, MOSFET board 6 g, wiring and connectors 15 g → **≈ 51 g**, under the 120 g target.
+6 motors 7 g, transistor board 6 g, wiring and connectors 15 g → **≈ 51 g**, under the 120 g target.
 This is an estimate from datasheets, not a weighed prototype.
 
 ### 5.2 Battery estimate (duty-cycle maths)
@@ -225,21 +230,34 @@ a **600 mAh** cell gives ≈ 16 h and an **800 mAh** cell ≈ 21 h. If modem sle
 (80 mA baseline), 8 h needs ≈ 680 mAh usable, so the 800 mAh cell still covers a college day
 with little margin; 1000 mAh is the safe choice for that firmware configuration.
 
-### 5.3 Pin map (ESP32-S3, generic DevKit or SuperMini)
+### 5.3 Pin map (Waveshare ESP32-S3-Zero, as built)
 
 | Function | GPIO | Notes |
 |---|---|---|
 | `PAD_L` | 1 | touch T1 |
 | `PAD_R` | 2 | touch T2 |
-| `PAD_B` | 3 | touch T3 |
+| `PAD_B` | 3 | touch T3 (a strapping pin only if the JTAG eFuse is burnt; it is not by default) |
 | `PAD_Q` | 4 | touch T4 |
-| `MOTOR_L` | 5 | LEDC PWM 20 kHz, 8-bit, gate of Q1 |
-| `MOTOR_R` | 6 | gate of Q2 |
-| `MOTOR_B` | 7 | gate of Q3 |
-| `MOTOR_F` | 8 | gate of Q4 |
-| `BATTERY_SENSE` | 9 | ADC1 through 100 kΩ / 100 kΩ divider |
-| `CHARGING_SENSE` | 10 | TP4056 CHRG, active low, 10 kΩ pull-up |
-| `STATUS_LED` | 48 | on-board LED where present |
+| `BATTERY_SENSE` | 5 | ADC1 through 100 kΩ / 100 kΩ divider |
+| `CHARGING_SENSE` | 6 | TP4056 CHRG, active low, 10 kΩ pull-up |
+| `MOTOR_L` | 8 | LEDC PWM 20 kHz, 8-bit, base of Q1 through 330 Ω |
+| `MOTOR_R` | 9 | base of Q2 |
+| `MOTOR_B` | 10 | base of Q3 |
+| `MOTOR_F` | 11 | base of Q4 |
+| `STATUS_LED` | 21 | onboard WS2812 RGB LED, driven with `rgbLedWrite` |
+| *reserved:* `PAD_F` | 7 | touch T7; F pad not wired yet (v2) |
+| *reserved:* I2S BCLK, WS | 12, 13 | shared by both microphone buses (decision 0014, v2) |
+| *reserved:* I2S0 DIN, I2S1 DIN | 14, 15 | mic pod data lines (v2; underside pads) |
+| *reserved:* MPU-6050 SDA, SCL | 44, 43 | UART0 pins, free because `Serial` uses USB CDC (v2) |
+| spare | 16 | underside pad |
+
+**One motor channel.** The battery feeds the motor; a 2N2222A switches the motor's minus lead
+to ground (GPIO → 330 Ω → base, 10 kΩ base → GND, emitter → GND, collector → motor −); a
+1N5819 across each motor absorbs the switch-off spike (cathode to +V); one 47 µF capacitor
+across +V/GND steadies the supply. L and R each switch two motors in parallel on one
+transistor (≈ 150 mA, estimate). The transistor drops ≈ 0.3–0.4 V when on, where a MOSFET
+drops almost nothing, so the motors run slightly weaker; the drop and the lowest duty that
+starts a motor are to be measured on the bench (decision 0013).
 
 Washing: unzip the channel, lift out the carrier with the battery, motors and pads (the pads
 are sewn to a removable strip), wash the stole, dry flat, slide the carrier back.

@@ -1,7 +1,7 @@
 /*
  * Kandha Stole firmware (protocol v1) for an ESP32-S3, Arduino-ESP32 core 3.x.
  * -----------------------------------------------------------------------------
- * Four motor zones (L, R, B, F) driven by MOSFET PWM, four textile touch pads, a LiPo gauge,
+ * Four motor zones (L, R, B, F) driven by PWM through 2N2222A transistors, four textile touch pads, a LiPo gauge,
  * and one Bluetooth LE service (docs/kandha/PROTOCOL.md). The tap language comes from
  * patterns.h, generated from browser/sanket/kandha-patterns.json: the app, the on-screen
  * virtual stole and this firmware play the same steps.
@@ -292,13 +292,35 @@ static void pollConsole() {
   }
 }
 
+// ---------------------------------------------------------------------------- status light
+// Connected: slow blink, solid while a pattern plays. Advertising: short flash once a second.
+// On the RGB LED the colour is green when connected and blue while advertising; v2 adds the
+// off-the-record colour (docs/kandha/V2_DESIGN.md section 5.2).
+static int8_t lastLight = -1;
+static void statusLight(bool on) {
+  if (PIN_STATUS_LED < 0) return;
+  int8_t state = on ? (connected ? 2 : 1) : 0;
+  if (state == lastLight) return;     // the WS2812 needs a full write; only send changes
+  lastLight = state;
+#if STATUS_LED_RGB
+  const uint8_t b = STATUS_LED_BRIGHTNESS;
+  if (state == 2) rgbLedWrite(PIN_STATUS_LED, 0, b, 0);
+  else if (state == 1) rgbLedWrite(PIN_STATUS_LED, 0, 0, b);
+  else rgbLedWrite(PIN_STATUS_LED, 0, 0, 0);
+#else
+  static bool pinReady = false;
+  if (!pinReady) { pinMode(PIN_STATUS_LED, OUTPUT); pinReady = true; }
+  digitalWrite(PIN_STATUS_LED, state ? HIGH : LOW);
+#endif
+}
+
 // ---------------------------------------------------------------------------- Arduino
 void setup() {
   Serial.begin(115200);
   delay(200);
   Serial.printf("Kandha Stole firmware %u.%u, pattern table %s\n", KANDHA_FW_MAJOR, KANDHA_FW_MINOR, KANDHA_TABLE_DIGEST);
   pinMode(PIN_CHARGING_SENSE, INPUT_PULLUP);
-  if (PIN_STATUS_LED >= 0) { pinMode(PIN_STATUS_LED, OUTPUT); digitalWrite(PIN_STATUS_LED, LOW); }
+  statusLight(false);
   analogReadResolution(12);
   engine.begin();
   pads.begin(onGesture);
@@ -313,7 +335,7 @@ void loop() {
   if (now - lastTouchAt >= TOUCH_POLL_MS) { lastTouchAt = now; pads.poll(now); }
   if (now - lastBatteryAt >= BATTERY_SAMPLE_MS) { lastBatteryAt = now; sampleBattery(); }
   if (statusDirty || now - lastStatusAt >= STATUS_PERIOD_MS) publishStatus(true);
-  if (PIN_STATUS_LED >= 0) digitalWrite(PIN_STATUS_LED, connected ? (engine.playing() ? HIGH : ((now / 1000) % 2 == 0 ? HIGH : LOW)) : ((now / 250) % 4 == 0 ? HIGH : LOW));
+  statusLight(connected ? (engine.playing() || (now / 1000) % 2 == 0) : ((now / 250) % 4 == 0));
   pollConsole();
   delay(1);
 }

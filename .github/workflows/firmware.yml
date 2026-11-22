@@ -41,9 +41,9 @@ jobs:
           arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
           arduino-cli core update-index
           arduino-cli core install esp32:esp32@3.1.1
-      - name: Compile for ESP32-S3
+      - name: Compile for the ESP32-S3-Zero (4 MB flash, QSPI PSRAM)
         run: |
-          arduino-cli compile --fqbn esp32:esp32:esp32s3:CDCOnBoot=cdc --export-binaries --warnings default firmware/kandha 2>&1 | tee firmware-build.txt
+          arduino-cli compile --fqbn esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=4M,PSRAM=enabled --export-binaries --warnings default firmware/kandha 2>&1 | tee firmware-build.txt
       - name: Checksums
         run: |
           cd firmware/kandha/build/esp32.esp32.esp32s3
