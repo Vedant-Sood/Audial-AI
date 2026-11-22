@@ -237,6 +237,8 @@ static void printHelp() {
   Serial.println("  motors                        show the saved motor map");
   Serial.println("  motors <L> <R> <B> <F>        set it by hand, e.g. motors 9 8 11 10");
   Serial.println("  motors reset                  forget it (back to L=8 R=9 B=10 F=11)");
+  Serial.println("  hold <gpio> [duty]            keep one motor pin on (8-11, duty 0-255) to measure it; 60 s max");
+  Serial.println("  hold off                      switch it off");
 }
 
 // Each zone in turn plays the zone test, saying where it should be felt.
@@ -264,6 +266,16 @@ static void applyMotorMap(const int pins[4]) {
 
 static void motorWrite(int gpio, uint8_t duty) { ledcWrite(gpio, duty); }
 
+// Bench fault-finding: keep one motor pin on so its channel can be measured with a multimeter.
+static int heldPin = -1;
+static uint32_t heldUntil = 0;
+static void holdOff() {
+  if (heldPin < 0) return;
+  ledcWrite(heldPin, 0);
+  Serial.printf("GPIO %d off.\n", heldPin);
+  heldPin = -1;
+}
+
 static uint8_t consoleSeq = 200;
 
 static void handleCommand(String line) {
@@ -281,7 +293,22 @@ static void handleCommand(String line) {
   String cmd = parts[0]; cmd.toLowerCase();
   if (wizard.active()) { wizard.answer(line); return; }   // every line is an answer while finding motors
   if (cmd == "help") printHelp();
-  else if (cmd == "identify" || cmd == "findmotors") { engine.stop(); wizard.start(); }
+  else if (cmd == "identify" || cmd == "findmotors") { holdOff(); engine.stop(); wizard.start(); }
+  else if (cmd == "hold") {
+    String sub = parts[1]; sub.toLowerCase();
+    if (sub == "off" || count == 1) holdOff();
+    else {
+      int gpio = parts[1].toInt();
+      int duty = count > 2 ? constrain(parts[2].toInt(), 0, 255) : 255;
+      if (!MotorMap::isMotorPin(gpio)) { Serial.println("hold takes a motor pin: 8, 9, 10 or 11"); return; }
+      holdOff();
+      engine.stop();
+      heldPin = gpio; heldUntil = millis() + 60000;
+      ledcWrite(gpio, duty);
+      Serial.printf("GPIO %d held ON at duty %d for up to 60 s. Measure now; type hold off when done.\n", gpio, duty);
+      Serial.println("Expect (to GND): GPIO ~3.3 V, transistor base ~0.7 V, collector under 0.4 V, motor + at battery voltage.");
+    }
+  }
   else if (cmd == "motors") {
     String sub = parts[1]; sub.toLowerCase();
     if (count == 1) motorMap.print();
@@ -387,6 +414,7 @@ void setup() {
 
 void loop() {
   uint32_t now = millis();
+  if (heldPin >= 0 && (int32_t)(now - heldUntil) >= 0) holdOff();
   if (wizard.active()) wizard.tick(now);
   else engine.tick(now);
   if (wizard.finished()) applyMotorMap(wizard.result());

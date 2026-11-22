@@ -130,6 +130,8 @@ play rise         three quick taps at the front
 test              two taps on every zone in turn, saying which one you should feel
 identify          find which GPIO drives which motor, and save it
 motors            show the saved motor map
+hold 9            keep GPIO 9's motor on (up to 60 s) to measure that channel
+hold off          switch it off
 pads              raw touch values; touch a pad and watch the number rise
 cal               recalibrate the pads (keep hands away)
 pad Q tap         send an INPUT as if the queue pad were tapped
