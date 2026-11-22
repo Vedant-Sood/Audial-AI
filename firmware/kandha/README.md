@@ -127,7 +127,8 @@ status            battery, connection, config, flags
 patterns          the built-in tap language with durations
 play seat_tap L   one firm tap on the left shoulder
 play rise         three quick taps at the front
-test              two taps on every zone in turn, saying which one you should feel
+test              5 s countdown, then two taps on every zone in turn, saying which one
+test 10           the same with a 10 s countdown (test 0: no countdown)
 identify          find which GPIO drives which motor, and save it
 motors            show the saved motor map
 hold 9            keep GPIO 9's motor on (up to 60 s) to measure that channel

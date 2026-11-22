@@ -228,7 +228,7 @@ static void printHelp() {
   Serial.println("  patterns                      the built-in tap language");
   Serial.println("  play <pattern> [zones] [intensity] [repeat]   e.g. play seat_tap L 230 1, play rise F");
   Serial.println("  stop                          stop the motors");
-  Serial.println("  test                          two taps on every zone in turn");
+  Serial.println("  test [seconds]                countdown (default 5 s), then two taps on every zone in turn");
   Serial.println("  pads                          raw touch values and baselines");
   Serial.println("  cal                           recalibrate the touch pads (hands off)");
   Serial.println("  pad <L|R|B|Q> <tap|double|long>   send an INPUT as if a pad were pressed");
@@ -241,9 +241,15 @@ static void printHelp() {
   Serial.println("  hold off                      switch it off");
 }
 
-// Each zone in turn plays the zone test, saying where it should be felt.
-static void checkZones() {
+// Each zone in turn plays the zone test, saying where it should be felt. A countdown first
+// (5 s by default) gives time to put the stole on or turn to an audience for a demo.
+static const int TEST_COUNTDOWN_S = 5;
+static void checkZones(int countdownS = TEST_COUNTDOWN_S) {
   const uint8_t zones[4] = {KANDHA_ZONE_L, KANDHA_ZONE_R, KANDHA_ZONE_B, KANDHA_ZONE_F};
+  if (countdownS > 0) {
+    Serial.printf("  starting in %d s...\n", countdownS);
+    for (int s = countdownS; s > 0; s--) { Serial.printf("  %d\n", s); delay(1000); }
+  }
   for (int i = 0; i < 4; i++) {
     Serial.printf("  now: %s (GPIO %d)\n", ZONE_WORD[i], engine.pin(i));
     engine.clearSeq();
@@ -338,7 +344,7 @@ static void handleCommand(String line) {
     Serial.printf("play id=%d zones=%d intensity=%u -> %s\n", id, mask, intensity, ok ? "ok" : "unknown pattern");
   } else if (cmd == "stop") { engine.stop(); Serial.println("stopped"); }
   else if (cmd == "test") {
-    checkZones();
+    checkZones(count > 1 ? constrain(parts[1].toInt(), 0, 60) : TEST_COUNTDOWN_S);
     Serial.println("test done");
   } else if (cmd == "pads") {
     for (int i = 0; i < 4; i++) Serial.printf("  pad %c raw=%lu baseline=%lu\n", "LRBQ"[i], (unsigned long)pads.raw(i), (unsigned long)pads.baseline(i));
