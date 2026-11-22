@@ -21,6 +21,7 @@ ESTIMATED_BYTES = {
     "whisper-tiny": 76_000_000,
     "whisper-small": 484_000_000,
     "whisper-medium": 1_530_000_000,
+    "whisper-turbo": 1_620_000_000,
     "ecapa": 90_000_000,
     "pyannote": 110_000_000,
     "hand-pose": 8_000_000,

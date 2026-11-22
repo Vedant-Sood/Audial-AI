@@ -47,6 +47,16 @@ REGISTRY = {
         "~1.5 GB",
         ("model.bin", "config.json", "tokenizer.json"),
     ),
+    "whisper-turbo": ModelSpec(
+        "whisper-turbo",
+        "Whisper large-v3-turbo (multilingual)",
+        "ASR",
+        "deepdml/faster-whisper-large-v3-turbo-ct2",
+        "MIT",
+        "~1.6 GB",
+        ("model.bin", "config.json", "tokenizer.json"),
+        notes="The most accurate caption model here, on English and Hindi alike (docs/kandha/VALIDATION.md); needs a recent multi-core CPU or an NVIDIA GPU for live captions.",
+    ),
     "ecapa": ModelSpec(
         "ecapa",
         "SpeechBrain ECAPA-TDNN",

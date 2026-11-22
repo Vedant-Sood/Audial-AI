@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+import os
 import threading
 
 import numpy as np
@@ -13,6 +14,14 @@ class Word:
     probability: float | None = None
 
 
+def cpu_threads():
+    """Threads for Whisper on the CPU: most of the machine, leaving cores for audio capture,
+    the voice engine and the window. It used to be fixed at 2, which made the larger models
+    fall behind live speech on laptops that had cores to spare."""
+    cores = os.cpu_count() or 4
+    return max(2, min(8, cores - 2))
+
+
 class WhisperASR:
     def __init__(self, model_path, device="cpu", compute_type="int8", beam_size=1, language="en"):
         path = Path(model_path)
@@ -22,7 +31,7 @@ class WhisperASR:
         configure_cuda_dlls()
         from faster_whisper import WhisperModel
         self.model = WhisperModel(str(path), device=device, compute_type=compute_type,
-                                 local_files_only=True, cpu_threads=2, num_workers=1)
+                                 local_files_only=True, cpu_threads=cpu_threads(), num_workers=1)
         self.beam_size = beam_size
         self.language = language or None
         self.lock = threading.Lock()
