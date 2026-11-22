@@ -106,15 +106,17 @@ event with its own audio time.
 speaking at that moment.
 
 **Review and saving.** The page builds the review from its own timeline (lines, cues, tones,
-queue, haptic, seat events). Saving is gated by the consent checkbox; the page then posts the
-voice events to `/api/voice-events` (as the companion does) and saves through
-`/api/kandha/session/save` (which requires `consent: true`) and `/api/export?format=…`.
+queue, haptic, seat events), on screen only. **Nothing is saved or exported** (decision 0018):
+the page starts its captioning session with `origin: "kandha"`, which makes it private. A
+private `Session` refuses `save()` and `export()`, `/api/export` answers 403 for it, there is no
+`/api/kandha/session/save`, and the engine keeps caption text out of the desktop window's
+event queue, so the desktop session never collects Kandha captions.
 
 ### 2.3 Privacy
 
 Audio is captured in the page and uploaded only to `127.0.0.1`. Nothing is recorded; the
-engine keeps short running averages of voice features in memory. No telemetry. Transcripts
-are saved only after the consent checkbox. The Bluetooth link carries five-byte tap commands,
+engine keeps short running averages of voice features in memory. No telemetry. Kandha never
+saves or exports a transcript (decision 0018). The stole's Bluetooth link carries five-byte tap commands,
 pad presses, battery and configuration, never audio or text. The companion keeps
 `script-src 'self'`; `browser/kandha/` adds `style-src 'unsafe-inline'` only because voice
 colours are inline custom properties, exactly as `/sanket/` did.
@@ -155,7 +157,7 @@ dark and light themes, visible focus on every control, WCAG 2.1 AA contrast, usa
    layout".
 4. **Review** (`#review`). Timeline lanes: voices, cues, tone estimates, queue moments, taps,
    seat changes; transcript with tone notes; "How accurate is this?" with the model's measured
-   numbers and limits; consent checkbox; export as web page, text, VTT, SRT or JSON.
+   numbers and limits; on screen only: no save, no export (decision 0018).
 5. **Settings** (`#settings`). Name, caption size, theme; which cues are on in which mode;
    tone estimates in review (on) and live (off); microphone choice; privacy explanation; the
    room-awareness reminder.

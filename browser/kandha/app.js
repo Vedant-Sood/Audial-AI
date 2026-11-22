@@ -805,13 +805,6 @@
       '<span><i class="swatch" style="--c:var(--signal)"></i>Asked to speak</span><span><i class="swatch" style="--c:var(--tap)"></i>Stole tap</span>';
     renderToneSummary();
     $('#reviewList').innerHTML = S.lines.map((l) => lineHTML(l, 'review')).join('');
-    $('#consentBox').checked = false;
-    updateSaveButtons();
-  }
-  function updateSaveButtons() {
-    const ok = $('#consentBox').checked && (S.lines.length > 0 || S.taps.length > 0);
-    for (const id of ['saveHtml', 'saveTxt', 'saveSession']) $('#' + id).disabled = !ok;
-    for (const b of $$('[data-export]')) b.disabled = !ok || !localHost;
   }
   function toneSummaryData() {
     const by = new Map();
@@ -840,54 +833,8 @@
     box.innerHTML = `<h3>Tone estimates</h3>${rows ? `<ul>${rows}</ul>` : '<p class="fineprint">Kandha was still learning these voices. It needs to hear someone a few times before estimating their tone.</p>'}
       <p class="fineprint">${demo ? 'Demo: these estimates are scripted to show the feature. ' : ''}Compared with how each person usually sounds. A hint to look again, not a fact about feelings. <button type="button" class="linkish" data-tone-about>How accurate is this?</button></p>`;
   }
-  function exportText() {
-    const head = `Kandha session — ${new Date(S.sessionStart).toLocaleString()}\n\n`;
-    const rows = S.lines.map((l) => {
-      if (l.kind === 'speech') { const tone = settings.toneReview ? toneText(toneForLine(l)) : ''; return [l.t, `[${clock(l.t)}] ${nameOf(l.speakerId)}: ${l.text}${l.orig ? `\n          (${l.orig})` : ''}${tone ? `\n          [${tone}]` : ''}`]; }
-      if (l.kind === 'cue') return [l.t, `[${clock(l.t)}] — ${CUE_INFO[l.cue].label}${l.speakerId != null ? ` (${nameOf(l.speakerId)})` : ''}`];
-      if (l.kind === 'seat') return [l.t, `[${clock(l.t)}] — ${nameOf(l.speakerId)} ${l.zone === 'me' ? 'is you' : l.zone ? 'seated ' + ZONE_NAME[l.zone] : 'seat cleared'}`];
-      return [l.t, `[${clock(l.t)}] — ${l.text}`];
-    }).concat(S.taps.filter((h) => h.intent !== 'test').map((h) => [h.t, `[${clock(h.t)}] ~ stole: ${h.pattern} on ${ZONE_LONG[h.zones] || h.zones}`]));
-    return head + rows.sort((a, b) => a[0] - b[0]).map((r) => r[1]).join('\n') + '\n';
-  }
-  function exportHTML() {
-    const light = ['#1a66c2', '#c2412d', '#0b8570', '#6b3fc4', '#4e7f12', '#b8306f'];
-    const c = (id) => { const s = speaker(id); return s ? light[s.idx] : '#4e5c6b'; };
-    const rows = S.lines.map((l) => {
-      if (l.kind === 'speech') { const tone = settings.toneReview ? toneText(toneForLine(l)) : ''; return `<li style="border-left:4px solid ${c(l.speakerId)}"><span class="t">${clock(l.t)}</span><b style="color:${c(l.speakerId)}">${esc(nameOf(l.speakerId))}</b><p>${esc(l.text)}</p>${l.orig ? `<p class="o">${esc(l.orig)}</p>` : ''}${tone ? `<p class="o tone">${esc(tone.charAt(0).toUpperCase() + tone.slice(1))}</p>` : ''}</li>`; }
-      if (l.kind === 'cue') return `<li class="cue"><span class="t">${clock(l.t)}</span><b>${CUE_INFO[l.cue].label}</b> ${l.speakerId != null ? esc(nameOf(l.speakerId)) : ''}</li>`;
-      if (l.kind === 'seat') return `<li class="cue"><span class="t">${clock(l.t)}</span><b>${esc(nameOf(l.speakerId))}</b> ${l.zone === 'me' ? 'is you' : l.zone ? 'seated ' + ZONE_NAME[l.zone] : 'seat cleared'}</li>`;
-      return `<li class="cue q"><span class="t">${clock(l.t)}</span><b>${esc(l.text)}</b></li>`;
-    }).join('\n');
-    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kandha session ${new Date(S.sessionStart).toLocaleDateString()}</title>
-<style>body{font:17px/1.5 system-ui,sans-serif;color:#111820;background:#f3f5f7;margin:0;padding:24px max(16px,4vw)}h1{font-size:24px;margin:0 0 4px}p.m{color:#4e5c6b;margin:0 0 16px}.tl{overflow-x:auto;background:#fff;border:1px solid #d3dbe3;border-radius:12px;margin-bottom:16px}ol{list-style:none;padding:0;display:grid;gap:8px;max-width:860px}li{background:#fff;border-radius:10px;padding:10px 14px;border:1px solid #d3dbe3}li p{margin:4px 0 0}li .o{color:#4e5c6b;font-size:14px}.t{float:right;color:#4e5c6b;font-family:ui-monospace,monospace;font-size:13px}.cue{background:#eaeef2;border-radius:999px;padding:6px 14px}.q b{color:#9a6200}</style></head>
-<body><h1>Kandha session</h1><p class="m">${esc(new Date(S.sessionStart).toLocaleString())} · ${clock(sessionLength())} · ${esc(Array.from(S.speakers.values()).map((s) => s.name + (zoneOf(s.id) ? ` (${ZONE_NAME[zoneOf(s.id)]})` : '')).join(', '))}</p>
-<div class="tl">${timelineSVG(timelineData(true), { literal: true })}</div><ol>${rows}</ol><p class="m">Tone cues describe what a voice did, not what anyone felt.${settings.toneReview && S.tones.length ? ' Tone estimates compare each voice with how that person usually sounds; they were learned from acted speech (CREMA-D) and are hints, not facts about feelings.' : ''}${S.tones.some((x) => x.demo) ? ' This was a demo: the estimates are scripted.' : ''} Stole taps are listed on the timeline. Saved with the consent of everyone present.</p></body></html>`;
-  }
-  function saveFile(name, data, mime) {
-    const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: mime }));
-    const a = document.createElement('a');
-    a.href = url; a.download = name;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-    toast(`Saved <b>${esc(name)}</b> to your downloads.`);
-  }
-  const stamp = () => new Date(S.sessionStart).toISOString().slice(0, 16).replace(/[T:]/g, '-');
-  async function exportAudial(format) {
-    await flushSessionEvents();
-    try {
-      const r = await fetch(`/api/export?format=${format}`);
-      if (!r.ok) throw new Error('Export failed.');
-      saveFile(`kandha-${stamp()}.${format}`, await r.blob());
-    } catch (e) { toast(esc(e.message)); }
-  }
-  async function saveToSessions() {
-    await flushSessionEvents();
-    try {
-      const out = await api('/api/kandha/session/save', { consent: $('#consentBox').checked, title: `Kandha ${settings.mode} ${new Date(S.sessionStart).toLocaleString()}` });
-      toast(`Saved to Audial-AI sessions: <b>${esc(out.title)}</b> (${out.captions} captions, ${out.voice_events} events).`, 6000);
-    } catch (e) { toast(esc(e.message), 6000); }
-  }
+  // Kandha never saves or exports a transcript (docs/kandha/decisions/0018): the review lives on
+  // this screen only and goes with the session.
 
   // ------------------------------------------------------------------ settings screen
   let settingsFilling = false;
@@ -1065,11 +1012,6 @@
     });
 
     // review
-    $('#consentBox').addEventListener('change', updateSaveButtons);
-    $('#saveHtml').addEventListener('click', () => saveFile(`kandha-${stamp()}.html`, exportHTML(), 'text/html'));
-    $('#saveTxt').addEventListener('click', () => saveFile(`kandha-${stamp()}.txt`, exportText(), 'text/plain'));
-    $$('[data-export]').forEach((b) => b.addEventListener('click', () => exportAudial(b.dataset.export)));
-    $('#saveSession').addEventListener('click', saveToSessions);
     const openToneAbout = () => $('#toneDlg').showModal();
     $('#toneAboutBtn').addEventListener('click', openToneAbout);
     $('#toneAboutBtn2').addEventListener('click', openToneAbout);
@@ -1140,7 +1082,7 @@
     showScreen(settings.screen || 'live');
     if (!Recognizer.supported() && !IN_QT) $('#nowHint').textContent = 'Open in Chrome or Edge for captions. The demos work here.';
     window.Kandha = {
-      S, K, settings, toggleQueue, playDemo, onSpeaker, onCue, onTone, handleInterim, handleFinal, exportText, exportHTML, openReview, showScreen, assignSeat, setMode,
+      S, K, settings, toggleQueue, playDemo, onSpeaker, onCue, onTone, handleInterim, handleFinal, openReview, showScreen, assignSeat, setMode,
       ready: () => ({ ready: !!PATTERNS, screen: settings.screen, toneModel: !!TONE_MODEL, stream: sseState, host: !!localHost, qt: IN_QT, stole: K.stole && K.stole.state }),
       get toneModel() { return TONE_MODEL; }, get patterns() { return PATTERNS; }, get engine() { return engine; }, get captions() { return recognizer; }, get localHost() { return localHost; }, get intents() { return intents; },
     };
@@ -1153,7 +1095,6 @@
         if (!st) return;
         $('#aboutLine').textContent = `Kandha inside Audial-AI · Whisper model: ${st.asr_model}${st.asr_installed ? '' : ' (not installed yet: Setup & models)'} · docs/kandha/USER_GUIDE.md`;
         if (!S.running && !S.demo) $('#nowHint').textContent = st.asr_installed ? `Captions from Whisper (${st.asr_model}) on this computer.` : `Install ${st.asr_model} in Audial-AI (Setup & models) for captions; voices and taps work now.`;
-        updateSaveButtons();
       });
     }
   }

@@ -15,6 +15,46 @@ over Bluetooth, on Windows, or with Indian English or Hindi speakers.
 | Accessibility | `python -m scripts.audit_kandha_a11y` | [a11y-chromium.json](validation/a11y-chromium.json) |
 | Embedded window | `python -m app.main --kandha-check` | page ready in QtWebEngine 6.8.3 with the `QWebEnginePermission` API (offscreen) |
 
+## No transcript is saved or exported (decision 0018), 2026-11-22
+
+Run in a Linux x86_64 cloud container with Python 3.12.3 and Node 22.23.5.
+**Result: npm 48 of 48 passed; pytest 220 passed, 1 skipped.**
+
+What the tests check:
+
+- **The full Kandha session path, under a spy.** `test_kandha_session_cannot_be_saved_or_exported_and_writes_nothing`
+  - Patches `open`, `os.open`, `os.replace`, `os.rename` and `socket.connect`.
+  - Runs a full Kandha captioning session with a canary caption and voice events.
+  - Tries `/api/kandha/session/save` (gone: 404) and `/api/export` in all five formats (403).
+  - Calls `Session.save()` and `Session.export()` directly; both raise `PrivateSessionError`.
+  - Result: the only files written were Kandha's own settings, rooms and stole files. The
+    canary appeared in no file under the data folder, no temporary file and no log line. No
+    connection left loopback.
+- **The spy works.** `test_the_spy_catches_a_transcript_write`: the same spy records an
+  ordinary Audial session save.
+- **The desktop window gets no captions.**
+  `test_kandha_captions_never_reach_the_desktop_window_queue`: during a Kandha session the
+  shared engine queues only status, warning, error and performance events, so the desktop
+  window can no longer collect Kandha's captions and offer to save them.
+- **Sabotage check.** With the private flag switched off on purpose, the two tests above
+  fail. With it restored, they pass.
+- **The page has no save path.** In `tests/kandha.test.js`, the Kandha page contains no
+  export, save, download or consent code, and its only browser storage is its settings.
+- **Chromium smoke check.**
+  - What was checked: the page loaded with no script errors, the seminar demo ran, and Review
+    showed the session with no consent box, no save button and no export button.
+  - This is a one-off script, not in the repo.
+  - `scripts.verify_kandha` fails at "timed captions and two voices" in this container. It
+    fails the same way on the code from before this change, so the cause is the environment,
+    not this change. It has not been re-run elsewhere yet.
+
+Not built yet (planned after 30 November):
+- the 5-minute caption memory;
+- Q-pad bookmarks;
+- the Review change to "bookmarks only".
+
+Until then, the Review screen still shows the current session on screen, in memory only.
+
 ## Back-channel hold (decision 0004)
 
 Engine over the LibriSpeech readers (real speech): every real turn was decided with

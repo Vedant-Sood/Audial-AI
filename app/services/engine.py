@@ -23,6 +23,10 @@ def choose_device(requested, warning=None):
     return "cuda" if requested in {"auto", "cuda"} and torch.cuda.is_available() else "cpu"
 
 
+# While a private (Kandha) session runs, only these carry no words and may reach the desktop
+# window's event queue; captions and voice data go to the observers (the Kandha page) only.
+PRIVATE_QUEUE_KINDS = frozenset({"status", "warning", "error", "performance"})
+
 class AudioEngine:
     def __init__(self, settings, manager=None, queue_events=True):
         self.settings = settings
@@ -42,6 +46,7 @@ class AudioEngine:
         self.asr = self.diarizer = self.prosody_model = None
         self._mode = "combined"
         self.source = "microphone"
+        self.private = False
         self.observers = []
         self.emotion_model = None
         self.expression_worker = None
@@ -65,6 +70,8 @@ class AudioEngine:
                     pass
         if not self.queue_events:
             return
+        if self.private and kind not in PRIVATE_QUEUE_KINDS:
+            return
         try:
             self.events.put_nowait((kind, data))
         except queue.Full:
@@ -79,7 +86,7 @@ class AudioEngine:
                         return
                 self.events.put((kind, data))
 
-    def start(self, mode="combined", file_path=None, source="microphone", language=None):
+    def start(self, mode="combined", file_path=None, source="microphone", language=None, private=False):
         if self.running or any(t.is_alive() for t in self.threads):
             raise RuntimeError("The previous worker is still finishing. Wait for Idle.")
         if source not in {"microphone", "system", "browser"} or mode not in {"combined", "captions", "tone"}:
@@ -88,6 +95,9 @@ class AudioEngine:
         # desktop preference, including while the model loads asynchronously.
         self.language = self.settings.language if language is None else language
         self.source = source
+        # A private (Kandha) session keeps caption text away from the desktop window's event
+        # queue, so the desktop session never collects, and can never save, Kandha captions.
+        self.private = bool(private)
         self.capture = ExternalAudio() if source == "browser" and not file_path else None
         self._mode, self.running = mode, True
         self.stop_requested.clear()

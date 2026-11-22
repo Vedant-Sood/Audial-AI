@@ -22,7 +22,7 @@ from app.services.engine import AudioEngine
 from app.services.isl import ISLVocabulary, load_pose_frames
 from app.services.lexicon import ISL_LANGUAGE, SignLexicon
 from app.services.text_input import read_text_bytes
-from app.storage.transcript import Session
+from app.storage.transcript import PrivateSessionError, Session
 from app.utils.config import PRESETS, Settings
 from app.utils.paths import project_root, data_root, atomic_json
 from app.services.browser_bridge import BrowserBridge
@@ -336,6 +336,8 @@ class BrowserService:
                     elif parsed.path == "/api/export":
                         kind = query.get("format",["vtt"])[0]
                         if kind not in {"vtt","srt","json","txt","csv"}:raise ValueError("Unsupported export format.")
+                        if service.session.private:
+                            self.respond(403,{"error":str(PrivateSessionError())});return
                         with service.lock, tempfile.TemporaryDirectory() as directory:
                             target = Path(directory)/("transcript."+kind)
                             service.session.export(target,kind)
@@ -424,14 +426,16 @@ class BrowserService:
                         if not isinstance(options,dict):raise ValueError("Send a JSON object.")
                         mode = options.get("mode","combined")
                         language = options.get("language")
+                        # The Kandha page marks its sessions private: never saved or exported.
+                        private = options.get("origin") == "kandha"
                         if language is not None and language not in SANKET_LANGUAGES:
                             raise ValueError("Caption language must be en or hi.")
                         with service.control_lock, service.lock:
                             if service.engine.running:
                                 self.respond(409,{"error":"Stop the current audio session before starting browser capture."});return
                             cursor = service.id
-                            service.engine.start(mode,source="browser",language=language)
-                            service.session = Session(title="Browser meeting")
+                            service.engine.start(mode,source="browser",language=language,private=private)
+                            service.session = Session(title="Kandha session" if private else "Browser meeting", private=private)
                             service.session_id = uuid.uuid4().hex
                             self.respond(200,{"started":True,"cursor":cursor,"session_id":service.session_id})
                     elif self.path == "/api/audio":
@@ -498,15 +502,6 @@ class BrowserService:
                     self.respond(200, k.simulate(options.get("action"), options.get("value")))
                 elif action == "session/new":
                     self.respond(200, k.new_session())
-                elif action == "session/save":
-                    if options.get("consent") is not True:
-                        self.respond(403, {"error": "Saving needs everyone's consent: tick the consent box first."}); return
-                    with service.lock:
-                        title = str(options.get("title") or service.session.title)[:120]
-                        service.session.title = title
-                        path = service.session.save()
-                    self.respond(200, {"saved": path.name, "title": title, "captions": len(service.session.captions),
-                                       "voice_events": len(service.session.voice_events)})
                 else:
                     self.respond(404, {"error": "Not found."})
 

@@ -28,7 +28,7 @@ that live captions are on.
 | **Live** | the current caption in the speaker's colour, the recent transcript, the room diagram, the virtual stole, the queue strip |
 | **Stole** | pairing, battery and firmware, a test button per zone, intensity, mirror left/right, do-not-disturb, **Learn the taps** |
 | **Seats** | drag voices onto seats, save rooms, start with the last layout |
-| **Review** | timeline of voices, cues, tone estimates, queue moments, taps and seat changes; transcript with tone notes; consent and export |
+| **Review** | timeline of voices, cues, tone estimates, queue moments, taps and seat changes; transcript with tone notes, on screen only |
 | **Settings** | name, caption size, theme, microphone, cues per mode, tone estimates, vocabulary, privacy |
 
 Keyboard: `Q` I want to speak · `S` start/pause · `M` what did I miss (last 30 s) ·
@@ -93,12 +93,12 @@ Pairing (when there is a stole): Settings → **Stole link → Real Bluetooth**,
 **Scan** → **Pair**. Kandha remembers the stole and reconnects on its own. While it is
 disconnected captions continue and the virtual stole shows every tap.
 
-## Review and saving
+## Review
 
-The Review screen shows the session. Nothing is saved unless you tick **Everyone in this
-session agreed to keep a transcript**. Then you can save to Audial-AI's sessions or export as a
-web page, text, VTT, SRT or JSON. Saving a practicum transcript with a real client needs
-supervisor and ethics approval.
+The Review screen shows the session on this screen only. **Kandha never saves or exports a
+transcript**: there is no save button, no export and no consent exception, and the Audial
+desktop window does not collect Kandha's captions either. When the session ends, the review
+goes with it. (Saved Q-pad bookmarks, redacted and encrypted, are planned: docs/kandha/V2_DESIGN.md.)
 
 **How accurate is this?** opens the tone model's measured numbers and limits. The estimates
 are learned from acted American English and have not been tested on Indian English or Hindi

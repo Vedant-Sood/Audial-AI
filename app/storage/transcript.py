@@ -36,6 +36,13 @@ class Caption:
             raise ValueError("Caption text is required.")
 
 
+class PrivateSessionError(PermissionError):
+    """A Kandha session's captions are never written anywhere (docs/kandha/decisions/0018)."""
+
+    def __init__(self):
+        super().__init__("Kandha never saves or exports a transcript: captions stay in memory only.")
+
+
 @dataclass
 class Session:
     id: str = field(default_factory=lambda: uuid.uuid4().hex)
@@ -45,6 +52,8 @@ class Session:
     speakers: dict = field(default_factory=dict)
     # Sanket voice view: validated browser voice/cue/tone events (app/services/voice_view.py)
     voice_events: list = field(default_factory=list)
+    # A Kandha session: never saved, never exported, never written to disk.
+    private: bool = field(default=False, compare=False, repr=False)
 
     def add(self, caption):
         self.captions.append(caption)
@@ -86,6 +95,8 @@ class Session:
         return data
 
     def save(self, path=None):
+        if self.private:
+            raise PrivateSessionError()
         path = Path(path or data_root() / "sessions" / f"{self.id}.json")
         atomic_json(path, self.to_dict())
         return path
@@ -98,6 +109,8 @@ class Session:
                    speakers=data["speakers"], voice_events=list(data.get("voice_view", {}).get("events", [])))
 
     def export(self, path, kind):
+        if self.private:
+            raise PrivateSessionError()
         path = Path(path)
         if kind == "json":
             atomic_json(path, self.to_dict())

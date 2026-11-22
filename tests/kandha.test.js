@@ -120,3 +120,19 @@ test("cues become cue and silence intents with the speaker attached", () => {
   assert.deepEqual(source.handle({ type: "cue", kind: "sarcasm", t: 10 }), []);
   assert.deepEqual(source.handle({ type: "level", t: 11, db: -40 }), []);
 });
+
+test("the Kandha page has no way to save or export a transcript (decision 0018)", () => {
+  const page = ["../browser/kandha/app.js", "../browser/kandha/index.html", "../browser/kandha/views.js", "../browser/kandha/demo.js",
+    "../browser/kandha/kandha-intents.js", "../browser/sanket/local-captions.js"].map(p => read(p).toString()).join("\n");
+  for (const banned of ["/api/export", "session/save", "consentBox", ".download", "createObjectURL", "data-export", "saveHtml", "saveTxt", "indexedDB", "sessionStorage"]) {
+    assert.ok(!page.includes(banned), `found ${banned}`);
+  }
+  // the page's captioning sessions are private, so the server refuses to save or export them
+  assert.match(read("../browser/sanket/local-captions.js").toString(), /'\/api\/start', \{[^}]*origin: 'kandha'/);
+});
+
+test("the page's only browser storage is its settings, never captions", () => {
+  const app = read("../browser/kandha/app.js").toString();
+  const writes = app.match(/localStorage\.setItem\([^)]*\)/g) || [];
+  assert.deepEqual(writes, ["localStorage.setItem(STORE, JSON.stringify(settings)"]);
+});

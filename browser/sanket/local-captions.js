@@ -91,7 +91,8 @@
           this.h.onError && this.h.onError('local-busy', 'AccessibilityAI is already listening in another window. Stop it there, then press Start again.');
           return false;
         }
-        const r = await this._json('/api/start', { mode: 'combined', language: this.lang });
+        // origin 'kandha' makes the session private: the server never saves or exports it.
+        const r = await this._json('/api/start', { mode: 'combined', language: this.lang, origin: 'kandha' });
         if (gen !== this.generation) { this._json('/api/stop', { session_id: r.session_id }).catch(() => {}); return false; }
         this.session = r.session_id;
         this.cursor = r.cursor || 0;

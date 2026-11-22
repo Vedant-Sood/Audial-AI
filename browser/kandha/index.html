@@ -77,7 +77,7 @@
               <button class="btn" data-demo="roleplay">Watch the practicum demo</button>
             </div>
             <label class="check"><input type="checkbox" id="demoAloud"> Play the demo voices aloud</label>
-            <p class="welcome__fine">Let people in the room know live captions are on. Nothing is recorded, and nothing is saved unless you tick the consent box in Review.</p>
+            <p class="welcome__fine">Let people in the room know live captions are on. Nothing is recorded, and no transcript is ever saved.</p>
           </div>
         </div>
       </section>
@@ -184,17 +184,8 @@
         <div class="tone-summary" id="toneSummary" hidden></div>
         <ol class="review-list" id="reviewList" aria-label="Transcript with tone notes"></ol>
         <div class="group">
-          <p class="fineprint"><button type="button" class="linkish" id="toneAboutBtn">How accurate is this?</button> · Tone cues describe what a voice did, never what someone feels. Saving a practicum transcript with a real client needs supervisor and ethics approval.</p>
-          <label class="check"><input type="checkbox" id="consentBox"> Everyone in this session agreed to keep a transcript</label>
-          <div class="row">
-            <button type="button" class="btn btn--primary" id="saveSession" disabled>Save to sessions</button>
-            <button type="button" class="btn" id="saveHtml" disabled>Web page</button>
-            <button type="button" class="btn" id="saveTxt" disabled>Text</button>
-            <button type="button" class="btn" data-export="vtt" disabled>VTT</button>
-            <button type="button" class="btn" data-export="srt" disabled>SRT</button>
-            <button type="button" class="btn" data-export="json" disabled>JSON</button>
-          </div>
-          <p class="fineprint" id="saveNote">VTT, SRT and JSON come from Audial-AI's session exports and need captions from the local Whisper model.</p>
+          <p class="fineprint"><button type="button" class="linkish" id="toneAboutBtn">How accurate is this?</button> · Tone cues describe what a voice did, never what someone feels.</p>
+          <p class="fineprint" id="saveNote">Kandha never saves or exports a transcript. This review is only on this screen and goes when the session ends.</p>
         </div>
       </section>
     </section>
@@ -251,8 +242,8 @@
 
         <section class="panel" aria-labelledby="privacyTitle">
           <h2 id="privacyTitle">Privacy</h2>
-          <p class="fineprint">Audio never leaves this computer: the microphone feeds the voice engine in this page and Audial-AI's Whisper model over the loopback address only. No recording is kept. The transcript stays on this screen unless you tick the consent box and save. The stole link carries taps, pad presses and battery level, never audio or words. There is no telemetry.</p>
-          <p class="fineprint">Let people in the room know live captions are on. Saving a practicum transcript with a real client needs supervisor and ethics approval.</p>
+          <p class="fineprint">Audio never leaves this computer: the microphone feeds the voice engine in this page and Audial-AI's Whisper model over the loopback address only. No recording is kept. Captions stay on this screen only: Kandha never saves or exports a transcript. The stole's Bluetooth link carries no audio or words, only taps, pad presses and battery level. There is no telemetry.</p>
+          <p class="fineprint">Let people in the room know live captions are on.</p>
           <p class="fineprint" id="aboutLine">Kandha inside Audial-AI · docs/kandha/USER_GUIDE.md</p>
         </section>
       </div>
