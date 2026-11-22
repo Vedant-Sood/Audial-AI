@@ -77,7 +77,9 @@ fi
 [ -n "$PORT" ] || { echo "No port chosen."; exit 1; }
 echo "Port: $PORT"
 if [ "$(uname -s)" = Linux ] && [ ! -w "$PORT" ]; then
-  echo "No permission to write $PORT. Run:  sudo usermod -aG dialout \$USER   then log out and in again."
+  GROUP="$(stat -c %G "$PORT" 2>/dev/null || echo dialout)"   # uucp on Arch, dialout on Debian/Ubuntu
+  echo "No permission to write $PORT. Run:  sudo usermod -aG $GROUP \$USER   then log out and back in."
+  exit 1
 fi
 
 # ------------------------------------------------------------------ 5. upload and monitor
