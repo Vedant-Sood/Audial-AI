@@ -31,19 +31,22 @@ time ÷ audio time on 4 threads, so below 1 keeps up with speech.
 
 Each cell is WER, then RTF in brackets. "Whole" means the full clip was transcribed at once.
 
-| Model | English, whole | English, 4 s chunks | English, 8 s chunks | Hindi, whole | Hindi, 4 s chunks |
-|---|---|---|---|---|---|
-| tiny (old default) | 11.8% (0.04) | 24.6% (0.09) | — | 146.5% (0.05) | 284.3% (0.13) |
-| small | 8.0% (0.14) | 12.9% (0.28) | 12.5% (0.20) | 71.3% (0.28) | 319.4% (0.93) |
-| medium | 5.8% (0.33) | 10.7% (0.69) | — | 43.8% (0.61) | 163.9% (1.74) |
-| **large-v3-turbo** | **4.2% (0.36)** | 8.9% (0.92) | **5.8% (0.55)** | **29.6% (0.35)** | 105.9% (1.04) |
+| Model | English, whole | English, 4 s chunks | English, 8 s chunks | Hindi, whole | Hindi, 4 s chunks | Hindi, 8 s chunks |
+|---|---|---|---|---|---|---|
+| tiny (old default) | 11.8% (0.04) | 24.6% (0.09) | — | 146.5% (0.05) | 284.3% (0.13) | — |
+| small | 8.0% (0.14) | 12.9% (0.28) | 12.5% (0.20) | 71.3% (0.28) | 319.4% (0.93) | 154.6% (0.53) |
+| medium | 5.8% (0.33) | 10.7% (0.69) | — | 43.8% (0.61) | 163.9% (1.74) | — |
+| **large-v3-turbo** | **4.2% (0.36)** | 8.9% (0.92) | **5.8% (0.55)** | **29.6% (0.35)** | 105.9% (1.04) | **51.0% (0.62)** |
 
 What it shows:
 - **Hindi.** Tiny writes Hindi in Latin letters, not Devanagari. A WER above 100% means the
   model added words (repetitions, hallucinations); short chunks make that much worse.
 - **Chunk length.** The app ends an utterance at a pause, or at the preset's limit
-  (`chunk_seconds`) when nobody pauses. For turbo, 8 s beat 4 s on both accuracy and speed.
-  Turbo's Hindi results at 6 s and 8 s were still running when this was written.
+  (`chunk_seconds`) when nobody pauses. For turbo, 8 s beat 4 s on both accuracy and speed,
+  in English and in Hindi. 6 s fell between them: English 6.5% (0.59), Hindi 54.6% (0.75).
+- **Hindi in live chunks is still weak.** Even turbo's 51% at 8 s means about one word in two
+  is wrong or extra. Hindi live captions need more work, for example decoding fallbacks that
+  suppress repetition, before they can be relied on.
 
 **Decision.** `TURBO` (large-v3-turbo, 8 s) is the default preset. Settings saved with the old
 default `FAST` move to it once; any other saved choice is kept. Until turbo is downloaded,
