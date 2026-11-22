@@ -270,9 +270,10 @@
       input.nextElementSibling.textContent = `${input.value}%`;
     }
   }
-  function renderDevices(devices) {
+  function renderDevices(devices, error) {
     $('#deviceList').innerHTML = devices.length ? devices.map((d) => `<li><b>${esc(d.name || d.address)}</b><small>${esc(d.address)}${d.rssi != null ? ` · ${d.rssi} dBm` : ''}</small><button type="button" class="btn btn--sm btn--primary" data-pair="${esc(d.address)}" data-pair-name="${esc(d.name || '')}">Pair</button></li>`).join('')
-      : '<li><small>No stole found. Is it switched on and within a few metres?</small></li>';
+      : error ? `<li><small><b>${esc(error)}</b>. Check the computer's Bluetooth is switched on.</small></li>`
+      : '<li><small>No stole found. Is it switched on, flashing blue, and within a few metres?</small></li>';
   }
 
   // ------------------------------------------------------------------ tone estimates
@@ -482,7 +483,13 @@
     on('queue', (data) => applyQueue(data));
     on('seat', (data) => applySeat(data));
     on('settings', (data) => { K.settings = data.settings; settings.mode = K.settings.mode; saveSettings(); applyDisplay(); renderStole(); fillSettings(); if (engine) engine.configure(engineSettings()); });
-    on('stole_state', (data) => { K.stole = Object.assign({}, K.stole, data, { status: K.stole.status }); if (data.state === 'connected') K.stole.error = null; renderStole(); });
+    on('stole_state', (data) => {
+      // a real-Bluetooth link is never the simulated stole, even if an older event said so
+      const simulated = 'simulated' in data ? data.simulated : data.backend === 'bleak' ? false : K.stole.simulated;
+      K.stole = Object.assign({}, K.stole, data, { status: K.stole.status, simulated });
+      if (data.state === 'connected') K.stole.error = null;
+      renderStole();
+    });
     on('stole_status', (data) => { if (data.device === 'stole') { K.stole = Object.assign({}, K.stole, { status: data }); renderStole(); } });
     on('stole_connected', (data) => { toast(`Stole connected: <b>${esc(data.name || data.address)}</b>.`); K.stole.state = 'connected'; renderStole(); });
     on('stole_error', (data) => { K.stole.error = data.error; renderStole(); });
@@ -953,7 +960,7 @@
     // stole screen
     $('#scanBtn').addEventListener('click', async () => {
       $('#scanBtn').disabled = true; $('#deviceList').innerHTML = '<li><small>Scanning for about six seconds…</small></li>';
-      try { renderDevices((await api('/api/kandha/stole/scan', { timeout: 6 })).devices); }
+      try { const out = await api('/api/kandha/stole/scan', { timeout: 6 }); renderDevices(out.devices, out.error); }
       catch (e) { toast(esc(e.message)); renderDevices([]); }
       $('#scanBtn').disabled = false;
     });

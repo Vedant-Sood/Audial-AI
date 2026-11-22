@@ -432,3 +432,43 @@ def test_the_prototype_pairs_with_the_simulated_stole_and_can_switch_links(tmp_p
             service.update_settings({"link": "wifi"})
     finally:
         service.close()
+
+
+def test_switching_to_bluetooth_updates_the_badge_and_scan_failures_say_why(tmp_path, monkeypatch):
+    """Bench report: after choosing Real Bluetooth the Stole screen still said "simulated", and a
+    failing scan only said "No stole found". The switch must publish simulated=False, and a scan
+    that fails must say why."""
+    import app.kandha.bridge as bridge_module
+
+    class BrokenBleak(MockBackend):
+        name = "bleak"
+
+        def __init__(self):
+            super().__init__([])
+
+        async def scan(self, timeout, service_uuid, prefix):
+            raise ModuleNotFoundError("No module named 'bleak'")
+
+    monkeypatch.setattr(bridge_module, "BleakBackend", BrokenBleak)
+    service = KandhaService(home=tmp_path, ticker=False)
+    try:
+        assert service.snapshot()["stole"]["simulated"] is True
+        events = service.subscribe()
+        service.update_settings({"link": "bluetooth"})
+        published = []
+        while not events.empty():
+            published.append(events.get_nowait())
+        states = [e for e in published if e.get("kind") == "stole_state"]
+        assert states and states[-1]["simulated"] is False and states[-1]["backend"] == "bleak"
+        assert service.snapshot()["stole"]["simulated"] is False
+        assert service.scan(1) == []
+        assert "bleak Bluetooth library is not installed" in service.scan_error()
+    finally:
+        service.close()
+
+
+def test_the_scan_route_returns_the_failure_reason(companion, monkeypatch):
+    monkeypatch.setattr(companion.kandha, "scan", lambda timeout: [])
+    monkeypatch.setattr(companion.kandha, "scan_error", lambda: "Scan failed: No Bluetooth adapters found.")
+    status, body, _ = request(companion, "/api/kandha/stole/scan", {"timeout": 1})
+    assert status == 200 and body == {"devices": [], "error": "Scan failed: No Bluetooth adapters found."}

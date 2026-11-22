@@ -273,6 +273,7 @@ class StoleLink:
         self.state = "disconnected"
         self.attempt = 0
         self.last_error = None
+        self.last_scan_error = None   # why the last scan failed, shown on the Stole screen
         self.status = None
         self.config = StoleConfig()
         self.low_battery_sent = False
@@ -321,10 +322,14 @@ class StoleLink:
         was = self.state
         if not self.connected:
             self._set_state("scanning")
+        self.last_scan_error = None
         try:
             found = await asyncio.wait_for(self.backend.scan(timeout, self.ids["service"], self.prefix), timeout + 5)
         except Exception as error:  # a Bluetooth stack failure is a message, not a crash
-            self.last_error = f"Scan failed: {error}"
+            reason = str(error) or type(error).__name__
+            if isinstance(error, ModuleNotFoundError) and "bleak" in reason:
+                reason = "the bleak Bluetooth library is not installed (pip install bleak)"
+            self.last_error = self.last_scan_error = f"Scan failed: {reason}"
             found = []
         if not self.connected:
             self._set_state("disconnected" if was in ("scanning", "disconnected") else was)

@@ -23,3 +23,5 @@ joblib>=1.5,<2
 pyarrow>=19,<24
 pypdf==6.21.4
 filelock==4.2.9
+# Kandha Stole Bluetooth LE link (app/kandha/bridge.py). Checked against the 1.1 API.
+bleak>=1.1,<2

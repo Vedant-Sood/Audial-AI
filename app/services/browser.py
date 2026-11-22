@@ -493,7 +493,8 @@ class BrowserService:
                 elif action == "pad":
                     self.respond(200, k.press_pad(options.get("pad"), options.get("gesture", "tap")))
                 elif action == "stole/scan":
-                    self.respond(200, {"devices": k.scan(float(options.get("timeout", 6)))})
+                    devices = k.scan(float(options.get("timeout", 6)))
+                    self.respond(200, {"devices": devices, "error": None if devices else k.scan_error()})
                 elif action == "stole/pair":
                     self.respond(200, {"connected": k.pair(options.get("address"), options.get("name")), "stole": k.snapshot()["stole"]})
                 elif action == "stole/forget":

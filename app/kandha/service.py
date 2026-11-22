@@ -155,7 +155,8 @@ class KandhaService:
                 pass
             self.bridge = None
         self._start_bridge()
-        self.publish("stole_state", self.bridge.snapshot())
+        # the whole stole snapshot, including "simulated", so the screen's link badge follows the switch
+        self.publish("stole_state", self.snapshot()["stole"])
 
     @property
     def simulated_stole(self):
@@ -455,6 +456,10 @@ class KandhaService:
         if self.bridge is None:
             return []
         return self.bridge.scan(float(min(max(timeout, 1.0), 15.0)))
+
+    def scan_error(self):
+        """Why the last scan failed (Bluetooth off, no adapter, bleak missing), or None."""
+        return getattr(self.bridge.link, "last_scan_error", None) if self.bridge is not None else None
 
     def pair(self, address, name=None):
         if self.bridge is None:
