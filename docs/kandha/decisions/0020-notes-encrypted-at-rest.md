@@ -1,6 +1,6 @@
 # 0020 · Bookmarks are AES-256-GCM records keyed by the OS keystore; no keystore, no bookmarks
 
-**Status.** Proposed.
+**Status.** Approved 22 Nov 2026; was proposed.
 
 **Decision.**
 - Each bookmark is redacted text plus the minute it was saved and the mode. Nothing else.

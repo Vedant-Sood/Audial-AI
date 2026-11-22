@@ -1,6 +1,6 @@
 # 0019 · "Kandha, off the record" is detected in the caption text
 
-**Status.** Proposed. Detection is measured in noise before it is described as working.
+**Status.** Approved 22 Nov 2026; was proposed. Detection is measured in noise before it is described as working.
 
 **Decision.**
 - Fuzzy-match the phrase, and "Kandha, back on", in finished caption text.
@@ -22,3 +22,6 @@ simulated; then consented speakers, with recordings never committed. Report dete
 triggers and every miss.
 
 **Open.** Q13: Hindi phrases.
+
+**Decided (22 Nov 2026).** Q13 (default): English phrases only until measured. A Hindi
+phrase is added only after its detection rate has been measured the same way.

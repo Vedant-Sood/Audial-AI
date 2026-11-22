@@ -1,6 +1,6 @@
 # 0021 · Redaction is one deterministic spec with shared fixtures, implemented in Python and Kotlin
 
-**Status.** Proposed.
+**Status.** Approved 22 Nov 2026; was proposed.
 
 **Decision.** `spec/redaction/` holds:
 - the rules;
@@ -30,3 +30,6 @@ on a held-out set, and the known misses are listed.
 
 **Would change it.** Measured name recall < 0.95 → add one small ONNX NER model, run through
 ONNX Runtime on both platforms.
+
+**Decided (22 Nov 2026).** **Q14: yes.** Clinical details are redacted only when tied to a
+person ("my client has anhedonia"). Course terms on their own ("anhedonia", "DSM-5") stay.

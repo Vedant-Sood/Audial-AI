@@ -1,6 +1,6 @@
 # 0023 · Phone captions use on-device ASR and a phone-side microphone; the stole link stays audio-free
 
-**Status.** Proposed. The microphone choice is decided by measured WER.
+**Status.** Approved 22 Nov 2026; was proposed. The microphone choice is decided by measured WER.
 
 **Decision.**
 - **ASR:** whisper.cpp with a multilingual model and the psychology vocabulary prompt.
@@ -16,3 +16,7 @@ whisper.cpp keeps the same model family as the laptop.
 
 **Open.** Q15: whether a Bluetooth mic conflicts with the sentence "Bluetooth carries no
 audio or words".
+
+**Decided (22 Nov 2026).** **Q15.** The claim is reworded to "**the stole's Bluetooth link
+carries no audio or words**". Bluetooth microphones on the phone come later and are off by
+default.

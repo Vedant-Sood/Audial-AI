@@ -1,6 +1,6 @@
 # 0024 · One host at a time: the stole takes one central, and hand-off is an explicit release
 
-**Status.** Proposed.
+**Status.** Approved 22 Nov 2026; was proposed.
 
 **Decision.**
 - The stole keeps accepting a single central.
@@ -15,3 +15,6 @@ from two schedulers at once.
 interleave.
 
 **Open.** Q16: preferred host.
+
+**Decided (22 Nov 2026).** Q16 (default): no preferred host. The first host to connect wins,
+and switching is the explicit hand-off.

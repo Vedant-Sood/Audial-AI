@@ -1,6 +1,6 @@
 # 0022 · Android host: Kotlin app, the Kandha page in a WebView, a Kotlin scheduler proven by golden vectors
 
-**Status.** Proposed (planned work, after the portfolio).
+**Status.** Approved 22 Nov 2026; was proposed (planned work, after the portfolio).
 
 **Decision.**
 - **Kotlin:**

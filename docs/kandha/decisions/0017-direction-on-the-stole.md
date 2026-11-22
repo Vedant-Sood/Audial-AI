@@ -1,6 +1,6 @@
 # 0017 · Direction is computed on the stole and sent as DIRECTION (protocol v2), never audio
 
-**Status.** Proposed.
+**Status.** Approved 22 Nov 2026; was proposed.
 
 **Decision.**
 
@@ -30,3 +30,7 @@ Other v2 additions:
 
 **Open.** Q10: the heading field goes beyond the prompt's "angle, confidence, level,
 timestamp only".
+
+**Decided (22 Nov 2026).** **Q10: yes**, DIRECTION carries the heading. The protocol and the
+privacy wording say the stole's link carries "**angle, confidence, level, heading,
+timestamp**" for direction, and never audio or words.

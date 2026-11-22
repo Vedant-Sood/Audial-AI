@@ -1,6 +1,9 @@
 # Kandha v2 design
 
-**Status: proposal, waiting for approval. No v2 code has been written.**
+**Status: approved 22 Nov 2026.** The answers to the open questions are in
+[§9.1](#91-answers-22-nov-2026). Before the 30 November portfolio deadline, only two things
+ship: Slice 0, and the removal of transcript saving and export (§5.1, decision 0018). Both are
+built. Everything else is planned and waits until after the deadline, on a separate branch.
 
 This document covers §§4–8 of [the v2 prompt](../prompts/kandha-v2.md). The
 [Final Project Summary](FINAL_SUMMARY.pdf) (19 Nov 2026) is the source of truth for behaviour
@@ -230,8 +233,8 @@ of a new id. The generator keeps retired ids as reserved and rejects them.
 |---|---|---|---|
 | 13 | `crosstalk` | LR | 3 × (100 ms @230, rest 60): both shoulders together, fast and even, unlike the two gentle silence ticks |
 | 14 | `off_record` | B | one 600 ms fade 255 → 60 (6 steps), unlike low battery's three separate pulses |
-| 15 | `back_on` | B | one 600 ms rise 60 → 255. Only if Q8 says "back on" gets a pattern |
-| 16 | `bookmark_saved` | reserved | Not played until Q7 is decided |
+| 15 | `back_on` | B | one 600 ms rise 60 → 255. Played when "Kandha, back on" is heard (Q8) |
+| 16 | `bookmark_saved` | B | one 30 ms tick @90: the lightest, shortest pattern in the table (Q7) |
 
 **Scheduler.**
 - Priority order: `speaker` = `crosstalk` > `privacy` (off_record, back_on) > `cue` >
@@ -595,12 +598,34 @@ behaviour, Q10 about the protocol, Q11–Q14 about privacy, and Q15–Q17 about 
     submission? The portfolio already describes the final behaviour, so building it makes the
     claims truer, not less true.
 
+### 9.1 Answers (22 Nov 2026)
+
+| # | Answer | Recorded in |
+|---|---|---|
+| Q1 | Default: commit to the shared clock, and prove it on the bench before ordering the pod board | 0014 |
+| Q2 | Default: keep 330 Ω until the Slice 2 measurement decides | 0013 |
+| Q3 | **No tap.** The caption shows **"?"** as its direction arrow until the pod is confident or a pad is pressed | 0015 |
+| Q4 | Default: a pad with nobody speaking does nothing | 0015 |
+| Q5 | Default: double = tap; long press does nothing (Q's long press no longer toggles DND) | 0015 |
+| Q6 | **30 s** per bookmark | §3.2 |
+| Q7 | **Yes**: one very light, short tick on B, new id **16 `bookmark_saved`** (30 ms @90), distinct from every other pattern | 0016 |
+| Q8 | Default: "back on" plays **15 `back_on`** | 0016 |
+| Q9 | Default: Do not disturb means no taps at all; the screen and the light still show state | 0016 |
+| Q10 | **Yes**: DIRECTION carries heading. Wording: "angle, confidence, level, heading, timestamp" | 0017 |
+| Q11 | **Review shows redacted bookmarks only. Named emotion estimates are removed entirely** | 0018 |
+| Q12 | Default: Audial's own windows are unchanged | 0018 |
+| Q13 | Default: English phrases only until a Hindi phrase is measured | 0019 |
+| Q14 | **Clinical details are redacted only when tied to a person**; course terms stay | 0021 |
+| Q15 | **"The stole's Bluetooth link carries no audio or words."** Bluetooth mics on the phone come later, off by default | 0023 |
+| Q16 | Default: no preferred host; the first to connect wins | 0024 |
+| Q17 | **Before 30 Nov:** Slice 0 and removing transcript saving and every export. **Everything else after**, on a separate branch | this section |
+
 ## 10. Slices
 
 | Slice | Contents | Needs hardware? |
 |---|---|---|
-| 0 | As-built sync, the pin budget | No (the docs and the firmware compile) |
-| 1 | This document and decisions 0013–0025 | No |
+| 0 | As-built sync, the pin budget. **Done 22 Nov**: compiles for the S3-Zero | No (the docs and the firmware compile) |
+| 1 | This document and decisions 0013–0025. **Approved 22 Nov** | No |
 | 2 | Part A in the app and firmware, F pad, new patterns; tap distinguishability on the bench stole | The bench stole for the feel tests only |
 | 3 | Privacy layer, redaction spec and fixtures, spy tests | No |
 | 4 | Mic pod bench board, DIRECTION, automatic seat map from real angles, Phase 2 measurements | Yes |

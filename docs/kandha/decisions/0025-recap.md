@@ -1,6 +1,6 @@
 # 0025 · "Summarise, then delete" is a redacted, extractive recap of the 5-minute memory, never saved
 
-**Status.** Proposed.
+**Status.** Approved 22 Nov 2026; was proposed.
 
 **Decision.**
 - "What did I miss?" on the phone offers a recap: ≤ 5 sentences chosen by TF-IDF and recency

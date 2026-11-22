@@ -1,6 +1,6 @@
 # 0013 · The bench stole uses an ESP32-S3-Zero and 2N2222A NPN motor switches (amends 0003)
 
-**Status.** Proposed (V2_DESIGN §2). Describes the bench build of November 2026.
+**Status.** Approved 22 Nov 2026; was proposed (V2_DESIGN §2). Describes the bench build of November 2026.
 
 **Decision.** The reference build follows the bench prototype:
 - a Waveshare ESP32-S3-Zero (4 MB flash, 2 MB PSRAM), with its WS2812 on GPIO 21 as the
@@ -30,3 +30,7 @@ hand-solder than SOT-23 MOSFETs.
 - A zone that doesn't saturate (V<sub>CE</sub> > 0.5 V): drop the base resistor to 220 Ω
   (open question Q2) or go back to AO3400s.
 - Taps too mushy to tell apart: DRV2605L, as in 0003.
+
+**Decided (22 Nov 2026).** Approved. Q2 (330 Ω or 220 Ω base resistor) is settled after the
+Slice 2 measurement. Until then, 330 Ω as built. Slice 0 brought `config.h`, DESIGN §5 and the
+firmware README in line with the bench build, and the firmware compiles for the S3-Zero.

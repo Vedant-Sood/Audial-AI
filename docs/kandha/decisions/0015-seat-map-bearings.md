@@ -1,6 +1,6 @@
 # 0015 · The seat map stores bearings, fills itself from a SeatSource, and pads override
 
-**Status.** Proposed. Replaces the new-voice window of 0006 and DESIGN §8.
+**Status.** Approved 22 Nov 2026; was proposed. Replaces the new-voice window of 0006 and DESIGN §8.
 
 **Decision.**
 
@@ -33,3 +33,10 @@ Pads:
 
 **Open.** Q3 (new voice, no direction), Q4 (pad with nobody speaking), Q5 (double and long
 gestures).
+
+**Decided (22 Nov 2026).**
+- **Q3.** A new voice without a clear direction gets **no tap**. Its caption shows **"?"** as
+  the direction arrow until the pod gives a confident reading or Vikram presses a pad.
+- **Q4** (default). A pad pressed while nobody is speaking does nothing and plays no tap.
+- **Q5** (default). Double acts the same as tap. Long press does nothing, so the Q pad's long
+  press no longer toggles Do not disturb; that stays on the screen and the keyboard.

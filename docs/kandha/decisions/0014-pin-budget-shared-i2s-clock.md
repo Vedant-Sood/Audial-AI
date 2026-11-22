@@ -1,6 +1,6 @@
 # 0014 · Pin budget: both I2S buses share one BCLK/WS; the MPU-6050 uses UART0's pins
 
-**Status.** Proposed. The shared clock must be proved on the bench (Slice 4).
+**Status.** Approved 22 Nov 2026; was proposed. The shared clock must be proved on the bench (Slice 4).
 
 **Decision.**
 
@@ -38,3 +38,6 @@ stable to ±1 sample over 1,000 clicks and match the geometry.
 - TDM. The INMP441 doesn't support it.
 
 **Would change it.** A failed sync test → the two-master fallback, dropping charge sense.
+
+**Decided (22 Nov 2026).** Approved, with the default for Q1: commit to the shared clock and
+prove it on the bench before the pod board is ordered. The pins are reserved in `config.h`.
