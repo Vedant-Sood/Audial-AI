@@ -98,4 +98,22 @@ if [ "$MONITOR_ONLY" = 0 ]; then
 fi
 [ "$NO_MONITOR" = 1 ] && exit 0
 step "Serial console on $PORT (115200 baud). Type help, or identify to find the motors. Ctrl+C to quit."
-exec "$CLI" monitor -p "$PORT" --config baudrate=115200
+# Pressing RESET (or replugging) restarts the board's USB too, so the port vanishes for a moment
+# and the monitor exits. Wait for it to come back and reconnect; Ctrl+C quits for good.
+trap 'echo; exit 0' INT
+while true; do
+  "$CLI" monitor -p "$PORT" --config baudrate=115200 || true
+  echo
+  echo "-- Board disconnected (RESET pressed?). Reconnecting when it is back... Ctrl+C to quit."
+  sleep 1
+  waited=0
+  while [ ! -e "$PORT" ]; do
+    sleep 0.5; waited=$((waited + 1))
+    # after a few seconds, follow the board if it came back under a new name (ttyACM1, ...)
+    if [ "$waited" -gt 8 ]; then
+      for candidate in /dev/ttyACM* /dev/cu.usbmodem*; do [ -e "$candidate" ] && { PORT="$candidate"; break; }; done
+    fi
+  done
+  sleep 0.5   # let udev finish setting the port's permissions
+  echo "-- Back on $PORT. Type status to see the board's state (the boot messages went by while it was away)."
+done

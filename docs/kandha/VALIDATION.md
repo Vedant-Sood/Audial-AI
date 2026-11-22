@@ -15,6 +15,19 @@ over Bluetooth, on Windows, or with Indian English or Hindi speakers.
 | Accessibility | `python -m scripts.audit_kandha_a11y` | [a11y-chromium.json](validation/a11y-chromium.json) |
 | Embedded window | `python -m app.main --kandha-check` | page ready in QtWebEngine 6.8.3 with the `QWebEnginePermission` API (offscreen) |
 
+## Bench stole: first results (reported by the builder, 2026-11-22)
+
+These are the first observations made on the physical bench stole (Waveshare ESP32-S3-Zero,
+2N2222A switches, firmware 0.11), as reported by the person who built it. Nothing below has
+been measured with instruments yet.
+
+- **Motor map from `identify`:** L = GPIO 10, R = GPIO 8, B = GPIO 11, F = GPIO 9. So the
+  wiring does not follow the default L, R, B, F = 8, 9, 10, 11 order.
+- **Front motor (GPIO 9) does not buzz.** The fault is not yet found. `hold 9` and the checks
+  in the firmware README are the next step.
+- **Real Bluetooth link:** not working yet; the app could not find the stole. Fault-finding
+  is in progress.
+
 ## No transcript is saved or exported (decision 0018), 2026-11-22
 
 Run in a Linux x86_64 cloud container with Python 3.12.3 and Node 22.23.5.

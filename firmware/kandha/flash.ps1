@@ -101,4 +101,14 @@ if (-not $MonitorOnly) {
 }
 if ($NoMonitor) { exit 0 }
 Step "Serial console on $Port (115200 baud). Type help, or identify to find the motors. Ctrl+C to quit."
-& $Cli monitor -p $Port --config baudrate=115200
+# Pressing RESET (or replugging) restarts the board's USB too, so the COM port vanishes for a
+# moment and the monitor exits. Wait for it to come back and reconnect; Ctrl+C quits for good.
+while ($true) {
+  & $Cli monitor -p $Port --config baudrate=115200
+  Write-Host ""
+  Write-Host "-- Board disconnected (RESET pressed?). Reconnecting when it is back... Ctrl+C to quit." -ForegroundColor Yellow
+  Start-Sleep -Seconds 1
+  while (-not ([System.IO.Ports.SerialPort]::GetPortNames() -contains $Port)) { Start-Sleep -Milliseconds 500 }
+  Start-Sleep -Milliseconds 500
+  Write-Host "-- Back on $Port. Type status to see the board's state." -ForegroundColor Cyan
+}

@@ -328,6 +328,8 @@ static void handleCommand(String line) {
   else if (cmd == "status") {
     Serial.printf("battery=%u%% charging=%u connected=%u playing=%u flags=0x%02x fw=%u.%u table=%s\n", batteryPercent, charging, connected, engine.playing(), statusFlags(), KANDHA_FW_MAJOR, KANDHA_FW_MINOR, KANDHA_TABLE_DIGEST);
     Serial.printf("config scales=%u,%u,%u,%u mute=%u mirror=%u test=%u\n", config.scale[0], config.scale[1], config.scale[2], config.scale[3], config.mute, config.mirror, config.testMode);
+    Serial.printf("bluetooth name=%s %s\n", deviceName().c_str(), connected ? "(connected to the app)" : "(advertising, waiting for the app)");
+    motorMap.print();
   } else if (cmd == "patterns") {
     for (int i = 0; i < KANDHA_PATTERN_COUNT; i++) {
       const KandhaPattern& p = KANDHA_PATTERNS[i];
