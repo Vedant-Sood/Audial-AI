@@ -242,7 +242,7 @@ with little margin; 1000 mAh is the safe choice for that firmware configuration.
 | `PAD_Q` | 4 | touch T4 |
 | `BATTERY_SENSE` | 5 | ADC1 through 100 kΩ / 100 kΩ divider |
 | `CHARGING_SENSE` | 6 | TP4056 CHRG, active low, 10 kΩ pull-up |
-| `MOTOR_L` | 8 | LEDC PWM 20 kHz, 8-bit, base of Q1 through 330 Ω |
+| `MOTOR_L` | 8 | LEDC PWM 20 kHz, 8-bit, base of Q1 through 330 Ω. GPIO 8–11 are the *default* L, R, B, F; the firmware's `identify` command finds the real order and saves it in flash |
 | `MOTOR_R` | 9 | base of Q2 |
 | `MOTOR_B` | 10 | base of Q3 |
 | `MOTOR_F` | 11 | base of Q4 |

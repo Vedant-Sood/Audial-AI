@@ -20,9 +20,12 @@
 #include "patterns.h"
 #include "pattern_engine.h"
 #include "touch_pads.h"
+#include "motor_map.h"
 
 // ---------------------------------------------------------------------------- state
 static PatternEngine engine;
+static MotorMap motorMap;
+static MotorWizard wizard;
 static TouchPads pads;
 static KandhaConfig config;
 static BLEServer* server = nullptr;
@@ -92,7 +95,17 @@ static void sendInput(uint8_t pad, uint8_t gesture) {
   Serial.printf("INPUT pad=%u gesture=%u\n", pad, gesture);
 }
 
-static void onGesture(uint8_t pad, uint8_t gesture) { sendInput(pad, gesture); }
+static void onGesture(uint8_t pad, uint8_t gesture) {
+  if (wizard.active()) {
+    // While finding the motors, a pad tap is an answer, not an INPUT for the app (Q means F).
+    if (gesture == KANDHA_GESTURE_TAP) {
+      const char* letter = pad == KANDHA_PAD_L ? "L" : pad == KANDHA_PAD_R ? "R" : pad == KANDHA_PAD_B ? "B" : pad == KANDHA_PAD_Q ? "F" : "";
+      if (*letter) { Serial.printf("  (pad %s)\n", pad == KANDHA_PAD_Q ? "Q = F" : letter); wizard.answer(letter); }
+    }
+    return;
+  }
+  sendInput(pad, gesture);
+}
 
 // ---------------------------------------------------------------------------- BLE callbacks
 class ServerCallbacks : public BLEServerCallbacks {
@@ -110,6 +123,7 @@ class HapticCallbacks : public BLECharacteristicCallbacks {
     const uint8_t* data = c->getData();
     size_t n = c->getLength();
     if (n != 5) { Serial.printf("HAPTIC: bad length %u\n", (unsigned)n); return; }
+    if (wizard.active()) { Serial.println("HAPTIC ignored: finding the motors"); return; }
     bool ok = engine.play(data[0], data[1], data[2], data[3], data[4], config, millis());
     Serial.printf("HAPTIC seq=%u zones=%u pattern=%u intensity=%u repeat=%u -> %s\n", data[0], data[1], data[2], data[3], data[4], ok ? "play" : "ignored");
     if (config.testMode) sendInput(0, data[0]);   // bench echo
@@ -219,7 +233,36 @@ static void printHelp() {
   Serial.println("  cal                           recalibrate the touch pads (hands off)");
   Serial.println("  pad <L|R|B|Q> <tap|double|long>   send an INPUT as if a pad were pressed");
   Serial.println("  mirror 0|1 · mute 0|1 · scale <L|R|B|F> <0-255> · testmode 0|1");
+  Serial.println("  identify                      find which GPIO (8-11) drives which motor, and save it");
+  Serial.println("  motors                        show the saved motor map");
+  Serial.println("  motors <L> <R> <B> <F>        set it by hand, e.g. motors 9 8 11 10");
+  Serial.println("  motors reset                  forget it (back to L=8 R=9 B=10 F=11)");
 }
+
+// Each zone in turn plays the zone test, saying where it should be felt.
+static void checkZones() {
+  const uint8_t zones[4] = {KANDHA_ZONE_L, KANDHA_ZONE_R, KANDHA_ZONE_B, KANDHA_ZONE_F};
+  for (int i = 0; i < 4; i++) {
+    Serial.printf("  now: %s (GPIO %d)\n", ZONE_WORD[i], engine.pin(i));
+    engine.clearSeq();
+    engine.play(0, zones[i], 11, 230, 1, config, millis());
+    uint32_t until = millis() + 900;
+    while (millis() < until) { engine.tick(millis()); delay(1); }
+  }
+  engine.stop();
+}
+
+static void applyMotorMap(const int pins[4]) {
+  if (!motorMap.save(pins)) { Serial.println("Could not save the motor map to flash."); return; }
+  engine.setPins(motorMap.pin);
+  Serial.println("Saved. It stays after power-off and reflashing.");
+  motorMap.print();
+  Serial.println("Checking each zone: you should feel");
+  checkZones();
+  Serial.println("If any zone was wrong, type identify again.");
+}
+
+static void motorWrite(int gpio, uint8_t duty) { ledcWrite(gpio, duty); }
 
 static uint8_t consoleSeq = 200;
 
@@ -236,7 +279,19 @@ static void handleCommand(String line) {
     while (start < (int)line.length() && line[start] == ' ') start++;
   }
   String cmd = parts[0]; cmd.toLowerCase();
+  if (wizard.active()) { wizard.answer(line); return; }   // every line is an answer while finding motors
   if (cmd == "help") printHelp();
+  else if (cmd == "identify" || cmd == "findmotors") { engine.stop(); wizard.start(); }
+  else if (cmd == "motors") {
+    String sub = parts[1]; sub.toLowerCase();
+    if (count == 1) motorMap.print();
+    else if (sub == "reset") { motorMap.forget(); engine.setPins(motorMap.pin); Serial.println("Motor map forgotten."); motorMap.print(); }
+    else if (count == 5) {
+      int pins[4] = {parts[1].toInt(), parts[2].toInt(), parts[3].toInt(), parts[4].toInt()};
+      if (MotorMap::valid(pins)) applyMotorMap(pins);
+      else Serial.println("Give four different motor pins (8, 9, 10, 11) in the order L R B F, e.g. motors 9 8 11 10");
+    } else Serial.println("motors | motors reset | motors <L> <R> <B> <F>");
+  }
   else if (cmd == "status") {
     Serial.printf("battery=%u%% charging=%u connected=%u playing=%u flags=0x%02x fw=%u.%u table=%s\n", batteryPercent, charging, connected, engine.playing(), statusFlags(), KANDHA_FW_MAJOR, KANDHA_FW_MINOR, KANDHA_TABLE_DIGEST);
     Serial.printf("config scales=%u,%u,%u,%u mute=%u mirror=%u test=%u\n", config.scale[0], config.scale[1], config.scale[2], config.scale[3], config.mute, config.mirror, config.testMode);
@@ -256,12 +311,7 @@ static void handleCommand(String line) {
     Serial.printf("play id=%d zones=%d intensity=%u -> %s\n", id, mask, intensity, ok ? "ok" : "unknown pattern");
   } else if (cmd == "stop") { engine.stop(); Serial.println("stopped"); }
   else if (cmd == "test") {
-    const uint8_t zones[4] = {KANDHA_ZONE_L, KANDHA_ZONE_R, KANDHA_ZONE_B, KANDHA_ZONE_F};
-    for (int i = 0; i < 4; i++) {
-      engine.play(consoleSeq++, zones[i], 11, 230, 1, config, millis());
-      uint32_t until = millis() + 600;
-      while (millis() < until) { engine.tick(millis()); delay(1); }
-    }
+    checkZones();
     Serial.println("test done");
   } else if (cmd == "pads") {
     for (int i = 0; i < 4; i++) Serial.printf("  pad %c raw=%lu baseline=%lu\n", "LRBQ"[i], (unsigned long)pads.raw(i), (unsigned long)pads.baseline(i));
@@ -294,17 +344,19 @@ static void pollConsole() {
 
 // ---------------------------------------------------------------------------- status light
 // Connected: slow blink, solid while a pattern plays. Advertising: short flash once a second.
-// On the RGB LED the colour is green when connected and blue while advertising; v2 adds the
+// On the RGB LED the colour is green when connected, blue while advertising and magenta while
+// finding the motors (identify); v2 adds the
 // off-the-record colour (docs/kandha/V2_DESIGN.md section 5.2).
 static int8_t lastLight = -1;
 static void statusLight(bool on) {
   if (PIN_STATUS_LED < 0) return;
-  int8_t state = on ? (connected ? 2 : 1) : 0;
+  int8_t state = wizard.active() ? (on ? 3 : 0) : on ? (connected ? 2 : 1) : 0;
   if (state == lastLight) return;     // the WS2812 needs a full write; only send changes
   lastLight = state;
 #if STATUS_LED_RGB
   const uint8_t b = STATUS_LED_BRIGHTNESS;
-  if (state == 2) rgbLedWrite(PIN_STATUS_LED, 0, b, 0);
+  if (state == 3) rgbLedWrite(PIN_STATUS_LED, b, 0, b);          // magenta: finding motors
+  else if (state == 2) rgbLedWrite(PIN_STATUS_LED, 0, b, 0);
   else if (state == 1) rgbLedWrite(PIN_STATUS_LED, 0, 0, b);
   else rgbLedWrite(PIN_STATUS_LED, 0, 0, 0);
 #else
@@ -322,20 +374,26 @@ void setup() {
   pinMode(PIN_CHARGING_SENSE, INPUT_PULLUP);
   statusLight(false);
   analogReadResolution(12);
-  engine.begin();
+  motorMap.load();
+  engine.begin(motorMap.pin);
+  wizard.begin(motorWrite);
   pads.begin(onGesture);
   sampleBattery();
   setupBle();
   printHelp();
+  motorMap.print();
+  if (!motorMap.fromFlash) Serial.println(">>> Not sure which motor is on which GPIO? Type identify and press Enter.");
 }
 
 void loop() {
   uint32_t now = millis();
-  engine.tick(now);
+  if (wizard.active()) wizard.tick(now);
+  else engine.tick(now);
+  if (wizard.finished()) applyMotorMap(wizard.result());
   if (now - lastTouchAt >= TOUCH_POLL_MS) { lastTouchAt = now; pads.poll(now); }
   if (now - lastBatteryAt >= BATTERY_SAMPLE_MS) { lastBatteryAt = now; sampleBattery(); }
   if (statusDirty || now - lastStatusAt >= STATUS_PERIOD_MS) publishStatus(true);
-  statusLight(connected ? (engine.playing() || (now / 1000) % 2 == 0) : ((now / 250) % 4 == 0));
+  statusLight(wizard.active() ? ((now / 500) % 2 == 0) : connected ? (engine.playing() || (now / 1000) % 2 == 0) : ((now / 250) % 4 == 0));
   pollConsole();
   delay(1);
 }

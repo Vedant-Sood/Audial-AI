@@ -16,8 +16,8 @@ struct KandhaConfig {
 
 class PatternEngine {
  public:
-  void begin() {
-    const int pins[4] = {PIN_MOTOR_L, PIN_MOTOR_R, PIN_MOTOR_B, PIN_MOTOR_F};
+  // pins: the GPIO for each zone, in the order L, R, B, F (from the saved motor map).
+  void begin(const int pins[4]) {
     for (int i = 0; i < 4; i++) {
       pins_[i] = pins[i];
       ledcAttach(pins_[i], PWM_FREQUENCY_HZ, PWM_RESOLUTION_BITS);
@@ -25,6 +25,17 @@ class PatternEngine {
       level_[i] = 0;
     }
   }
+
+  // A new motor map at runtime: the same four pins (already attached), in a new zone order.
+  void setPins(const int pins[4]) {
+    stop();
+    for (int i = 0; i < 4; i++) { pins_[i] = pins[i]; ledcWrite(pins_[i], 0); level_[i] = 0; }
+  }
+
+  int pin(int zone) const { return pins_[zone]; }
+
+  // Bench checks from the console: accept the next command whatever its seq.
+  void clearSeq() { seqSeen_ = false; }
 
   // Up to 224 custom patterns (ids 32-255) uploaded over PATTERNS live in RAM.
   bool storeCustom(uint8_t id, const uint8_t* data, size_t n) {

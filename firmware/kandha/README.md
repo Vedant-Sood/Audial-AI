@@ -16,7 +16,10 @@ stole and a simulated stole, and real Bluetooth is an opt-in setting marked unte
 | `kandha.ino` | main sketch: BLE service, battery, status, serial console |
 | `pattern_engine.h` | the pattern player (same steps and arithmetic as `app/kandha/patterns.py`), transistor PWM with a spin-up kick |
 | `touch_pads.h` | pads with tap / double / long gestures |
+| `motor_map.h` | which GPIO drives which motor zone, saved in flash, and the `identify` wizard that finds out |
 | `config.h` | pin map, timings, firmware version |
+| `flash.bat` / `flash.ps1` | Windows: build, flash and open the serial console in one go |
+| `flash.sh` | macOS / Linux: the same |
 | `patterns.h` | **generated**: run `python scripts/generate_kandha_patterns.py` after editing the JSON |
 
 ## Hardware
@@ -24,9 +27,63 @@ stole and a simulated stole, and real Bluetooth is an opt-in setting marked unte
 Pin map and parts list: [docs/kandha/DESIGN.md section 5](../../docs/kandha/DESIGN.md). The
 bench stole is a **Waveshare ESP32-S3-Zero**. In short: pads on GPIO 1–4 (touch), battery
 divider on GPIO 5, charger `CHRG` on GPIO 6, motor transistors (2N2222A, through 330 Ω) on
-GPIO 8–11 = L, R, B, F, and the onboard WS2812 RGB status light on GPIO 21. GPIO 7 and 12–16,
+GPIO 8–11 (default order L, R, B, F; see **Find the motors** below if yours differ), and the onboard WS2812 RGB status light on GPIO 21. GPIO 7 and 12–16,
 43 and 44 are reserved for the F pad and the v2 mic pod. Status light: blue flash while
-advertising, green blink when connected, solid green while a pattern plays.
+advertising, green blink when connected, solid green while a pattern plays, magenta blink while
+finding the motors.
+
+## Quick start: flash with one command
+
+Plug the ESP32-S3-Zero in with a USB **data** cable, then from the repository folder:
+
+- **Windows:** double-click `firmware\kandha\flash.bat`, or run it in a terminal.
+- **macOS / Linux:** `bash firmware/kandha/flash.sh`
+
+The script:
+1. downloads `arduino-cli` 1.2.2 if you don't have it (checksum-verified, kept in
+   `firmware/kandha/.tools/`);
+2. installs the ESP32 core 3.1.1 the first time (a large download);
+3. compiles for the S3-Zero;
+4. finds the board's port, uploads, and opens the serial console at 115200 baud.
+
+Options:
+- choose the port with `flash.bat -Port COM5` or `flash.sh /dev/ttyACM0`;
+- only reopen the console with `flash.bat -MonitorOnly` or `flash.sh --monitor`.
+
+If the upload fails, put the board in download mode and run the script again: hold **BOOT**,
+tap **RESET** (or plug in while holding **BOOT**), then release **BOOT**. After the upload,
+press **RESET** once.
+
+## Find the motors (`identify`)
+
+The four motor transistors are on GPIO 8, 9, 10 and 11, but the wires may not run L, R, B, F
+in that order. The board can't sense where a motor sits on your body, so it asks you.
+
+1. Flash, and open the serial console (the flash script opens it for you).
+2. Put the stole on, or hold the motors where you can feel them.
+3. Type `identify` and press Enter. The status light blinks magenta.
+4. One GPIO buzzes at a time (about 12 times, then it waits). Say where you feel it: type `L`,
+   `R`, `B` or `F` and press Enter. Or tap the stole's **L**, **R** or **B** pad; tap **Q**
+   for **F**, because the F pad isn't wired yet.
+   - L and R each have **two** motors, so you feel two buzzes at once there. B and F have one.
+   - Other answers: `again` buzzes it again, `none` means you felt nothing, `back` goes to the
+     previous pin, `cancel` stops without changing anything.
+5. After four answers it shows the map, for example `L = GPIO 10, R = GPIO 8, B = GPIO 11,
+   F = GPIO 9`. Type `save`. It refuses to save if a zone is missing or was given twice; type
+   `redo` instead.
+6. It saves the map in the chip's flash, then taps L, R, B and F once each and says which one
+   you should feel. If one is wrong, run `identify` again.
+
+The map is kept through power-off **and** reflashing, so you only do this once per stole.
+
+Related commands:
+- `motors` shows the saved map;
+- `motors 10 8 11 9` sets it by hand (the GPIOs for L R B F, in that order);
+- `motors reset` goes back to the default 8, 9, 10, 11.
+
+If exactly one pin buzzes nothing (you answered `none`) and the other three are known, the
+wizard works out that pin's zone, but tells you to check that motor's transistor, diode and
+wires. A motor that never buzzes is a wiring fault, not a mapping problem.
 
 ## Build and flash (first time with an ESP32)
 
@@ -47,15 +104,17 @@ You need a computer with a USB port and the free **Arduino IDE 2** (Windows, mac
 8. Press **Upload** (the arrow). If the upload does not start, hold the board's **BOOT** button,
    tap **RESET**, release **BOOT**, and press Upload again.
 9. **Tools → Serial Monitor**, set **115200 baud**. You should see
-   `Kandha Stole firmware 0.9, pattern table …` and `Advertising as KandhaStole-XXXX`.
-   Type `help` and press Enter.
+   `Kandha Stole firmware 0.11, pattern table …`, `Advertising as KandhaStole-XXXX` and the
+   motor map. Set the monitor's line ending to **Newline**, type `help` and press Enter, then
+   `identify` (see **Find the motors**).
 
-### Command line (optional)
+### Command line by hand (optional)
 
 ```text
 arduino-cli core install esp32:esp32@3.1.1 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
 arduino-cli compile --fqbn esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=4M,PSRAM=enabled --export-binaries firmware/kandha
-arduino-cli upload  --fqbn esp32:esp32:esp32s3 -p /dev/ttyACM0 firmware/kandha
+arduino-cli upload  --fqbn esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=4M,PSRAM=enabled -p /dev/ttyACM0 firmware/kandha
+arduino-cli monitor -p /dev/ttyACM0 --config baudrate=115200
 ```
 
 The CI workflow produces `kandha-stole-firmware.zip` with the `.bin` files and a `.sha256` file;
@@ -68,7 +127,9 @@ status            battery, connection, config, flags
 patterns          the built-in tap language with durations
 play seat_tap L   one firm tap on the left shoulder
 play rise         three quick taps at the front
-test              two taps on every zone in turn
+test              two taps on every zone in turn, saying which one you should feel
+identify          find which GPIO drives which motor, and save it
+motors            show the saved motor map
 pads              raw touch values; touch a pad and watch the number rise
 cal               recalibrate the pads (keep hands away)
 pad Q tap         send an INPUT as if the queue pad were tapped

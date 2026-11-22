@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #define KANDHA_FW_MAJOR 0
-#define KANDHA_FW_MINOR 10
+#define KANDHA_FW_MINOR 11
 
 // Touch pads (ESP32-S3 touch-capable GPIOs 1-14). GPIO 3 is a strapping pin only when the
 // JTAG-select eFuse is burnt, which it is not by default, so a fabric pad there is safe.
@@ -14,7 +14,8 @@
 #define PIN_PAD_B 3
 #define PIN_PAD_Q 4
 
-// Motor zones, LEDC PWM. Each drives a 2N2222A NPN through 330 ohm to the base, 10 k base to
+// Motor zones, LEDC PWM. These are the DEFAULT order only: if the wiring differs, type
+// "identify" in the serial console and the firmware finds and saves the real order (motor_map.h). Each drives a 2N2222A NPN through 330 ohm to the base, 10 k base to
 // GND, emitter to GND, collector to the motor's minus lead; a 1N5819 across each motor
 // (decision 0013, amending 0003). L and R each switch two motors in parallel.
 #define PIN_MOTOR_L 8

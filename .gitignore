@@ -21,3 +21,7 @@ windows-source-startup.txt
 models/**/encoder.pth
 models/**/encoder.download
 models/**/selected.joblib
+
+# Kandha firmware: arduino-cli downloaded by flash.sh / flash.ps1, and local builds
+firmware/kandha/.tools/
+firmware/kandha/build/
