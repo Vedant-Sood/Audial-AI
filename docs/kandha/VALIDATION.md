@@ -15,6 +15,47 @@ over Bluetooth, on Windows, or with Indian English or Hindi speakers.
 | Accessibility | `python -m scripts.audit_kandha_a11y` | [a11y-chromium.json](validation/a11y-chromium.json) |
 | Embedded window | `python -m app.main --kandha-check` | page ready in QtWebEngine 6.8.3 with the `QWebEnginePermission` API (offscreen) |
 
+## Caption models: Whisper tiny, small, medium and large-v3-turbo (2026-11-22)
+
+Why: the default model, Whisper tiny, was reported as poor. The comparison was run in a
+4-core Linux x86_64 cloud container with faster-whisper int8 on the CPU and the app's own
+decoding settings (greedy, voice-activity filter on, no previous-text conditioning).
+
+The test sets, 20 clips each:
+- **English:** LibriSpeech validation-clean, from `hf-internal-testing/librispeech_asr_dummy`.
+- **Hindi:** Google FLEURS `hi_in` test, CC-BY-4.0.
+
+Word error rate (WER) is computed on lower-cased text with punctuation removed. Devanagari
+vowel signs are kept as part of their words. Speed is the real-time factor (RTF): processing
+time ÷ audio time on 4 threads, so below 1 keeps up with speech.
+
+Each cell is WER, then RTF in brackets. "Whole" means the full clip was transcribed at once.
+
+| Model | English, whole | English, 4 s chunks | English, 8 s chunks | Hindi, whole | Hindi, 4 s chunks |
+|---|---|---|---|---|---|
+| tiny (old default) | 11.8% (0.04) | 24.6% (0.09) | — | 146.5% (0.05) | 284.3% (0.13) |
+| small | 8.0% (0.14) | 12.9% (0.28) | 12.5% (0.20) | 71.3% (0.28) | 319.4% (0.93) |
+| medium | 5.8% (0.33) | 10.7% (0.69) | — | 43.8% (0.61) | 163.9% (1.74) |
+| **large-v3-turbo** | **4.2% (0.36)** | 8.9% (0.92) | **5.8% (0.55)** | **29.6% (0.35)** | 105.9% (1.04) |
+
+What it shows:
+- **Hindi.** Tiny writes Hindi in Latin letters, not Devanagari. A WER above 100% means the
+  model added words (repetitions, hallucinations); short chunks make that much worse.
+- **Chunk length.** The app ends an utterance at a pause, or at the preset's limit
+  (`chunk_seconds`) when nobody pauses. For turbo, 8 s beat 4 s on both accuracy and speed.
+  Turbo's Hindi results at 6 s and 8 s were still running when this was written.
+
+**Decision.** `TURBO` (large-v3-turbo, 8 s) is the default preset. Settings saved with the old
+default `FAST` move to it once; any other saved choice is kept. Until turbo is downloaded,
+captions use the best installed Whisper model and say so. Whisper's CPU threads now follow
+the machine (cores − 2, between 2 and 8) instead of a fixed 2.
+
+**Not measured:**
+- Indian-accented English. AI4Bharat's Svarah set needs a login.
+- Real classroom audio.
+- Any laptop other than this container. On a slower CPU turbo may fall behind live speech;
+  BALANCED (small) is the fallback.
+
 ## Bench stole: first results (reported by the builder, 2026-11-22)
 
 These are the first observations made on the physical bench stole (Waveshare ESP32-S3-Zero,

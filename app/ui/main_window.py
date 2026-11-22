@@ -467,7 +467,7 @@ class MainWindow(QMainWindow):
         return p
 
     def settings_page(self):
-        p, layout = self.page("Settings apply to the next session. FAST uses tiny; BALANCED uses small; ACCURATE uses medium. These are hardware targets until locally benchmarked.")
+        p, layout = self.page("Settings apply to the next session. TURBO (default) uses large-v3-turbo, the most accurate model measured; FAST uses tiny, BALANCED small, ACCURATE medium. On a slow computer without an NVIDIA GPU, choose BALANCED if captions fall behind.")
         form = QFormLayout()
         self.preset_box = QComboBox()
         for name in PRESETS:

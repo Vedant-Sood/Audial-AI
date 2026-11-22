@@ -9,12 +9,29 @@ PRESETS = {
     "FAST": {"asr": "whisper-tiny", "compute_type": "int8_float16", "beam_size": 1, "chunk_seconds": 4},
     "BALANCED": {"asr": "whisper-small", "compute_type": "int8_float16", "beam_size": 3, "chunk_seconds": 6},
     "ACCURATE": {"asr": "whisper-medium", "compute_type": "float16", "beam_size": 5, "chunk_seconds": 8},
+    # The default since Nov 2026: large-v3-turbo was the most accurate model measured, on English
+    # and Hindi, and 8 s utterances beat 4 s on both accuracy and speed (docs/kandha/VALIDATION.md).
+    "TURBO": {"asr": "whisper-turbo", "compute_type": "int8_float16", "beam_size": 1, "chunk_seconds": 8},
 }
+SETTINGS_VERSION = 2   # 2: TURBO replaced FAST as the default preset
+
+
+def caption_model(preset, installed):
+    """The Whisper model to run for a preset: its own if installed, otherwise the best installed
+    one, so changing the default never stops captions on a machine that has not downloaded it yet.
+    Returns (model id to use, the preset's model when it is missing, else None)."""
+    wanted = PRESETS[preset]["asr"]
+    if installed(wanted):
+        return wanted, None
+    for fallback in ("whisper-turbo", "whisper-medium", "whisper-small", "whisper-tiny"):
+        if fallback != wanted and installed(fallback):
+            return fallback, wanted
+    return wanted, None
 
 
 @dataclass
 class Settings:
-    preset: str = "FAST"
+    preset: str = "TURBO"
     device: str = "auto"
     language: str = "en"
     microphone: int | None = None
@@ -34,6 +51,7 @@ class Settings:
     voice_colors: bool = True
     voice_cues: bool = False
     voice_tone: bool = False
+    settings_version: int = SETTINGS_VERSION
 
     def validate(self):
         if self.sign_language != "ISL" or not isinstance(self.auto_sign, bool):
@@ -70,6 +88,9 @@ class Settings:
             data = json.loads(target.read_text(encoding="utf-8"))
             if not isinstance(data, dict):
                 raise ValueError("Settings must be an object.")
+            if int(data.get("settings_version", 1) or 1) < 2 and data.get("preset") == "FAST":
+                data["preset"] = "TURBO"   # FAST was only the old default; a choice made after this is kept
+            data["settings_version"] = SETTINGS_VERSION
             return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__}).validate()
         except (TypeError, ValueError, OSError) as error:
             raise ValueError("Could not read settings.") from error

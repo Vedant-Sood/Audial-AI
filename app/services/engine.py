@@ -10,7 +10,7 @@ from app.audio.features import prosody, mfcc_features
 from app.inference.asr import WhisperASR
 from app.inference.diarization import ECAPADiarizer, OverlapDiarizer, reconcile_words
 from app.models.manager import ModelManager
-from app.utils.config import PRESETS
+from app.utils.config import PRESETS, caption_model
 
 
 def choose_device(requested, warning=None):
@@ -117,11 +117,14 @@ class AudioEngine:
             preset = PRESETS[self.settings.preset]
             device = choose_device(self.settings.device, lambda message: self.emit("warning", message))
             self.asr = self.diarizer = self.prosody_model = self.emotion_model = None
-            caption_ready = self.manager.installed(preset["asr"])
+            caption_id, missing = caption_model(self.settings.preset, self.manager.installed)
+            caption_ready = self.manager.installed(caption_id)
             if self._mode == "tone" and self.settings.auto_sign and not caption_ready:
                 self.emit("warning", "ISL from voice needs a caption model. Install " + preset["asr"] + " in Models; voice measurements remain available.")
             if self._mode != "tone" or (self.settings.auto_sign and caption_ready):
-                model_id = preset["asr"]
+                model_id = caption_id
+                if missing:
+                    self.emit("warning", f"{missing} is not installed yet, so captions use {model_id} for now. Install {missing} on the Models page (or: python -m app.main --install-model {missing}).")
                 if not self.manager.installed(model_id):
                     raise FileNotFoundError(f"Install {model_id} on the Models page, or select a preset with an installed ASR model.")
                 compute = preset["compute_type"] if device == "cuda" else "int8"

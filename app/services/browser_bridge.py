@@ -9,7 +9,7 @@ import uuid
 import numpy as np
 from app.audio.features import mono_resample
 from app.storage.transcript import Session
-from app.utils.config import PRESETS
+from app.utils.config import caption_model
 
 
 class BrowserBridge:
@@ -152,9 +152,8 @@ class BrowserBridge:
                         "Stop the current capture before switching source."
                     )
                 with self.service.control_lock:
-                    if not self.service.engine.manager.installed(
-                        PRESETS[self.service.settings.preset]["asr"]
-                    ):
+                    model_id, _missing = caption_model(self.service.settings.preset, self.service.engine.manager.installed)
+                    if not self.service.engine.manager.installed(model_id):
                         raise ValueError(
                             "Finish automatic model setup before starting browser captions."
                         )

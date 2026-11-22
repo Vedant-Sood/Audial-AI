@@ -23,7 +23,7 @@ from app.services.isl import ISLVocabulary, load_pose_frames
 from app.services.lexicon import ISL_LANGUAGE, SignLexicon
 from app.services.text_input import read_text_bytes
 from app.storage.transcript import PrivateSessionError, Session
-from app.utils.config import PRESETS, Settings
+from app.utils.config import PRESETS, Settings, caption_model
 from app.utils.paths import project_root, data_root, atomic_json
 from app.services.browser_bridge import BrowserBridge
 from app.utils.palette import DEFAULT_EMOTION_COLORS, validate_palette
@@ -311,9 +311,9 @@ class BrowserService:
                     elif parsed.path == "/api/tabs":
                         self.respond(200, service.bridge.snapshot())
                     elif parsed.path == "/api/status":
-                        selected = PRESETS[service.settings.preset]["asr"]
+                        selected, missing = caption_model(service.settings.preset, service.engine.manager.installed)
                         self.respond(200,{"running":service.engine.running,"source":service.engine.source,
-                            "asr_model":selected,"asr_installed":service.engine.manager.installed(selected),
+                            "asr_model":selected,"asr_installed":service.engine.manager.installed(selected),"asr_missing":missing,
                             "language":service.engine.language if service.engine.running else service.settings.language,"sign_language":ISL_LANGUAGE,
                             "auto_sign":service.settings.auto_sign,"vocabulary":service.vocabulary.summary(),
                             "emotion_enabled":service.settings.prosody_classifier,"voice_view":service.voice_settings(),
