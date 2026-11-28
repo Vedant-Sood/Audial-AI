@@ -988,6 +988,8 @@
     setText($('#audioZone'), mode === 'mono' ? 'No direction in Mono' : zone ? ZONE_WORD[zone] : 'No voice yet');
     setText($('#audioReading'), a.bearing != null ? `${Math.round(a.bearing)}° · ${Math.round((a.confidence || 0) * 100)}% sure${a.sided_only ? ' · left/right only' : ''}` : '');
     $('#audioTapTest').checked = !!a.test_tap;
+    const last = a.last_test_tap;
+    setText($('#audioLastTap'), a.test_tap ? (last ? `Last tap: ${ZONE_WORD[last.zone] || last.zone}, ${last.result}.` : 'Waiting to hear someone…') : '');
     $('#audioTapTest').disabled = mode === 'mono';
     const err = $('#audioError');
     err.hidden = !a.error;

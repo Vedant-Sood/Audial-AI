@@ -189,3 +189,68 @@ def test_bad_audio_settings_are_refused(tmp_path):
         assert "recorded WAV" in service.audio_status()["error"]
     finally:
         service.close()
+
+
+class _SteadyTracker:
+    """Hears one side continuously, as when someone talks without pausing."""
+
+    def __init__(self, clock, bearing=270.0, channels=2):
+        self.clock, self.bearing = clock, bearing
+        self.geometry = ArrayGeometry.stereo() if channels == 2 else ArrayGeometry.quad()
+
+    def latest(self):
+        return {"t": self.clock[0], "bearing": self.bearing, "confidence": 0.8, "levels_db": [-30.0, -30.0], "sided_only": True}
+
+    def take_turns(self):
+        return []
+
+    def mute(self, until):
+        pass
+
+
+def test_tap_the_zone_i_hear_taps_every_five_seconds_while_someone_talks(tmp_path):
+    stole, clock = MockStole(), [100.0]
+    service = KandhaService(home=tmp_path, backend=MockBackend([stole]), ticker=False, clock=lambda: clock[0])
+    try:
+        assert service.pair(stole.address) is True
+        tracker = _SteadyTracker(clock)
+        service.use_direction(type("D", (), {"tracker": tracker, "status": lambda self: tracker.latest(), "stop": lambda self: None})())
+        service.set_direction_test_tap(True)
+        taps = []
+        for step in range(0, 121):                        # 12 s in 0.1 s steps
+            clock[0] = 100.0 + step / 10
+            service.tick()
+            if service.last_test_tap and (not taps or taps[-1][0] != service.test_tap_at):
+                taps.append((service.test_tap_at, service.last_test_tap["zone"], service.last_test_tap["result"]))
+        assert [round(t - 100.0, 1) for t, _, _ in taps] == [0.0, 5.0, 10.0]
+        assert all(zone == "L" and result == "tapped the stole" for _, zone, result in taps)
+        time.sleep(0.1)
+        assert stole.received[-1][1] == "haptic" and stole.received[-1][2][1] == 1            # left shoulder
+
+        tracker.bearing = 90.0                                 # someone on the right now
+        clock[0] = 115.0; service.tick()
+        assert service.last_test_tap["zone"] == "R"
+
+        service.update_settings({"dnd": True})                 # do not disturb: says so instead of tapping
+        clock[0] = 121.0; service.tick()
+        assert service.last_test_tap["result"].startswith("not tapped")
+
+        service.set_direction_test_tap(False)
+        clock[0] = 130.0; service.tick()
+        assert service.last_test_tap is None
+    finally:
+        service.close()
+
+
+def test_no_test_tap_when_nobody_was_heard_recently(tmp_path):
+    clock = [50.0]
+    service = KandhaService(home=tmp_path, ticker=False, clock=lambda: clock[0])
+    try:
+        tracker = _SteadyTracker(clock)
+        tracker.latest = lambda: {"t": 40.0, "bearing": 270.0, "confidence": 0.8}    # heard 10 s ago
+        service.use_direction(type("D", (), {"tracker": tracker, "status": lambda self: {}, "stop": lambda self: None})())
+        service.set_direction_test_tap(True)
+        service.tick()
+        assert service.last_test_tap is None and not service.played
+    finally:
+        service.close()

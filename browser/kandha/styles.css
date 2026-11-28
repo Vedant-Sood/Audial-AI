@@ -397,3 +397,4 @@ table.acc td:last-child { font-family: var(--font-mono); font-variant-numeric: t
   .ww__card .ww__shape { width: 18px; height: 18px; }
   .ww__live { grid-column: 2; grid-row: 3; justify-self: start; }
 }
+.audio__last { margin: 0; color: var(--muted); min-height: 1.4em; }

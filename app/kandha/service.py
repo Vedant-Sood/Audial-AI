@@ -29,6 +29,8 @@ AUDIO_FIELDS = ("audio_mode", "audio_device", "stereo_spacing_m", "stereo_swap",
 # Direction is trusted for a turn only when it is this sure, over at least 3 speech frames.
 DIRECTION_MIN_CONFIDENCE = 0.5
 DIRECTION_WINDOW_S = 2.5          # a speaker decision comes 0.6-1.4 s after the turn starts
+TEST_TAP_PERIOD_S = 5.0           # "Tap the zone I hear": one tap on the heard side every 5 s
+TEST_TAP_FRESH_S = 1.0            # ...only while that side was heard in the last second
 MANUAL_SEAT_SOURCES = ("pad", "screen", "drag", "key", "room")   # direction never overrides these
 PAD_CODES = {"L": PAD_L, "R": PAD_R, "B": PAD_B, "Q": PAD_Q}
 GESTURE_CODES = {"tap": GESTURE_TAP, "double": GESTURE_DOUBLE, "long": GESTURE_LONG}
@@ -152,6 +154,8 @@ class KandhaService:
         self.direction = None             # DirectionInput while an audio mode with direction runs
         self.direction_error = None
         self.direction_test_tap = False   # "Tap the zone I hear" in the audio test panel
+        self.test_tap_at = -1e9           # when it last tapped
+        self.last_test_tap = None         # {zone, result} for the panel: what happened to the last one
         self.direction_moves = {}         # voice -> (zone, consecutive turns there) before moving a seat
         self.last_audio_publish = 0.0
         if self.settings.audio_mode != "mono":
@@ -562,12 +566,15 @@ class KandhaService:
 
     def set_direction_test_tap(self, on):
         self.direction_test_tap = bool(on)
+        self.test_tap_at = -1e9            # tap as soon as a side is heard
+        self.last_test_tap = None
         return self.audio_status()
 
     def audio_status(self):
         status = self.direction.status() if self.direction is not None else {}
         return {"mode": self.settings.audio_mode, "running": self.direction is not None and not self.direction_error,
-                "error": self.direction_error, "test_tap": self.direction_test_tap, **status,
+                "error": self.direction_error, "test_tap": self.direction_test_tap, "last_test_tap": self.last_test_tap,
+                "test_tap_period_s": TEST_TAP_PERIOD_S, **status,
                 "zone": side_zone(status.get("bearing"), status.get("sided_only", False)) if status.get("bearing") is not None else None}
 
     def audio_devices(self):
@@ -616,13 +623,24 @@ class KandhaService:
         if self.direction is None:
             return
         tracker = getattr(self.direction, "tracker", None)
-        if tracker is not None and self.direction_test_tap:
-            for turn in tracker.take_turns():
-                zone = side_zone(turn["bearing"], tracker.geometry.channels == 2)
-                if zone and turn["confidence"] >= DIRECTION_MIN_CONFIDENCE and turn["t1"] - turn["t0"] >= 0.6:
-                    self.publish("direction_turn", {**turn, "zone": zone})
-                    for p in self.scheduler.submit(Intent("speaker", created=now, zone=zone), now):
-                        self.dispatch(p)
+        if tracker is not None:
+            tracker.take_turns()                                # not used for the test tap; keep the queue short
+        if tracker is not None and self.direction_test_tap and now - self.test_tap_at >= TEST_TAP_PERIOD_S:
+            # Every 5 s, tap the side the dial shows now, if it was heard in the last second.
+            latest = tracker.latest()
+            fresh = latest.get("t") is not None and now - latest["t"] <= TEST_TAP_FRESH_S
+            zone = side_zone(latest.get("bearing"), tracker.geometry.channels == 2) if fresh else None
+            if zone:
+                self.test_tap_at = now
+                before = len(self.scheduler.dropped)
+                played = [self.dispatch(p) for p in self.scheduler.submit(Intent("speaker", created=now, zone=zone), now)]
+                if played:
+                    result = "tapped the stole" if played[0]["device"] == "stole" else "tapped the virtual stole only (no stole connected)"
+                else:
+                    reason = self.scheduler.dropped[-1][1] if len(self.scheduler.dropped) > before else "busy"
+                    result = {"mode": "not tapped: this mode or Do not disturb gives no seat taps"}.get(reason, f"not tapped ({reason})")
+                self.last_test_tap = {"zone": zone, "result": result, "bearing": latest.get("bearing")}
+                self.publish("direction_turn", self.last_test_tap)
         if now - self.last_audio_publish >= 0.12:              # meters and dial: about 8 per second
             self.last_audio_publish = now
             self.publish("audio", self.audio_status())
