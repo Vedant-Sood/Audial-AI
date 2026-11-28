@@ -5,7 +5,20 @@ Branch `kandha-demo`, made from `Kandha-Physical-Final-Software` at `4ae2b81`. B
 home-filmed demo video of Kandha working end to end on the laptop, the phone(s), and the
 bench or virtual stole.
 
-**Status: plan. Waiting on the open questions; the defaults apply if they're not answered.**
+**Status: plan approved 28 Nov 2026, with these answers:**
+
+| # | Question | Answer |
+|---|---|---|
+| 1 | Is the video for the portfolio? | **Yes, for the 30 Nov portfolio.** So nothing shown may contradict a portfolio sentence, and simulated parts carry a label |
+| 2 | Scrapped features | **Hidden everywhere in the UI;** the code goes in Part A |
+| 3 | 4-channel interface | **No.** 4-sided is synthetic only |
+| 4 | Phone → laptop audio | **Off** |
+| 5 | Bench stole | **Flashed and working** |
+| 6 | Android drives the stole | **Left out** |
+| 7 | iPhone certificate | **Try Safari tap-through first** |
+| 8 | Laptop-mic check | Results to follow |
+| 9 | Windows to test the installer | **Yes, the owner has Windows** |
+| 10 | Torch-free Kandha bundle | **Default: measure both** |
 Everything this branch adds is labelled **demo / test** until measured. Nothing here changes a
 portfolio sentence (`Kandha-Physical-Final-Software/PORTFOLIO_CHANGES.md`).
 

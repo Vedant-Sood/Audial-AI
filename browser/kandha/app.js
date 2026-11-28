@@ -93,6 +93,10 @@
   }
   function clock(t) { t = Math.max(0, Math.round(t)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; }
   function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  // Touch the page only when something visible changed: rebuilding on every caption made the
+  // room diagram and voice list flicker (docs/kandha/validation/ui-before/ISSUES.md, U10).
+  function setText(node, value) { value = String(value); if (node && node.textContent !== value) node.textContent = value; }
+  function setHTML(node, html) { if (node && node.__html !== html) { node.__html = html; node.innerHTML = html; } }
   function speaker(id) { return id == null ? null : S.speakers.get(id) || null; }
   function colourVar(id) { const s = speaker(id); return s ? `var(--s${s.idx + 1})` : 'var(--s0)'; }
   function nameOf(id) { const s = speaker(id); return s ? s.name : 'Someone'; }
@@ -203,12 +207,12 @@
     badge.style.setProperty('--c', colourVar(id));
     badge.classList.toggle('is-unseated', id != null && (!zoneOf(id) || zoneOf(id) === 'me'));
     $('svg', badge).style.transform = `rotate(${arrowAngle(id)}deg)`;
-    $('#nowName').textContent = id == null ? (S.running || S.demo ? 'Listening…' : 'No one yet') : nameOf(id);
-    $('#nowSeat').textContent = seatText(id);
+    setText($('#nowName'), id == null ? (S.running || S.demo ? 'Listening…' : 'No one yet') : nameOf(id));
+    setText($('#nowSeat'), seatText(id));
     if (pieces) {
       const text = $('#nowText');
       text.classList.toggle('is-idle', false);
-      text.innerHTML = pieces.map((p) => `<span class="piece" style="--pc:${colourVar(p.speakerId)}">${esc(p.text)}</span>`).join(' ');
+      setHTML(text, pieces.map((p) => `<span class="piece" style="--pc:${colourVar(p.speakerId)}">${esc(p.text)}</span>`).join(' '));
     }
     renderRoomLive();
   }
@@ -221,7 +225,7 @@
     renderRoomLive();
     if (views.roomBig) views.roomBig.render(K.seats, voices, S.current, K.pending && K.pending.voice);
     const un = voices.filter((v) => !zoneOf(v.id) || zoneOf(v.id) === 'me');
-    $('#unseated').innerHTML = un.map((v) => `<li><button type="button" class="chip${views.roomBig && views.roomBig.selected === v.id ? ' is-selected' : ''}" draggable="true" data-chip="${v.id}" style="--c:${colourVar(v.id)}" aria-label="${esc(v.name)}, no seat. Select, then press 1 to 4."><i aria-hidden="true"></i>${esc(v.name)}</button></li>`).join('');
+    setHTML($('#unseated'), un.map((v) => `<li><button type="button" class="chip${views.roomBig && views.roomBig.selected === v.id ? ' is-selected' : ''}" draggable="true" data-chip="${v.id}" style="--c:${colourVar(v.id)}" aria-label="${esc(v.name)}, no seat. Select, then press 1 to 4."><i aria-hidden="true"></i>${esc(v.name)}</button></li>`).join(''));
     $('#roomList').innerHTML = K.rooms.length ? K.rooms.map((r) => `<li><b>${esc(r.name)}</b><small>${esc(r.slots.map((z) => z || '–').join(' · ') || 'empty')} · ${esc(r.mode)}</small>${K.loadedRoom === r.name ? '<small>· in use</small>' : ''}<button type="button" class="btn btn--sm" data-room-load="${esc(r.name)}">Use</button><button type="button" class="btn btn--sm btn--ghost" data-room-delete="${esc(r.name)}" aria-label="Delete ${esc(r.name)}">Delete</button></li>`).join('')
       : '<li><small>No rooms saved yet. Seat the voices, name the room and save.</small></li>';
   }
@@ -229,12 +233,12 @@
     const ul = $('#voices');
     const list = Array.from(S.speakers.values());
     $('#voicesEmpty').hidden = list.length > 0;
-    ul.innerHTML = list.map((s) => `
+    setHTML(ul, list.map((s) => `
       <li><button class="voice${s.id === S.current ? ' is-current' : ''}" data-voice="${s.id}" style="--c:${colourVar(s.id)}" aria-label="${esc(s.name)}, ${esc(seatText(s.id) || 'no seat')}${s.id === S.current ? ', speaking' : ''}">
         ${badgeHTML(s.id, true)}
         <span class="voice__name">${esc(s.name)} <span class="voice__meta">${esc(seatText(s.id))}</span></span>
         ${s.id === S.current ? '<span class="voice__live">Speaking</span>' : `<span class="voice__meta">${countLines(s.id)} lines</span>`}
-      </button></li>`).join('');
+      </button></li>`).join(''));
   }
   function countLines(id) { return S.lines.filter((l) => l.kind === 'speech' && l.speakerId === id).length; }
 

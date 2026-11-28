@@ -4,13 +4,15 @@
 @font-face { font-family: 'Atkinson Hyperlegible'; src: url('fonts/AtkinsonHyperlegible-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
 @font-face { font-family: 'Atkinson Hyperlegible'; src: url('fonts/AtkinsonHyperlegible-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
 @font-face { font-family: 'Atkinson Hyperlegible'; src: url('fonts/AtkinsonHyperlegible-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; font-display: swap; }
+/* Bundled so Hindi never renders as boxes on a machine without a Devanagari font (OFL 1.1; U1). */
+@font-face { font-family: 'Noto Sans Devanagari'; src: url('fonts/NotoSansDevanagari-Variable.ttf') format('truetype'); font-weight: 100 900; font-style: normal; font-display: swap; unicode-range: U+0900-097F, U+1CD0-1CFF, U+200C-200D, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FF; }
 
 :root {
   --bg: #0e1318; --surface: #151c24; --surface-2: #1c2530; --line: #2d3a49; --text: #edf2f7; --muted: #a3b1c0;
   --signal: #f5b53d; --signal-ink: #1b1404; --focus: #8ec5ff; --danger: #ff8a7a; --ok: #3fd07a;
   --s1: #6ab0ff; --s2: #ff8a7a; --s3: #45d6b9; --s4: #c19bff; --s5: #a7dd5a; --s6: #ff7dc4; --s0: #a3b1c0;
   --tap: #ffd166;
-  --font: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --font: 'Atkinson Hyperlegible', 'Noto Sans Devanagari', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
   --font-hi: 'Noto Sans Devanagari', 'Nirmala UI', 'Kohinoor Devanagari', 'Mangal', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Consolas, monospace;
   --cap: 28px; --radius: 14px;
@@ -66,7 +68,8 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .seg button { border: 0; background: transparent; padding: 6px 13px; border-radius: 999px; font-size: 15px; min-height: 36px; color: var(--text); }
 .seg button[aria-pressed="true"], .seg button[aria-selected="true"] { background: var(--text); color: var(--bg); font-weight: 700; }
 .seg--tabs button { font-weight: 700; }
-.dnd { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 6px 12px; min-height: 36px; font-size: 15px; }
+.dnd { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 6px 12px; min-height: 36px; font-size: 15px; display: inline-flex; align-items: center; gap: 6px; }
+.dnd__icon { width: 16px; height: 16px; flex: none; }
 .dnd[aria-pressed="true"] { background: var(--muted); color: var(--bg); border-color: var(--muted); font-weight: 700; }
 .status { display: flex; align-items: center; gap: 8px; margin-left: auto; color: var(--muted); font-size: 15px; min-width: 0; }
 .status__dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
@@ -78,6 +81,7 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .meter span { display: block; height: 100%; width: 0; background: var(--muted); transition: width .08s linear; }
 .status[data-state="live"] .meter span { background: var(--ok); }
 .icon-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); display: grid; place-items: center; flex: none; }
+.icon-btn svg { width: 20px; height: 20px; }
 
 /* ---------------------------------------------------------------- main and screens */
 .main { min-height: 0; overflow: hidden; padding: 14px max(16px, env(safe-area-inset-right, 0px)) 14px max(16px, env(safe-area-inset-left, 0px)); }

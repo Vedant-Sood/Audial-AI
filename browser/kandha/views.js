@@ -151,7 +151,8 @@
       for (const [z, [x, y]] of Object.entries(spots)) {
         const g = el('g', { 'data-zone': z }, svg);
         this.seats[z] = el('circle', { cx: x, cy: y, r: 36, class: 'room__seat', 'data-zone': z }, g);
-        const t = el('text', { x, y: y + 52, 'text-anchor': 'middle', class: 'room__seatlabel' }, g);
+        // the front label sits above its seat: below it is where the "facing" arrow is drawn (U4)
+        const t = el('text', { x, y: z === 'F' ? y - 44 : y + 52, 'text-anchor': 'middle', class: 'room__seatlabel' }, g);
         t.textContent = { F: 'front', R: 'right', B: 'behind', L: 'left' }[z];
         if (this.interactive) {
           g.addEventListener('dragover', (e) => { e.preventDefault(); this.seats[z].classList.add('is-over'); });
@@ -171,6 +172,10 @@
 
     // seats: {voiceId: zone|null}; voices: [{id, name, idx}]; current: voiceId; pending: voiceId waiting for a pad
     render(seats, voices, current, pending) {
+      // skip when nothing visible changed (U10: this ran on every caption and rebuilt every chip)
+      const key = JSON.stringify([seats, voices.map((v) => [v.id, v.name, v.idx]), current, pending, this.selected]);
+      if (key === this.lastKey) return;
+      this.lastKey = key;
       for (const node of Object.values(this.seats)) { node.classList.remove('is-lit'); node.style.removeProperty('--c'); }
       this.chipLayer.innerHTML = '';
       const byZone = {};
@@ -182,11 +187,14 @@
       for (const [z, list] of Object.entries(byZone)) {
         const [cx, cy] = this.spots[z];
         list.forEach((v, i) => {
-          const n = list.length, dx = (i - (n - 1) / 2) * 30;
+          // two per row, rows stacked, so three or more voices on one side never overlap
+          const perRow = Math.min(2, list.length), row = Math.floor(i / 2), col = i % 2;
+          const inRow = Math.min(perRow, list.length - row * 2), rows = Math.ceil(list.length / 2);
+          const dx = (col - (inRow - 1) / 2) * 32, dy = (row - (rows - 1) / 2) * 32;
           const g = el('g', { class: 'room__chip' + (v.id === current ? ' is-current' : '') + (v.id === this.selected ? ' is-selected' : ''), 'data-voice': v.id, tabindex: this.interactive ? 0 : -1, role: this.interactive ? 'button' : null, 'aria-label': `${v.name}, seated ${ZONE_NAME[z]}` }, this.chipLayer);
           g.style.setProperty('--c', `var(--s${v.idx + 1})`);
-          el('circle', { cx: cx + dx, cy, r: 15 }, g);
-          const t = el('text', { x: cx + dx, y: cy + 5, 'text-anchor': 'middle' }, g); t.textContent = v.name.slice(0, 2);
+          el('circle', { cx: cx + dx, cy: cy + dy, r: 15 }, g);
+          const t = el('text', { x: cx + dx, y: cy + dy + 5, 'text-anchor': 'middle' }, g); t.textContent = v.name.slice(0, 2);
           if (v.id === current) this.seats[z].classList.add('is-lit'), this.seats[z].style.setProperty('--c', `var(--s${v.idx + 1})`);
           if (this.interactive) this.wireChip(g, v.id);
         });
@@ -226,7 +234,9 @@
     const T = Math.max(1, data.length);
     const pxPerSec = Math.max(6, Math.min(40, 900 / T));
     const x0 = 20, W = Math.max(600, Math.ceil(T * pxPerSec) + 40);
-    const lanes = [['voices', 44], ['cues', 24], ['tone', data.showTone ? 22 : 0], ['queue', 16], ['taps', 22], ['seats', data.seats && data.seats.length ? 18 : 0]].filter((l) => l[1] > 0);
+    // taps get 32 px so their zone letters stay inside their own lane (U5); the queue lane is
+    // hidden with the rest of the scrapped queue feature (U12)
+    const lanes = [['voices', 44], ['cues', 24], ['tone', data.showTone ? 22 : 0], ['taps', 32], ['seats', data.seats && data.seats.length ? 18 : 0]].filter((l) => l[1] > 0);
     let y = 18; const laneY = {};
     for (const [name, h] of lanes) { laneY[name] = y; y += h + 6; }
     const H = y + 16;
@@ -257,8 +267,8 @@
         else parts.push(`<rect x="${X(x.t0).toFixed(1)}" y="${yb + 4}" width="${Math.max(2, X(x.t1) - X(x.t0)).toFixed(1)}" height="2" fill="${c}" opacity=".6">${tip}</rect>`);
       }
     }
-    label('queue', 'Asked to speak');
-    for (const q of data.queue) parts.push(`<path d="M${X(q.t).toFixed(1)} ${laneY.queue} v14" stroke="${signal}" stroke-width="3"><title>${esc(q.text)} ${data.clock(q.t)}</title></path>`);
+    if (laneY.queue != null) label('queue', 'Asked to speak');
+    if (laneY.queue != null) for (const q of data.queue) parts.push(`<path d="M${X(q.t).toFixed(1)} ${laneY.queue} v14" stroke="${signal}" stroke-width="3"><title>${esc(q.text)} ${data.clock(q.t)}</title></path>`);
     label('taps', 'Stole taps');
     for (const h of data.taps) {
       const w = Math.max(3, (h.duration_ms || 120) / 1000 * pxPerSec);

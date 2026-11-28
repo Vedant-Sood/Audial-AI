@@ -46,7 +46,7 @@
       <button data-speech="en" aria-pressed="true">English</button>
       <button data-speech="hi" aria-pressed="false" lang="hi">हिन्दी</button>
     </div>
-    <button class="dnd" id="dndBtn" aria-pressed="false" title="Do not disturb: the stole only answers the queue pad"><span aria-hidden="true">◌</span> Do not disturb</button>
+    <button class="dnd" id="dndBtn" aria-pressed="false" title="Do not disturb: no taps; captions continue"><svg class="dnd__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Do not disturb</span></button>
     <div class="status" id="status" data-state="idle">
       <span class="status__dot" aria-hidden="true"></span>
       <span class="status__text" id="statusText">Ready</span>
@@ -268,7 +268,7 @@
 
 <dialog id="voiceDlg" aria-labelledby="voiceTitle">
   <form method="dialog" class="dlg">
-    <div class="dlg__head"><span class="badge badge--sm" id="voiceBadge" aria-hidden="true"></span><h2 id="voiceTitle">Voice</h2><button class="icon-btn dlg__close" value="close" aria-label="Close">✕</button></div>
+    <div class="dlg__head"><span class="badge badge--sm" id="voiceBadge" aria-hidden="true"></span><h2 id="voiceTitle">Voice</h2><button class="icon-btn dlg__close" value="close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button></div>
     <label class="field"><span>Name</span><input type="text" id="voiceName" autocomplete="off"></label>
     <div class="field"><span>Seat</span><div class="row seatrow" id="voiceSeatRow"><button type="button" class="btn btn--sm" data-seat="L">Left</button><button type="button" class="btn btn--sm" data-seat="R">Right</button><button type="button" class="btn btn--sm" data-seat="B">Behind</button><button type="button" class="btn btn--sm" data-seat="F">Front</button><button type="button" class="btn btn--sm" data-seat="me">This is me</button><button type="button" class="btn btn--sm btn--ghost" data-seat="">No seat</button></div><small>"This is me" is your own voice: the stole never taps for it.</small></div>
     <div class="field" id="lineMoveField" hidden><span>This line was said by</span><div class="row"><select id="lineMoveSel" aria-label="Speaker of this line"></select><button type="button" class="btn" id="lineMoveBtn">Move line</button></div></div>
@@ -280,7 +280,7 @@
 
 <dialog id="missDlg" aria-labelledby="missTitle">
   <form method="dialog" class="dlg">
-    <div class="dlg__head"><h2 id="missTitle">The last 30 seconds</h2><button class="icon-btn dlg__close" value="close" aria-label="Close">✕</button></div>
+    <div class="dlg__head"><h2 id="missTitle">The last 30 seconds</h2><button class="icon-btn dlg__close" value="close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button></div>
     <ol class="miss" id="missList"></ol>
     <div class="dlg__foot"><button class="btn btn--primary" value="close">Back to live</button></div>
   </form>
@@ -288,7 +288,7 @@
 
 <dialog id="learnDlg" aria-labelledby="learnTitle">
   <form method="dialog" class="dlg">
-    <div class="dlg__head"><h2 id="learnTitle">Learn the taps</h2><button class="icon-btn dlg__close" value="close" aria-label="Close">✕</button></div>
+    <div class="dlg__head"><h2 id="learnTitle">Learn the taps</h2><button class="icon-btn dlg__close" value="close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button></div>
     <p class="fineprint" id="learnProgress">Step 1 of 9</p>
     <div class="learn">
       <div class="stolewrap" id="stoleLearn"></div>
@@ -308,7 +308,7 @@
 
 <dialog id="toneDlg" aria-labelledby="toneTitle">
   <form method="dialog" class="dlg">
-    <div class="dlg__head"><h2 id="toneTitle">How accurate are tone estimates?</h2><button class="icon-btn dlg__close" value="close" aria-label="Close">✕</button></div>
+    <div class="dlg__head"><h2 id="toneTitle">How accurate are tone estimates?</h2><button class="icon-btn dlg__close" value="close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button></div>
     <p>Kandha's tone model learned from <b>CREMA-D</b>: 7,441 short sentences by 91 actors, each acting six emotions. It was tested on <b>10 actors it never heard in training</b>, using the speaker split from Audial-AI, and on natural, unacted reading. "Was" is the earlier loudness-and-pitch rules on the same test.</p>
     <table class="acc">
       <thead><tr><th scope="col">Tested on 10 actors the model never heard</th><th scope="col">Result</th></tr></thead>

@@ -35,7 +35,8 @@ SANKET_FILES = {"tone.js", "engine.js", "captions.js", "recognizer.js", "transla
 # Kandha (browser/kandha/): the app, served under /kandha/ with its bundled font.
 KANDHA_FILES = {"index.html", "styles.css", "app.js", "views.js", "demo.js", "kandha-intents.js"}
 KANDHA_FONTS = {"AtkinsonHyperlegible-Regular.ttf", "AtkinsonHyperlegible-Bold.ttf", "AtkinsonHyperlegible-Italic.ttf",
-                "AtkinsonHyperlegible-BoldItalic.ttf", "OFL.txt"}
+                "AtkinsonHyperlegible-BoldItalic.ttf", "OFL.txt",
+                "NotoSansDevanagari-Variable.ttf", "OFL-NotoSansDevanagari.txt"}
 SANKET_LANGUAGES = {"en", "hi"}
 CSP = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
 # Kandha's page colours voices with inline style attributes (--c custom properties); scripts stay 'self'.
