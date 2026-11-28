@@ -15,6 +15,38 @@ over Bluetooth, on Windows, or with Indian English or Hindi speakers.
 | Accessibility | `python -m scripts.audit_kandha_a11y` | [a11y-chromium.json](validation/a11y-chromium.json) |
 | Embedded window | `python -m app.main --kandha-check` | page ready in QtWebEngine 6.8.3 with the `QWebEnginePermission` API (offscreen) |
 
+## Laptop microphones: can they tell left from right? (measured on the owner's laptop, 2026-11-28)
+
+**Laptop.** Arch Linux, Intel SOF audio (`sof-hda-dsp`, card 1). The built-in microphone is a
+digital mic array on `hw:1,6`. Its hardware reports `CHANNELS: 2`: **two microphones**, not
+four.
+
+**Method.**
+- Recorded straight from the hardware (`arecord -D hw:1,6 -c 2 -r 48000 -f S32_LE`, with
+  PipeWire paused).
+- One person talking about 1 m away for 15 s: at your left (90°), straight across the
+  laptop, and at your right (90°).
+- Checked with GCC-PHAT on the two channels: 300–4,000 Hz, 4,096-sample frames, speech
+  frames only. The value is the median delay over those frames.
+
+| Talker | Delay, mic0 → mic1 | Spread (interquartile) |
+|---|---|---|
+| Left | −4.0 samples (−83 µs) | 0.0 |
+| Centre | 0.0 | 0.5 |
+| Right | +4.0 samples (+83 µs) | 0.5 |
+
+**Result: measured, one laptop, one quiet room, one talker.**
+- The two channels are real, separate microphones, not one signal duplicated.
+- They separate left, centre and right cleanly. **mic0 is on the user's left.**
+- An earlier 6-second run was much noisier on the left (−1.0, spread 5.0), so a turn needs a
+  few seconds of speech before its direction is trusted.
+
+**Not measured:**
+- other rooms or noise;
+- two people talking at once;
+- talkers at diagonals;
+- front versus behind. A two-mic line can't tell those apart.
+
 ## Caption models: Whisper tiny, small, medium and large-v3-turbo (2026-11-22)
 
 Why: the default model, Whisper tiny, was reported as poor. The comparison was run in a
