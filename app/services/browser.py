@@ -481,6 +481,12 @@ class BrowserService:
                     self.respond(200, k.set_queue(bool(options.get("on")), str(options.get("source", "screen"))[:20]))
                 elif action == "settings":
                     self.respond(200, k.update_settings(options.get("settings", options)))
+                elif action == "audio/status":
+                    self.respond(200, k.audio_status())
+                elif action == "audio/devices":
+                    self.respond(200, k.audio_devices())
+                elif action == "audio/test-tap":
+                    self.respond(200, k.set_direction_test_tap(bool(options.get("on"))))
                 elif action == "seats":
                     self.respond(200, k.assign_seat(options.get("voice"), options.get("zone"), str(options.get("source", "screen"))[:20]))
                 elif action == "merge":

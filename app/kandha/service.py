@@ -20,9 +20,16 @@ from app.kandha.protocol import GESTURE_DOUBLE, GESTURE_LONG, GESTURE_TAP, PAD_B
 from app.kandha.scheduler import CUES, HapticScheduler, Intent, QueueTracker, SchedulerSettings
 from app.kandha.seatmap import SeatMap
 from app.kandha.virtual import VirtualStole
+from app.kandha.direction import side_zone
 from app.utils.paths import atomic_json, data_root
 
 MODES = ("lecture", "seminar", "practicum")
+AUDIO_MODES = ("mono", "stereo", "quad", "recorded")
+AUDIO_FIELDS = ("audio_mode", "audio_device", "stereo_spacing_m", "stereo_swap", "recorded_file")
+# Direction is trusted for a turn only when it is this sure, over at least 3 speech frames.
+DIRECTION_MIN_CONFIDENCE = 0.5
+DIRECTION_WINDOW_S = 2.5          # a speaker decision comes 0.6-1.4 s after the turn starts
+MANUAL_SEAT_SOURCES = ("pad", "screen", "drag", "key", "room")   # direction never overrides these
 PAD_CODES = {"L": PAD_L, "R": PAD_R, "B": PAD_B, "Q": PAD_Q}
 GESTURE_CODES = {"tap": GESTURE_TAP, "double": GESTURE_DOUBLE, "long": GESTURE_LONG}
 MAX_INTENTS = 50
@@ -48,12 +55,29 @@ class KandhaSettings:
     # "simulated": the prototype's built-in stole (no radio). "bluetooth": the real bleak link,
     # prepared but untested with hardware; only for people who have a stole running the firmware.
     link: str = "simulated"
+    # Where direction comes from (decision 0027). "mono": none, voices are seated by the seat map
+    # and the pads (the default). "stereo" / "quad": a 2- or 4-channel microphone. "recorded": a
+    # multichannel WAV file, SIMULATED.
+    audio_mode: str = "mono"
+    audio_device: str = ""            # sounddevice index or name, or "pulse:<source name>"
+    stereo_spacing_m: float = 0.03
+    stereo_swap: bool = False
+    recorded_file: str = ""
 
     def validate(self):
         if self.mode not in MODES:
             raise ValueError("Mode must be lecture, seminar or practicum.")
         if self.link not in ("simulated", "bluetooth"):
             raise ValueError("The stole link is simulated or bluetooth.")
+        if self.audio_mode not in AUDIO_MODES:
+            raise ValueError("The audio source is mono, stereo, quad or recorded.")
+        if not isinstance(self.audio_device, str) or not isinstance(self.recorded_file, str) or len(self.audio_device) > 300 or len(self.recorded_file) > 1000:
+            raise ValueError("Audio device and recorded file are short text.")
+        if type(self.stereo_spacing_m) not in (int, float) or not 0.005 <= self.stereo_spacing_m <= 0.5:
+            raise ValueError("Microphone spacing is 0.005 to 0.5 metres.")
+        self.stereo_spacing_m = float(self.stereo_spacing_m)
+        if not isinstance(self.stereo_swap, bool):
+            raise ValueError("stereo_swap must be true or false.")
         for key in ("dnd", "seminar_cues", "mirror", "use_last_layout"):
             if not isinstance(getattr(self, key), bool):
                 raise ValueError(f"{key} must be true or false.")
@@ -125,6 +149,13 @@ class KandhaService:
         self.start_bridge = start_bridge
         if start_bridge:
             self._start_bridge()
+        self.direction = None             # DirectionInput while an audio mode with direction runs
+        self.direction_error = None
+        self.direction_test_tap = False   # "Tap the zone I hear" in the audio test panel
+        self.direction_moves = {}         # voice -> (zone, consecutive turns there) before moving a seat
+        self.last_audio_publish = 0.0
+        if self.settings.audio_mode != "mono":
+            self._start_direction()
         self.ticker = None
         if ticker:
             self.ticker = threading.Thread(target=self._tick_loop, name="kandha-ticker", daemon=True)
@@ -242,6 +273,9 @@ class KandhaService:
         if self.bridge is not None and self.bridge.connected:
             self.bridge.write_haptic(data)
             device = "stole"
+        tracker = getattr(self.direction, "tracker", None)
+        if tracker is not None:                         # ignore the microphones while the motors run
+            tracker.mute(played.until)
         record = played.as_dict() | {"device": device, "wall_ms": round(time.time() * 1000)}
         if sent_ms is not None:
             latency = time.time() * 1000 - sent_ms
@@ -267,6 +301,7 @@ class KandhaService:
         now = self.clock()
         with self.lock:
             released = [self.dispatch(p) for p in self.scheduler.tick(now)]
+            self._direction_tick(now)
             if self.queue.due(now):
                 released += [self.dispatch(p) for p in self.scheduler.submit(Intent("queue_reminder", created=now), now)]
                 self.publish("queue", {"on": True, "waited_s": round(self.queue.waited(now)), "reminder": True})
@@ -291,6 +326,11 @@ class KandhaService:
                                           "pending": self.seats.snapshot(now)["pending"]})
                 if intent.kind in ("speaker", "voice_resumes", "new_voice") and intent.voice is not None:
                     self.current_voice = intent.voice
+                    if self.direction is not None:
+                        self._seat_from_direction(intent.voice, now)
+                        if intent.kind == "new_voice" and self.seats.source_of(intent.voice) == "direction":
+                            # the side is known: one firm tap there, as approved for the final design (Q3)
+                            intent = Intent("speaker", created=intent.created, voice=intent.voice, t=intent.t, new=True)
                 for p in self.scheduler.submit(intent, now):
                     played.append(self.dispatch(p, sent))
         return {"accepted": accepted, "played": played, "dropped": len(self.scheduler.dropped)}
@@ -392,6 +432,7 @@ class KandhaService:
             raise ValueError("Unknown settings: " + ", ".join(sorted(unknown)))
         data = asdict(self.settings)
         data.update(changes)
+        previous = self.settings
         updated = KandhaSettings(**data).validate()
         link_changed = updated.link != self.settings.link
         with self.lock:
@@ -406,6 +447,8 @@ class KandhaService:
             updated.save(self.home / "settings.json")
         if link_changed and self.backend_given is None:
             self._restart_bridge()
+        if any(getattr(previous, f) != getattr(updated, f) for f in AUDIO_FIELDS):
+            self._start_direction()
         self.publish("settings", {"settings": asdict(updated), "source": source})
         return asdict(updated)
 
@@ -482,9 +525,110 @@ class KandhaService:
                 "virtual": self.virtual.snapshot(), "seats": self.seats.snapshot(now), "current_voice": self.current_voice,
                 "queue": {"on": self.queue.on, "waited_s": round(self.queue.waited(now)), "reminder_s": self.queue.reminder_s},
                 "latency_ms": {"n": len(latencies), "p50": _percentile(latencies, 50), "p95": _percentile(latencies, 95), "max": max(latencies) if latencies else None},
-                "recent": self.played[-20:], "dropped": [(i.kind, reason) for i, reason in self.scheduler.dropped[-20:]]}
+                "recent": self.played[-20:], "dropped": [(i.kind, reason) for i, reason in self.scheduler.dropped[-20:]],
+                "audio": self.audio_status()}
+
+    # ----------------------------------------------------------------- direction (decision 0027)
+    def _start_direction(self):
+        self._stop_direction()
+        self.direction_error = None
+        if self.settings.audio_mode == "mono":
+            return
+        from app.kandha.audio_input import DirectionInput
+        s = self.settings
+        try:
+            self.direction = DirectionInput(s.audio_mode, self.clock, s.audio_device, s.stereo_spacing_m, s.stereo_swap,
+                                            s.recorded_file, on_error=self._direction_failed).start()
+        except Exception as error:
+            self.direction = None
+            self._direction_failed(str(error))
+
+    def _direction_failed(self, message):
+        self.direction_error = message
+        self.publish("audio", {"error": message, "mode": self.settings.audio_mode})
+
+    def _stop_direction(self):
+        if self.direction is not None:
+            try:
+                self.direction.stop()
+            except Exception:
+                pass
+        self.direction = None
+
+    def use_direction(self, direction):
+        """Tests: drive direction from a prepared DirectionInput-like object (with .tracker)."""
+        self._stop_direction()
+        self.direction = direction
+
+    def set_direction_test_tap(self, on):
+        self.direction_test_tap = bool(on)
+        return self.audio_status()
+
+    def audio_status(self):
+        status = self.direction.status() if self.direction is not None else {}
+        return {"mode": self.settings.audio_mode, "running": self.direction is not None and not self.direction_error,
+                "error": self.direction_error, "test_tap": self.direction_test_tap, **status,
+                "zone": side_zone(status.get("bearing"), status.get("sided_only", False)) if status.get("bearing") is not None else None}
+
+    def audio_devices(self):
+        from app.kandha.audio_input import list_devices
+        return {"devices": list_devices()}
+
+    def _direction_for_turn(self, now):
+        tracker = getattr(self.direction, "tracker", None)
+        if tracker is None:
+            return None
+        found = tracker.direction_between(now - DIRECTION_WINDOW_S, now)
+        if not found or found["confidence"] < DIRECTION_MIN_CONFIDENCE:
+            return None
+        zone = side_zone(found["bearing"], tracker.geometry.channels == 2)
+        return zone and {**found, "zone": zone}
+
+    def _seat_from_direction(self, voice, now):
+        """Seat a voice from where its speech came from. A voice seated by a person (pad, screen,
+        key, drag) or a saved room is never moved; a direction seat moves only after two turns in
+        a row agree on the new side, so one reflection cannot move a person."""
+        if self.seats.zone_for(voice) == "me":
+            return None
+        found = self._direction_for_turn(now)
+        if found is None:
+            return None
+        current, source = self.seats.zone_for(voice), self.seats.source_of(voice)
+        if current is not None and source in MANUAL_SEAT_SOURCES:
+            return None
+        zone = found["zone"]
+        if current == zone:
+            self.direction_moves.pop(voice, None)
+            return None
+        if current is not None:
+            seen_zone, count = self.direction_moves.get(voice, (None, 0))
+            count = count + 1 if seen_zone == zone else 1
+            self.direction_moves[voice] = (zone, count)
+            if count < 2:
+                return None
+        self.direction_moves.pop(voice, None)
+        self.seats.assign(voice, zone, "direction")
+        self.publish("seat", {"voice": voice, "zone": zone, "source": "direction", "bearing": round(found["bearing"], 1),
+                              "confidence": found["confidence"], "seats": self.seats.snapshot(now)["seats"]})
+        return zone
+
+    def _direction_tick(self, now):
+        if self.direction is None:
+            return
+        tracker = getattr(self.direction, "tracker", None)
+        if tracker is not None and self.direction_test_tap:
+            for turn in tracker.take_turns():
+                zone = side_zone(turn["bearing"], tracker.geometry.channels == 2)
+                if zone and turn["confidence"] >= DIRECTION_MIN_CONFIDENCE and turn["t1"] - turn["t0"] >= 0.6:
+                    self.publish("direction_turn", {**turn, "zone": zone})
+                    for p in self.scheduler.submit(Intent("speaker", created=now, zone=zone), now):
+                        self.dispatch(p)
+        if now - self.last_audio_publish >= 0.12:              # meters and dial: about 8 per second
+            self.last_audio_publish = now
+            self.publish("audio", self.audio_status())
 
     def close(self):
+        self._stop_direction()
         self.stopping.set()
         if self.ticker is not None:
             self.ticker.join(1)

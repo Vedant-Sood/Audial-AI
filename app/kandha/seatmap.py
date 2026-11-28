@@ -74,6 +74,7 @@ class SeatMap:
         self.last_room = None
         self.loaded_room = None     # the Room whose slots pre-assign voices this session
         self.changes = []           # (voice, zone, source) this session
+        self.sources = {}           # voice -> how its current seat was set (pad, screen, direction, room, ...)
         self._load_store()
 
     # ------------------------------------------------------------------ voices and zones
@@ -96,6 +97,7 @@ class SeatMap:
                     self.seats[other] = None
         changed = self.seats.get(voice) != zone
         self.seats[voice] = zone
+        self.sources[voice] = source
         if changed:
             self.changes.append((voice, zone, source))
         if self.pending and self.pending[0] == voice:
@@ -121,7 +123,8 @@ class SeatMap:
             return ME
         if zone is not None and self.seats[voice] is None:
             self.seats[voice] = zone
-            self.changes.append((voice, zone, "room" if self.loaded_room else "mode-default"))
+            self.sources[voice] = "room" if self.loaded_room else "mode-default"
+            self.changes.append((voice, zone, self.sources[voice]))
         self.pending = (voice, now + self.window_s)
         return self.seats[voice]
 
@@ -160,12 +163,18 @@ class SeatMap:
             return {"action": "clear-current", "voice": current_voice, "zone": None}
         return None
 
+    def source_of(self, voice):
+        """How the voice's seat was set, or None when it has none."""
+        return self.sources.get(voice) if self.seats.get(voice) is not None else None
+
     def merge(self, keep, drop):
         """Two colours turned out to be one person: keep the first voice's seat unless it has none."""
         if drop in self.seats:
             if self.seats.get(keep) is None and self.seats[drop] is not None:
                 self.seats[keep] = self.seats[drop]
+                self.sources[keep] = self.sources.get(drop)
             del self.seats[drop]
+            self.sources.pop(drop, None)
         if drop in self.order:
             self.order.remove(drop)
         if keep not in self.order:
@@ -176,6 +185,7 @@ class SeatMap:
         self.order = []
         self.pending = None
         self.changes = []
+        self.sources = {}
         if not keep_room:
             self.loaded_room = None
 
@@ -248,6 +258,7 @@ class SeatMap:
 
     def snapshot(self, now=None):
         return {"seats": {str(v): z for v, z in self.seats.items()}, "order": list(self.order),
+                "sources": {str(v): self.sources.get(v) for v, z in self.seats.items() if z is not None},
                 "pending": {"voice": self.pending[0], "until_s": round(self.pending[1] - now, 2)} if (self.pending and now is not None and now <= self.pending[1]) else None,
                 "rooms": self.list_rooms(), "last_room": self.last_room,
                 "loaded_room": self.loaded_room.name if self.loaded_room else None, "mode": self.mode}

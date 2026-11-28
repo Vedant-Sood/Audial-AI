@@ -1,0 +1,179 @@
+{
+ "simulated": true,
+ "method": "SIMULATED zone accuracy of the direction finder (decision 0027) on synthetic rooms.",
+ "results": {
+  "stereo/clean": {
+   "bearings": 24,
+   "zone_accuracy_for_what_it_can_tell": 0.917,
+   "zone_accuracy_four_zones": 0.708,
+   "mean_bearing_error_deg": null,
+   "misses": [
+    {
+     "bearing": 135,
+     "expected": "F",
+     "got": "R",
+     "found_deg": 45.7,
+     "on_boundary": true
+    },
+    {
+     "bearing": 315,
+     "expected": "F",
+     "got": "L",
+     "found_deg": 314.9,
+     "on_boundary": true
+    }
+   ],
+   "misses_off_boundary": 0
+  },
+  "stereo/noisy": {
+   "bearings": 24,
+   "zone_accuracy_for_what_it_can_tell": 0.875,
+   "zone_accuracy_four_zones": 0.667,
+   "mean_bearing_error_deg": null,
+   "misses": [
+    {
+     "bearing": 135,
+     "expected": "F",
+     "got": "R",
+     "found_deg": 46.6,
+     "on_boundary": true
+    },
+    {
+     "bearing": 225,
+     "expected": "L",
+     "got": "F",
+     "found_deg": 318.4,
+     "on_boundary": true
+    },
+    {
+     "bearing": 315,
+     "expected": "F",
+     "got": "L",
+     "found_deg": 310.1,
+     "on_boundary": true
+    }
+   ],
+   "misses_off_boundary": 0
+  },
+  "stereo/echo": {
+   "bearings": 24,
+   "zone_accuracy_for_what_it_can_tell": 0.833,
+   "zone_accuracy_four_zones": 0.625,
+   "mean_bearing_error_deg": null,
+   "misses": [
+    {
+     "bearing": 45,
+     "expected": "R",
+     "got": "F",
+     "found_deg": 44.2,
+     "on_boundary": true
+    },
+    {
+     "bearing": 135,
+     "expected": "F",
+     "got": "R",
+     "found_deg": 46.9,
+     "on_boundary": true
+    },
+    {
+     "bearing": 225,
+     "expected": "L",
+     "got": "F",
+     "found_deg": 317.7,
+     "on_boundary": true
+    },
+    {
+     "bearing": 315,
+     "expected": "F",
+     "got": "L",
+     "found_deg": 313.3,
+     "on_boundary": true
+    }
+   ],
+   "misses_off_boundary": 0
+  },
+  "quad/clean": {
+   "bearings": 24,
+   "zone_accuracy_for_what_it_can_tell": 0.917,
+   "zone_accuracy_four_zones": 0.917,
+   "mean_bearing_error_deg": 0.1,
+   "misses": [
+    {
+     "bearing": 45,
+     "expected": "R",
+     "got": "F",
+     "found_deg": 45.0,
+     "on_boundary": true
+    },
+    {
+     "bearing": 135,
+     "expected": "B",
+     "got": "R",
+     "found_deg": 134.9,
+     "on_boundary": true
+    }
+   ],
+   "misses_off_boundary": 0
+  },
+  "quad/noisy": {
+   "bearings": 24,
+   "zone_accuracy_for_what_it_can_tell": 0.875,
+   "zone_accuracy_four_zones": 0.875,
+   "mean_bearing_error_deg": 1.0,
+   "misses": [
+    {
+     "bearing": 135,
+     "expected": "B",
+     "got": "R",
+     "found_deg": 135.0,
+     "on_boundary": true
+    },
+    {
+     "bearing": 225,
+     "expected": "L",
+     "got": "B",
+     "found_deg": 224.2,
+     "on_boundary": true
+    },
+    {
+     "bearing": 315,
+     "expected": "F",
+     "got": "L",
+     "found_deg": 313.7,
+     "on_boundary": true
+    }
+   ],
+   "misses_off_boundary": 0
+  },
+  "quad/echo": {
+   "bearings": 24,
+   "zone_accuracy_for_what_it_can_tell": 0.875,
+   "zone_accuracy_four_zones": 0.875,
+   "mean_bearing_error_deg": 0.3,
+   "misses": [
+    {
+     "bearing": 135,
+     "expected": "B",
+     "got": "R",
+     "found_deg": 134.5,
+     "on_boundary": true
+    },
+    {
+     "bearing": 225,
+     "expected": "L",
+     "got": "B",
+     "found_deg": 224.7,
+     "on_boundary": true
+    },
+    {
+     "bearing": 315,
+     "expected": "F",
+     "got": "L",
+     "found_deg": 314.7,
+     "on_boundary": true
+    }
+   ],
+   "misses_off_boundary": 0
+  }
+ }
+}
