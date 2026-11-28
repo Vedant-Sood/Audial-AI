@@ -30,3 +30,9 @@ why, what was rejected and what would change the decision. New records get the n
 | [0023](0023-phone-asr-and-mics.md) | Phone ASR on device; the stole link stays audio-free · approved |
 | [0024](0024-one-host-at-a-time.md) | One host at a time; explicit hand-off · approved |
 | [0025](0025-recap.md) | Extractive, redacted recap, wiped with the memory · approved |
+| [0026](0026-phone-as-website.md) | Demo: the phone is a website served by the desktop app; defers 0022 · proposed |
+| [0027](0027-audio-source-modes.md) | Audio source modes; multichannel capture and direction in desktop Python · proposed |
+| [0028](0028-distributed-devices.md) | Distributed devices: loudness only, no clock sync, no audio sent · proposed |
+| [0029](0029-phone-mic-path.md) | Phone → laptop audio: off by default; conflicts with "audio never leaves the laptop" · proposed |
+| [0030](0030-local-https-pairing.md) | Local HTTPS from a generated CA; one-time-code QR pairing · proposed |
+| [0031](0031-linux-appimage.md) | Linux packaging is an AppImage · proposed |

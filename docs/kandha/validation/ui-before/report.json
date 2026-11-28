@@ -1,0 +1,1286 @@
+{
+ "system/1280x720/empty-live": {
+  "overlaps": [
+   {
+    "a": "p#nowText.now__text.is-idle \"Captions appear here, in the colour of whoever i\"",
+    "b": "h1 \"Keep your eyes on the person.\"",
+    "px": 9883
+   },
+   {
+    "a": "p#nowText.now__text.is-idle \"Captions appear here, in the colour of whoever i\"",
+    "b": "p \"Kandha captions the room, gives each voice its o\"",
+    "px": 275
+   }
+  ],
+  "missing": {},
+  "spill": [],
+  "boxes": 59
+ },
+ "system/1280x720/empty-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 47
+ },
+ "system/1280x720/demo-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 71
+ },
+ "system/1280x720/demo-stole": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 63
+ },
+ "system/1280x720/demo-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 50
+ },
+ "system/1280x720/demo-review": {
+  "overlaps": [
+   {
+    "a": "text \"F\"",
+    "b": "text \"Seat changes\"",
+    "px": 48
+   }
+  ],
+  "missing": {},
+  "spill": [],
+  "boxes": 60
+ },
+ "system/1280x720/demo-settings": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 79
+ },
+ "system/1280x720/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 24
+ },
+ "system/1920x1080/empty-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 71
+ },
+ "system/1920x1080/empty-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 47
+ },
+ "system/1920x1080/demo-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 81
+ },
+ "system/1920x1080/demo-stole": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 81
+ },
+ "system/1920x1080/demo-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 50
+ },
+ "system/1920x1080/demo-review": {
+  "overlaps": [
+   {
+    "a": "text \"F\"",
+    "b": "text \"Seat changes\"",
+    "px": 48
+   }
+  ],
+  "missing": {},
+  "spill": [],
+  "boxes": 82
+ },
+ "system/1920x1080/demo-settings": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 101
+ },
+ "system/1920x1080/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 29
+ },
+ "system/390x844/empty-live": {
+  "overlaps": [
+   {
+    "a": "span#nowName.now__name \"No one yet\"",
+    "b": "h1 \"Keep your eyes on the person.\"",
+    "px": 852
+   },
+   {
+    "a": "span#nowHint.now__hint \"Install whisper-turbo in Audial-AI (Setup & mode\"",
+    "b": "h1 \"Keep your eyes on the person.\"",
+    "px": 1719
+   },
+   {
+    "a": "span#nowHint.now__hint \"Install whisper-turbo in Audial-AI (Setup & mode\"",
+    "b": "p \"Kandha captions the room, gives each voice its o\"",
+    "px": 266
+   },
+   {
+    "a": "p#nowText.now__text.is-idle \"Captions appear here, in the colour of whoever i\"",
+    "b": "p \"Kandha captions the room, gives each voice its o\"",
+    "px": 1753
+   },
+   {
+    "a": "p#nowText.now__text.is-idle \"Captions appear here, in the colour of whoever i\"",
+    "b": "button#welcomeStart.btn.btn--primary \"Start listening\"",
+    "px": 1783
+   },
+   {
+    "a": "h1 \"Keep your eyes on the person.\"",
+    "b": "svg \"[icon]\"",
+    "px": 261
+   }
+  ],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 43
+ },
+ "system/390x844/empty-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 34
+ },
+ "system/390x844/demo-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 41
+ },
+ "system/390x844/demo-stole": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 41
+ },
+ "system/390x844/demo-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 37
+ },
+ "system/390x844/demo-review": {
+  "overlaps": [
+   {
+    "a": "text \"F\"",
+    "b": "text \"Seat changes\"",
+    "px": 48
+   }
+  ],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 41
+ },
+ "system/390x844/demo-settings": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 30
+ },
+ "system/390x844/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 24
+ },
+ "system/360x640/empty-live": {
+  "overlaps": [
+   {
+    "a": "span#nowName.now__name \"No one yet\"",
+    "b": "h1 \"Keep your eyes on the person.\"",
+    "px": 852
+   },
+   {
+    "a": "span#nowHint.now__hint \"Install whisper-turbo in Audial-AI (Setup & mode\"",
+    "b": "h1 \"Keep your eyes on the person.\"",
+    "px": 1719
+   },
+   {
+    "a": "span#nowHint.now__hint \"Install whisper-turbo in Audial-AI (Setup & mode\"",
+    "b": "p \"Kandha captions the room, gives each voice its o\"",
+    "px": 266
+   },
+   {
+    "a": "p#nowText.now__text.is-idle \"Captions appear here, in the colour of whoever i\"",
+    "b": "p \"Kandha captions the room, gives each voice its o\"",
+    "px": 1753
+   },
+   {
+    "a": "h1 \"Keep your eyes on the person.\"",
+    "b": "svg \"[icon]\"",
+    "px": 261
+   }
+  ],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window",
+   "button#tab-settings \"Settings\" ends at 373px",
+   "span#nowHint.now__hint \"Install whisper-turbo in Audial-AI (Setup & mode\" ends at 362px",
+   "p#nowText.now__text.is-idle \"Captions appear here, in the colour of whoever i\" ends at 362px"
+  ],
+  "boxes": 38
+ },
+ "system/360x640/empty-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window",
+   "button#tab-settings \"Settings\" ends at 373px"
+  ],
+  "boxes": 30
+ },
+ "system/360x640/demo-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window",
+   "button#tab-settings \"Settings\" ends at 373px",
+   "span#nowHint.now__hint \"Demo: no microphone in use. Taps are scripted th\" ends at 362px"
+  ],
+  "boxes": 32
+ },
+ "system/360x640/demo-stole": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window",
+   "button#tab-settings \"Settings\" ends at 373px"
+  ],
+  "boxes": 35
+ },
+ "system/360x640/demo-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window",
+   "button#tab-settings \"Settings\" ends at 373px"
+  ],
+  "boxes": 30
+ },
+ "system/360x640/demo-review": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window",
+   "button#tab-settings \"Settings\" ends at 373px"
+  ],
+  "boxes": 30
+ },
+ "system/360x640/demo-settings": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window",
+   "button#tab-settings \"Settings\" ends at 373px"
+  ],
+  "boxes": 27
+ },
+ "system/360x640/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window"
+  ],
+  "boxes": 20
+ },
+ "bundled/1280x720/empty-live": {
+  "overlaps": [
+   {
+    "a": "p#nowText.now__text.is-idle \"Captions appear here, in the colour of whoever i\"",
+    "b": "h1 \"Keep your eyes on the person.\"",
+    "px": 13644
+   },
+   {
+    "a": "p#nowText.now__text.is-idle \"Captions appear here, in the colour of whoever i\"",
+    "b": "p \"Kandha captions the room, gives each voice its o\"",
+    "px": 873
+   }
+  ],
+  "missing": {
+   "U+0915 \"क\"": [
+    "span.brand__hi"
+   ],
+   "U+0927 \"ध\"": [
+    "span.brand__hi"
+   ],
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [],
+  "boxes": 59
+ },
+ "bundled/1280x720/empty-seats": {
+  "overlaps": [],
+  "missing": {
+   "U+0915 \"क\"": [
+    "span.brand__hi"
+   ],
+   "U+0927 \"ध\"": [
+    "span.brand__hi"
+   ],
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [],
+  "boxes": 46
+ },
+ "bundled/1280x720/demo-live": {
+  "overlaps": [],
+  "missing": {
+   "U+0915 \"क\"": [
+    "span.brand__hi"
+   ],
+   "U+0927 \"ध\"": [
+    "span.brand__hi"
+   ],
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [],
+  "boxes": 70
+ },
+ "bundled/1280x720/demo-stole": {
+  "overlaps": [],
+  "missing": {
+   "U+0915 \"क\"": [
+    "span.brand__hi"
+   ],
+   "U+0927 \"ध\"": [
+    "span.brand__hi"
+   ],
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [],
+  "boxes": 59
+ },
+ "bundled/1280x720/demo-seats": {
+  "overlaps": [],
+  "missing": {
+   "U+0915 \"क\"": [
+    "span.brand__hi"
+   ],
+   "U+0927 \"ध\"": [
+    "span.brand__hi"
+   ],
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [],
+  "boxes": 49
+ },
+ "bundled/1280x720/demo-review": {
+  "overlaps": [
+   {
+    "a": "text \"F\"",
+    "b": "text \"Seat changes\"",
+    "px": 42
+   }
+  ],
+  "missing": {
+   "U+0915 \"क\"": [
+    "span.brand__hi"
+   ],
+   "U+0927 \"ध\"": [
+    "span.brand__hi"
+   ],
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [],
+  "boxes": 57
+ },
+ "bundled/1280x720/demo-settings": {
+  "overlaps": [],
+  "missing": {
+   "U+0915 \"क\"": [
+    "span.brand__hi"
+   ],
+   "U+0927 \"ध\"": [
+    "span.brand__hi"
+   ],
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [],
+  "boxes": 79
+ },
+ "bundled/1280x720/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {
+   "U+2715 \"✕\"": [
+    "button.icon-btn.dlg__close"
+   ],
+   "U+0928 \"न\"": [
+    "p.line__text"
+   ],
+   "U+092E \"म\"": [
+    "p.line__text"
+   ],
+   "U+0938 \"स\"": [
+    "p.line__text"
+   ],
+   "U+0924 \"त\"": [
+    "p.line__text"
+   ],
+   "U+0906 \"आ\"": [
+    "p.line__text"
+   ],
+   "U+091C \"ज\"": [
+    "p.line__text"
+   ],
+   "U+0939 \"ह\"": [
+    "p.line__text"
+   ],
+   "U+0915 \"क\"": [
+    "p.line__text"
+   ],
+   "U+092A \"प\"": [
+    "p.line__text"
+   ],
+   "U+0930 \"र\"": [
+    "p.line__text"
+   ],
+   "U+091A \"च\"": [
+    "p.line__text"
+   ],
+   "U+0917 \"ग\"": [
+    "p.line__text"
+   ],
+   "U+0964 \"।\"": [
+    "p.line__text"
+   ]
+  },
+  "spill": [],
+  "boxes": 24
+ },
+ "bundled/1920x1080/empty-live": {
+  "overlaps": [],
+  "missing": {
+   "U+0915 \"क\"": [
+    "span.brand__hi"
+   ],
+   "U+0927 \"ध\"": [
+    "span.brand__hi"
+   ],
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [],
+  "boxes": 71
+ },
+ "bundled/1920x1080/empty-seats": {
+  "overlaps": [],
+  "missing": {
+   "U+0915 \"क\"": [
+    "span.brand__hi"
+   ],
+   "U+0927 \"ध\"": [
+    "span.brand__hi"
+   ],
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [],
+  "boxes": 47
+ },
+ "bundled/1920x1080/demo-live": {
+  "overlaps": [],
+  "missing": {
+   "U+0915 \"क\"": [
+    "span.brand__hi"
+   ],
+   "U+0927 \"ध\"": [
+    "span.brand__hi"
+   ],
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ],
+   "U+092E \"म\"": [
+    "p.line__text"
+   ],
+   "U+0938 \"स\"": [
+    "p.line__text"
+   ],
+   "U+0924 \"त\"": [
+    "p.line__text"
+   ],
+   "U+0906 \"आ\"": [
+    "p.line__text"
+   ],
+   "U+091C \"ज\"": [
+    "p.line__text"
+   ],
+   "U+092A \"प\"": [
+    "p.line__text"
+   ],
+   "U+0930 \"र\"": [
+    "p.line__text"
+   ],
+   "U+091A \"च\"": [
+    "p.line__text"
+   ],
+   "U+0917 \"ग\"": [
+    "p.line__text"
+   ],
+   "U+0964 \"।\"": [
+    "p.line__text"
+   ]
+  },
+  "spill": [],
+  "boxes": 81
+ },
+ "bundled/1920x1080/demo-stole": {
+  "overlaps": [],
+  "missing": {
+   "U+0915 \"क\"": [
+    "span.brand__hi"
+   ],
+   "U+0927 \"ध\"": [
+    "span.brand__hi"
+   ],
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [],
+  "boxes": 81
+ },
+ "bundled/1920x1080/demo-seats": {
+  "overlaps": [],
+  "missing": {
+   "U+0915 \"क\"": [
+    "span.brand__hi"
+   ],
+   "U+0927 \"ध\"": [
+    "span.brand__hi"
+   ],
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [],
+  "boxes": 50
+ },
+ "bundled/1920x1080/demo-review": {
+  "overlaps": [
+   {
+    "a": "text \"F\"",
+    "b": "text \"Seat changes\"",
+    "px": 42
+   }
+  ],
+  "missing": {
+   "U+0915 \"क\"": [
+    "span.brand__hi"
+   ],
+   "U+0927 \"ध\"": [
+    "span.brand__hi"
+   ],
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ],
+   "U+092E \"म\"": [
+    "p.line__text"
+   ],
+   "U+0938 \"स\"": [
+    "p.line__text"
+   ],
+   "U+0924 \"त\"": [
+    "p.line__text"
+   ],
+   "U+0906 \"आ\"": [
+    "p.line__text"
+   ],
+   "U+091C \"ज\"": [
+    "p.line__text"
+   ],
+   "U+092A \"प\"": [
+    "p.line__text"
+   ],
+   "U+0930 \"र\"": [
+    "p.line__text"
+   ],
+   "U+091A \"च\"": [
+    "p.line__text"
+   ],
+   "U+0917 \"ग\"": [
+    "p.line__text"
+   ],
+   "U+0964 \"।\"": [
+    "p.line__text"
+   ]
+  },
+  "spill": [],
+  "boxes": 82
+ },
+ "bundled/1920x1080/demo-settings": {
+  "overlaps": [],
+  "missing": {
+   "U+0915 \"क\"": [
+    "span.brand__hi"
+   ],
+   "U+0927 \"ध\"": [
+    "span.brand__hi"
+   ],
+   "U+0939 \"ह\"": [
+    "button",
+    "p#translateNote.fineprint"
+   ],
+   "U+0928 \"न\"": [
+    "button",
+    "p#translateNote.fineprint"
+   ],
+   "U+0926 \"द\"": [
+    "button",
+    "p#translateNote.fineprint"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [],
+  "boxes": 102
+ },
+ "bundled/1920x1080/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {
+   "U+2715 \"✕\"": [
+    "button.icon-btn.dlg__close"
+   ],
+   "U+0928 \"न\"": [
+    "p.line__text"
+   ],
+   "U+092E \"म\"": [
+    "p.line__text"
+   ],
+   "U+0938 \"स\"": [
+    "p.line__text"
+   ],
+   "U+0924 \"त\"": [
+    "p.line__text"
+   ],
+   "U+0906 \"आ\"": [
+    "p.line__text"
+   ],
+   "U+091C \"ज\"": [
+    "p.line__text"
+   ],
+   "U+0939 \"ह\"": [
+    "p.line__text"
+   ],
+   "U+0915 \"क\"": [
+    "p.line__text"
+   ],
+   "U+092A \"प\"": [
+    "p.line__text"
+   ],
+   "U+0930 \"र\"": [
+    "p.line__text"
+   ],
+   "U+091A \"च\"": [
+    "p.line__text"
+   ],
+   "U+0917 \"ग\"": [
+    "p.line__text"
+   ],
+   "U+0964 \"।\"": [
+    "p.line__text"
+   ]
+  },
+  "spill": [],
+  "boxes": 29
+ },
+ "bundled/390x844/empty-live": {
+  "overlaps": [
+   {
+    "a": "span#nowName.now__name \"No one yet\"",
+    "b": "h1 \"Keep your eyes on the person.\"",
+    "px": 864
+   },
+   {
+    "a": "span#nowHint.now__hint \"Install whisper-turbo in Audial-AI (Setup & mode\"",
+    "b": "h1 \"Keep your eyes on the person.\"",
+    "px": 1734
+   },
+   {
+    "a": "span#nowHint.now__hint \"Install whisper-turbo in Audial-AI (Setup & mode\"",
+    "b": "p \"Kandha captions the room, gives each voice its o\"",
+    "px": 262
+   },
+   {
+    "a": "p#nowText.now__text.is-idle \"Captions appear here, in the colour of whoever i\"",
+    "b": "p \"Kandha captions the room, gives each voice its o\"",
+    "px": 1483
+   },
+   {
+    "a": "p#nowText.now__text.is-idle \"Captions appear here, in the colour of whoever i\"",
+    "b": "button#welcomeStart.btn.btn--primary \"Start listening\"",
+    "px": 1800
+   },
+   {
+    "a": "h1 \"Keep your eyes on the person.\"",
+    "b": "svg \"[icon]\"",
+    "px": 261
+   }
+  ],
+  "missing": {
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 42
+ },
+ "bundled/390x844/empty-seats": {
+  "overlaps": [],
+  "missing": {
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 32
+ },
+ "bundled/390x844/demo-live": {
+  "overlaps": [],
+  "missing": {
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 38
+ },
+ "bundled/390x844/demo-stole": {
+  "overlaps": [],
+  "missing": {
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 39
+ },
+ "bundled/390x844/demo-seats": {
+  "overlaps": [],
+  "missing": {
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 35
+ },
+ "bundled/390x844/demo-review": {
+  "overlaps": [
+   {
+    "a": "text \"F\"",
+    "b": "text \"Seat changes\"",
+    "px": 43
+   }
+  ],
+  "missing": {
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 40
+ },
+ "bundled/390x844/demo-settings": {
+  "overlaps": [],
+  "missing": {
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 29
+ },
+ "bundled/390x844/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {
+   "U+2715 \"✕\"": [
+    "button.icon-btn.dlg__close"
+   ],
+   "U+0928 \"न\"": [
+    "p.line__text"
+   ],
+   "U+092E \"म\"": [
+    "p.line__text"
+   ],
+   "U+0938 \"स\"": [
+    "p.line__text"
+   ],
+   "U+0924 \"त\"": [
+    "p.line__text"
+   ],
+   "U+0906 \"आ\"": [
+    "p.line__text"
+   ],
+   "U+091C \"ज\"": [
+    "p.line__text"
+   ],
+   "U+0939 \"ह\"": [
+    "p.line__text"
+   ],
+   "U+0915 \"क\"": [
+    "p.line__text"
+   ],
+   "U+092A \"प\"": [
+    "p.line__text"
+   ],
+   "U+0930 \"र\"": [
+    "p.line__text"
+   ],
+   "U+091A \"च\"": [
+    "p.line__text"
+   ],
+   "U+0917 \"ग\"": [
+    "p.line__text"
+   ],
+   "U+0964 \"।\"": [
+    "p.line__text"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 390px window"
+  ],
+  "boxes": 24
+ },
+ "bundled/360x640/empty-live": {
+  "overlaps": [
+   {
+    "a": "span#nowName.now__name \"No one yet\"",
+    "b": "h1 \"Keep your eyes on the person.\"",
+    "px": 864
+   },
+   {
+    "a": "span#nowHint.now__hint \"Install whisper-turbo in Audial-AI (Setup & mode\"",
+    "b": "h1 \"Keep your eyes on the person.\"",
+    "px": 1734
+   },
+   {
+    "a": "span#nowHint.now__hint \"Install whisper-turbo in Audial-AI (Setup & mode\"",
+    "b": "p \"Kandha captions the room, gives each voice its o\"",
+    "px": 262
+   },
+   {
+    "a": "p#nowText.now__text.is-idle \"Captions appear here, in the colour of whoever i\"",
+    "b": "p \"Kandha captions the room, gives each voice its o\"",
+    "px": 1483
+   },
+   {
+    "a": "h1 \"Keep your eyes on the person.\"",
+    "b": "svg \"[icon]\"",
+    "px": 261
+   }
+  ],
+  "missing": {
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window",
+   "button#tab-settings \"Settings\" ends at 373px",
+   "span#nowHint.now__hint \"Install whisper-turbo in Audial-AI (Setup & mode\" ends at 362px",
+   "p#nowText.now__text.is-idle \"Captions appear here, in the colour of whoever i\" ends at 362px"
+  ],
+  "boxes": 36
+ },
+ "bundled/360x640/empty-seats": {
+  "overlaps": [],
+  "missing": {
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window",
+   "button#tab-settings \"Settings\" ends at 373px"
+  ],
+  "boxes": 30
+ },
+ "bundled/360x640/demo-live": {
+  "overlaps": [],
+  "missing": {
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window",
+   "button#tab-settings \"Settings\" ends at 373px",
+   "span#nowHint.now__hint \"Demo: no microphone in use. Taps are scripted th\" ends at 362px"
+  ],
+  "boxes": 31
+ },
+ "bundled/360x640/demo-stole": {
+  "overlaps": [],
+  "missing": {
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window",
+   "button#tab-settings \"Settings\" ends at 373px"
+  ],
+  "boxes": 33
+ },
+ "bundled/360x640/demo-seats": {
+  "overlaps": [],
+  "missing": {
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window",
+   "button#tab-settings \"Settings\" ends at 373px"
+  ],
+  "boxes": 30
+ },
+ "bundled/360x640/demo-review": {
+  "overlaps": [],
+  "missing": {
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window",
+   "button#tab-settings \"Settings\" ends at 373px"
+  ],
+  "boxes": 28
+ },
+ "bundled/360x640/demo-settings": {
+  "overlaps": [],
+  "missing": {
+   "U+0939 \"ह\"": [
+    "button"
+   ],
+   "U+0928 \"न\"": [
+    "button"
+   ],
+   "U+0926 \"द\"": [
+    "button"
+   ],
+   "U+25CC \"◌\"": [
+    "span"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window",
+   "button#tab-settings \"Settings\" ends at 373px"
+  ],
+  "boxes": 27
+ },
+ "bundled/360x640/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {
+   "U+2715 \"✕\"": [
+    "button.icon-btn.dlg__close"
+   ]
+  },
+  "spill": [
+   "page scrolls sideways: 393px wide in a 360px window"
+  ],
+  "boxes": 20
+ }
+}
