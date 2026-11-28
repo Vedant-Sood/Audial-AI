@@ -15,6 +15,50 @@ over Bluetooth, on Windows, or with Indian English or Hindi speakers.
 | Accessibility | `python -m scripts.audit_kandha_a11y` | [a11y-chromium.json](validation/a11y-chromium.json) |
 | Embedded window | `python -m app.main --kandha-check` | page ready in QtWebEngine 6.8.3 with the `QWebEnginePermission` API (offscreen) |
 
+## Audio modes: direction (decision 0027), 2026-11-28
+
+### SIMULATED: synthetic rooms
+
+From `python -m scripts.kandha_direction_accuracy`
+([direction-simulated.json](validation/direction-simulated.json)): 24 bearings, every 15°,
+each with one LibriSpeech voice for 2.5 s. The conditions:
+- **clean:** −50 dBFS noise per microphone;
+- **noisy:** −30 dBFS;
+- **echo:** a second path 4 ms later, 140° away, at 40%.
+
+"Stereo" is two microphones 3 cm apart, scored on what two microphones can tell: left, centre
+or right, with sounds from behind folding to the front. "Quad" is the mic pod's 4 cm square.
+
+| Array | Condition | Zone right, for what it can tell | Zone right, of four | Mean bearing error (°) | Misses |
+|---|---|---|---|---|---|
+| stereo | clean | 92% | 71% | — | 2 (all on a 45° boundary)
+| stereo | noisy | 88% | 67% | — | 3 (all on a 45° boundary)
+| stereo | echo | 83% | 62% | — | 4 (all on a 45° boundary)
+| quad | clean | 92% | 92% | 0.1 | 2 (all on a 45° boundary)
+| quad | noisy | 88% | 88% | 1.0 | 3 (all on a 45° boundary)
+| quad | echo | 88% | 88% | 0.3 | 3 (all on a 45° boundary)
+
+**Every miss is a bearing exactly on a 45° zone boundary**, where either neighbouring zone is a
+fair answer. The synthetic rooms are an upper bound: no real reverberation, one voice at a
+time.
+
+Found and fixed while measuring this: without a Hann window, speech delays read about 30%
+short (a 4-sample delay read as 2.8), which pushed side voices into "front".
+
+### End to end, in Chromium
+
+The Recorded mode played a synthetic 4-channel room (left, right, then front) into the real
+page with the mock stole paired. This is simulated.
+- **The Audio test dial** showed Left, Right and Front in turn, with the "Simulated" badge.
+- **"Tap the zone I hear"** sent taps through the scheduler, and the mock stole received
+  HAPTIC `020101e601` (seat tap, left), `030201e601` (right) and `040801e601` (front). No page
+  errors.
+- **Tests:** `tests/test_kandha_direction.py` (29) includes the end-to-end test: synthetic
+  4-channel audio → direction → seat map → scheduler → the exact HAPTIC bytes on the mock
+  stole.
+- **Not run on real hardware yet:** live Stereo capture on the owner's laptop through
+  PipeWire. The laptop's microphones themselves are measured below.
+
 ## Laptop microphones: can they tell left from right? (measured on the owner's laptop, 2026-11-28)
 
 **Laptop.** Arch Linux, Intel SOF audio (`sof-hda-dsp`, card 1). The built-in microphone is a

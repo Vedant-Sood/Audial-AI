@@ -81,6 +81,7 @@ class DirectionInput:
         self.stop_event = threading.Event()
         self.tracker = None
         self.thread = None
+        self.stream = None
         self.error = None
         self.fake_checked = False
         self.info = {}
@@ -113,11 +114,16 @@ class DirectionInput:
         import sounddevice as sd
         channels = 4 if self.mode == "quad" else 2
         device = self.device or None
+        candidates = [device]
         if isinstance(device, str) and device.startswith("pulse:"):
-            os.environ["PULSE_SOURCE"] = device[len("pulse:"):]      # read by PortAudio's pulse device
-            device = "pulse"
+            # a PipeWire/PulseAudio source by name: point the PulseAudio and PipeWire ALSA plugins
+            # at it, then open whichever of their devices this machine's PortAudio offers
+            source = device[len("pulse:"):]
+            os.environ["PULSE_SOURCE"] = source
+            os.environ["PIPEWIRE_NODE"] = source
+            candidates = ["pulse", "pipewire", "default"]
         elif isinstance(device, str) and device.isdigit():
-            device = int(device)
+            candidates = [int(device)]
         self.tracker = DirectionTracker(geometry_for(self.mode, channels, self.spacing_m, self.swap), RATE)
         blocks = queue.Queue(maxsize=200)
 
@@ -127,13 +133,20 @@ class DirectionInput:
             except queue.Full:
                 pass
 
-        try:
-            self.stream = sd.InputStream(device=device, channels=channels, samplerate=RATE, blocksize=BLOCK,
-                                         dtype="float32", callback=callback)
-            self.stream.start()
-        except Exception as error:
-            raise ValueError(f"Could not open a {channels}-channel input on {self.device or 'the default device'}: {error}")
-        self.info = {"device": self.device or "default", "channels": channels, "rate": RATE, "simulated": False}
+        errors, opened = [], None
+        for candidate in candidates:
+            try:
+                self.stream = sd.InputStream(device=candidate, channels=channels, samplerate=RATE, blocksize=BLOCK,
+                                             dtype="float32", callback=callback)
+                self.stream.start()
+                opened = candidate
+                break
+            except Exception as error:
+                errors.append(f"{candidate if candidate is not None else 'default'}: {error}")
+        if self.stream is None or opened is None and candidates != [None]:
+            raise ValueError(f"Could not open a {channels}-channel input for {self.device or 'the default device'}: " + "; ".join(errors))
+        self.info = {"device": self.device or "default", "opened_as": str(opened if opened is not None else "default"),
+                     "channels": channels, "rate": RATE, "simulated": False}
         self.thread = threading.Thread(target=self._pump, args=(blocks,), name="kandha-direction", daemon=True)
         self.thread.start()
 
