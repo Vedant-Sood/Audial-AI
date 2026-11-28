@@ -307,3 +307,93 @@ table.acc td:last-child { font-family: var(--font-mono); font-variant-numeric: t
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* ---------------------------------------------------------------- demo build (decision 0027 and the UI fixes) */
+/* features the final design scrapped stay in the code until Part A but never show (owner's answer, 28 Nov 2026) */
+.is-scrapped { display: none !important; }
+.sim-badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; border: 1px dashed var(--signal); color: var(--signal); font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.dlg__head .sim-badge { margin-left: 8px; }
+.audio__mode { margin: 0; color: var(--muted); }
+.audio__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 18px; align-items: start; }
+.audio__h { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
+.audio__meters { display: grid; gap: 8px; }
+.meterrow { display: grid; grid-template-columns: 52px minmax(0, 1fr) 54px; align-items: center; gap: 8px; font-size: 14px; }
+.meterrow__bar { height: 12px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
+.meterrow__bar > span { display: block; height: 100%; width: 0; background: var(--ok); transition: width .08s linear; }
+.meterrow__db { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--muted); text-align: right; font-size: 13px; }
+.audio__dialwrap { display: grid; justify-items: center; gap: 6px; }
+.audio__dial { width: min(240px, 100%); height: auto; }
+.dial__ring { fill: var(--surface-2); stroke: var(--line); stroke-width: 2; }
+.dial__zone { fill: transparent; stroke: var(--line); stroke-width: 1; }
+.dial__zone.is-on { fill: color-mix(in srgb, var(--tap) 35%, transparent); }
+.dial__label { font-size: 13px; font-weight: 700; fill: var(--muted); }
+.dial__you { fill: var(--text); }
+.dial__needle line { stroke: var(--tap); stroke-width: 4; stroke-linecap: round; }
+.dial__needle circle { fill: var(--tap); }
+.dial__needle { transform-origin: 100px 100px; transition: transform .15s ease-out; }
+.audio__reading { margin: 0; text-align: center; min-height: 1.5em; }
+.audio__error { margin: 0; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--danger) 16%, transparent); border: 1px solid var(--danger); }
+@media (max-width: 600px) { .audio__grid { grid-template-columns: 1fr; } }
+
+/* header: on wide screens the wrapper is invisible; on phones three tidy rows (U6, U7, U11) */
+.topbar__controls { display: contents; }
+.now__hint, .now__text { overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding-top: 8px; padding-bottom: 8px; }
+  .brand { grid-column: 1; grid-row: 1; }
+  .status { grid-column: 2; grid-row: 1; width: auto; margin: 0; font-size: 13px; }
+  .status .meter { display: none; }
+  .screens { grid-column: 1 / -1; grid-row: 2; min-width: 0; }
+  .seg--tabs { display: flex; width: 100%; }
+  .seg--tabs button { flex: 1 1 0; padding: 6px 4px; font-size: 14px; min-width: 0; }
+  .topbar__controls { display: flex; flex-wrap: wrap; grid-column: 1 / -1; grid-row: 3; gap: 6px; }
+  .topbar__controls .seg, .topbar__controls .dnd { flex: none; }
+  .topbar__controls .seg button { padding: 5px 10px; font-size: 14px; min-height: 34px; }
+  .topbar__controls .dnd { padding: 5px 10px; font-size: 14px; min-height: 34px; }
+  .topbar__controls .dnd span { white-space: nowrap; }
+  .dock { flex-wrap: nowrap; gap: 8px; }
+  .dock .btn { flex: 1 1 auto; justify-content: center; min-height: 44px; }
+}
+@media (max-width: 380px) {
+  .seg__label { display: none; }
+}
+
+/* "Who is where?" (§5.2): a top-down room, one card per voice, never overlapping */
+.ww-panel { display: grid; gap: 14px; }
+.ww__empty { margin: 0; padding: 14px; border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); }
+.ww__room { display: grid; grid-template-columns: minmax(0, 1fr) minmax(64px, auto) minmax(0, 1fr);
+  grid-template-areas: "f f f" "l you r" "b b b"; gap: 10px; align-items: stretch; }
+.ww__side { border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); padding: 10px; min-height: 84px; min-width: 0; display: grid; align-content: start; gap: 8px; }
+.ww__side h3 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.ww__side[data-side="F"] { grid-area: f; } .ww__side[data-side="L"] { grid-area: l; }
+.ww__side[data-side="R"] { grid-area: r; } .ww__side[data-side="B"] { grid-area: b; }
+.ww__side.is-over { outline: 3px dashed var(--focus); outline-offset: 2px; }
+.ww__you { grid-area: you; display: grid; place-items: center; }
+.ww__you span { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--text); color: var(--bg); font-weight: 700; }
+.ww__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ww__card { width: 100%; min-height: 44px; display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 8px; align-items: center;
+  text-align: left; border: 2px solid var(--line); border-left: 6px solid var(--c); border-radius: 10px; background: var(--surface); color: var(--text); padding: 6px 10px; }
+.ww__card .ww__shape { grid-row: 1 / span 2; width: 22px; height: 22px; fill: var(--c); }
+.ww__name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ww__src { grid-column: 2; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ww__live { grid-column: 3; grid-row: 1 / span 2; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--c); color: var(--bg); }
+.ww__card.is-current { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 55%, transparent); }
+.ww__card.is-selected { border-color: var(--focus); outline: 2px solid var(--focus); outline-offset: 1px; }
+.ww__card.is-me { opacity: .8; }
+.ww__side--none { min-height: 0; }
+.ww__actions { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; }
+.ww__selected { margin: 0; font-weight: 700; }
+.ww__seatbtns { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.ww__seat { min-height: 52px; font-size: 17px; justify-content: center; }
+.ww__seat[aria-pressed="true"], .ww__more [data-seat][aria-pressed="true"] { background: var(--text); color: var(--bg); }
+.ww__more { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.ww__field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.ww__field input, .ww__field select { min-height: 40px; }
+@media (max-width: 600px) {
+  .ww__room { grid-template-columns: minmax(0, 1fr) 52px minmax(0, 1fr); gap: 6px; }
+  .ww__you span { width: 48px; height: 48px; font-size: 13px; }
+  .ww__seatbtns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ww__card { grid-template-columns: 18px minmax(0, 1fr); padding: 6px 8px; }
+  .ww__card .ww__shape { width: 18px; height: 18px; }
+  .ww__live { grid-column: 2; grid-row: 3; justify-self: start; }
+}

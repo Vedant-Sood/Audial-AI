@@ -35,9 +35,10 @@
         <button role="tab" id="tab-settings" data-screen="settings" aria-selected="false" aria-controls="settings" tabindex="-1">Settings</button>
       </div>
     </nav>
+    <div class="topbar__controls">
     <div class="seg" role="group" aria-label="Mode">
       <span class="seg__label">Mode</span>
-      <button data-mode="lecture" aria-pressed="false">Lecture</button>
+      <button data-mode="lecture" aria-pressed="false" class="is-scrapped" tabindex="-1">Lecture</button>
       <button data-mode="seminar" aria-pressed="true">Seminar</button>
       <button data-mode="practicum" aria-pressed="false">Practicum</button>
     </div>
@@ -47,6 +48,7 @@
       <button data-speech="hi" aria-pressed="false" lang="hi">हिन्दी</button>
     </div>
     <button class="dnd" id="dndBtn" aria-pressed="false" title="Do not disturb: no taps; captions continue"><svg class="dnd__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Do not disturb</span></button>
+    </div>
     <div class="status" id="status" data-state="idle">
       <span class="status__dot" aria-hidden="true"></span>
       <span class="status__text" id="statusText">Ready</span>
@@ -83,12 +85,6 @@
       </section>
 
       <aside class="side" aria-label="Room and stole">
-        <section class="panel room-panel" aria-labelledby="roomTitle">
-          <h2 id="roomTitle">Room</h2>
-          <div class="room" id="roomLive" aria-label="Room diagram: who sits where"></div>
-          <p class="panel__hint" id="roomHint">Seats light up when that person speaks. Press 1–4 to seat the current voice left, right, behind or in front.</p>
-        </section>
-
         <section class="panel stole-panel" aria-labelledby="stoleTitle">
           <h2 id="stoleTitle">Stole <span class="stole-state" id="stoleStateLive">virtual</span></h2>
           <div class="stolewrap" id="stoleLive"></div>
@@ -98,10 +94,16 @@
           </div>
         </section>
 
+        <section class="panel room-panel" aria-labelledby="roomTitle">
+          <h2 id="roomTitle">Room</h2>
+          <div class="room" id="roomLive" aria-label="Room diagram: who sits where"></div>
+          <p class="panel__hint" id="roomHint">Seats light up when that person speaks. Press 1–4 to seat the current voice left, right, behind or in front.</p>
+        </section>
+
         <section class="panel voices-panel" aria-labelledby="voicesTitle">
           <h2 id="voicesTitle">Voices</h2>
           <ul class="voices" id="voices"></ul>
-          <p class="voices__empty" id="voicesEmpty">Each new voice gets its own colour. Two taps at the front mean someone new: touch a pad or press 1–4 to seat them.</p>
+          <p class="voices__empty" id="voicesEmpty">Each new voice gets its own colour. Seat it on the Seats screen, with a pad, or press 1–4 while they speak.</p>
         </section>
       </aside>
     </section>
@@ -147,7 +149,7 @@
           </div>
           <div class="toggles">
             <label class="check"><input type="checkbox" id="setMirror"> Mirror left and right (wearing the stole the other way round)</label>
-            <label class="check"><input type="checkbox" id="setDnd"> Do not disturb: only the queue pad answers</label>
+            <label class="check"><input type="checkbox" id="setDnd"> Do not disturb: no taps; captions continue</label>
           </div>
           <div class="row"><button class="btn btn--primary" id="learnBtn">Learn the taps (5 minutes)</button><button class="btn" id="stopTapsBtn">Stop taps</button></div>
           <p class="fineprint">Taps are felt where the speaker sits. Tone cues are felt at the collarbone. A squeeze on both shoulders is about you: your turn request was noted, or the floor is open.</p>
@@ -158,11 +160,35 @@
     <!-- ------------------------------------------------------------ seats -->
     <section class="screen screen--seats" id="seats" role="tabpanel" aria-labelledby="tab-seats" hidden>
       <div class="cols">
-        <section class="panel" aria-labelledby="seatsTitle">
-          <h2 id="seatsTitle">Who sits where</h2>
-          <p class="panel__hint">Drag a voice onto a seat, or select a voice and press 1 (left), 2 (right), 3 (behind) or 4 (front). On the stole: when two taps at the front announce a new voice, touch the L, R or B pad within six seconds. Double-tap a pad to move the person speaking now; hold it to clear their seat.</p>
-          <div class="room room--big" id="roomBig" aria-label="Room diagram with draggable voices"></div>
-          <ul class="chips" id="unseated" aria-label="Voices without a seat"></ul>
+        <section class="panel ww-panel" aria-labelledby="seatsTitle">
+          <h2 id="seatsTitle">Who is where?</h2>
+          <p class="panel__hint">Tap a voice, then the side they sit on. When they speak, Kandha taps that shoulder.</p>
+          <p class="ww__empty" id="wwEmpty">No voices yet. Press <b>Start</b> or watch a demo: each voice appears here with its own colour and shape.</p>
+          <div class="ww__room" id="wwRoom" aria-label="The room seen from above, you in the middle">
+            <div class="ww__side" data-side="F"><h3>Front</h3><ul class="ww__list"></ul></div>
+            <div class="ww__side" data-side="L"><h3>Left</h3><ul class="ww__list"></ul></div>
+            <div class="ww__you" aria-hidden="true"><span>You</span></div>
+            <div class="ww__side" data-side="R"><h3>Right</h3><ul class="ww__list"></ul></div>
+            <div class="ww__side" data-side="B"><h3>Behind</h3><ul class="ww__list"></ul></div>
+          </div>
+          <div class="ww__side ww__side--none" data-side=""><h3>No seat yet</h3><ul class="ww__list"></ul></div>
+          <div class="ww__actions" id="wwActions" hidden>
+            <p class="ww__selected" id="wwSelected" aria-live="polite"></p>
+            <div class="ww__seatbtns" role="group" aria-label="Seat this voice">
+              <button type="button" class="btn ww__seat" data-seat="L">Left</button>
+              <button type="button" class="btn ww__seat" data-seat="F">Front</button>
+              <button type="button" class="btn ww__seat" data-seat="R">Right</button>
+              <button type="button" class="btn ww__seat" data-seat="B">Behind</button>
+            </div>
+            <div class="ww__more">
+              <button type="button" class="btn btn--ghost" data-seat="">No seat</button>
+              <button type="button" class="btn btn--ghost" id="wwMe">This is me</button>
+              <label class="ww__field"><span>Name</span><input type="text" id="wwName" autocomplete="off" maxlength="40"></label>
+              <label class="ww__field"><span>Same person as</span><select id="wwJoinSel"></select></label>
+              <button type="button" class="btn" id="wwJoinBtn">Join voices</button>
+            </div>
+          </div>
+          <div hidden><div id="roomBig"></div><ul id="unseated"></ul></div>
         </section>
         <section class="panel" aria-labelledby="roomsTitle">
           <h2 id="roomsTitle">Saved rooms</h2>
@@ -193,6 +219,14 @@
     <!-- ------------------------------------------------------------ settings -->
     <section class="screen screen--settings" id="settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
       <div class="cols cols--settings">
+        <section class="panel" aria-labelledby="audioTitle">
+          <h2 id="audioTitle">Audio source and direction</h2>
+          <label class="field"><span>Where direction comes from</span><select id="setAudioMode"><option value="mono">Mono: no direction (seat voices yourself)</option><option value="stereo">Stereo: two microphones, left or right</option><option value="quad">4-sided: four microphones</option><option value="recorded">Recorded file (simulated)</option></select><small id="audioModeText"></small></label>
+          <label class="field" id="audioDeviceField"><span>Direction microphone</span><select id="setAudioDevice"><option value="">Default input</option></select><small>On Linux, choose the laptop's built-in array (its PipeWire source), not a headset. Captions keep using the microphone above.</small></label>
+          <label class="field" id="audioFileField"><span>Recorded file (a 2- or 4-channel WAV)</span><input type="text" id="setRecordedFile" placeholder="/home/you/room.wav" autocomplete="off"></label>
+          <label class="check" id="audioSwapField"><input type="checkbox" id="setStereoSwap"> Swap left and right (if voices on the left show on the right)</label>
+          <div class="row"><button type="button" class="btn btn--primary" id="audioTestBtn">Open the audio test</button></div>
+        </section>
         <section class="panel" aria-labelledby="youTitle">
           <h2 id="youTitle">You and the screen</h2>
           <label class="field"><span>Your name</span><input type="text" id="setName" placeholder="e.g. Vikram" autocomplete="off"><small>Shown on the strip while you wait to speak.</small></label>
@@ -207,25 +241,25 @@
         <section class="panel" aria-labelledby="cuesTitle">
           <h2 id="cuesTitle">Cues in each mode</h2>
           <table class="cuetable" id="cueTable">
-            <thead><tr><th scope="col">Cue</th><th scope="col">Lecture</th><th scope="col">Seminar</th><th scope="col">Practicum</th></tr></thead>
+            <thead><tr><th scope="col">Cue</th><th scope="col" class="is-scrapped">Lecture</th><th scope="col">Seminar</th><th scope="col">Practicum</th></tr></thead>
             <tbody>
-              <tr><th scope="row">Voice softened (one slow swell)</th><td><input type="checkbox" data-cue="drop" data-cmode="lecture" aria-label="Voice softened in Lecture"></td><td><input type="checkbox" data-cue="drop" data-cmode="seminar" aria-label="Voice softened in Seminar"></td><td><input type="checkbox" data-cue="drop" data-cmode="practicum" aria-label="Voice softened in Practicum"></td></tr>
-              <tr><th scope="row">Voice rose (three quick taps)</th><td><input type="checkbox" data-cue="rise" data-cmode="lecture" aria-label="Voice rose in Lecture"></td><td><input type="checkbox" data-cue="rise" data-cmode="seminar" aria-label="Voice rose in Seminar"></td><td><input type="checkbox" data-cue="rise" data-cmode="practicum" aria-label="Voice rose in Practicum"></td></tr>
-              <tr><th scope="row">Hesitation (soft flutter)</th><td><input type="checkbox" data-cue="hesitation" data-cmode="lecture" aria-label="Hesitation in Lecture"></td><td><input type="checkbox" data-cue="hesitation" data-cmode="seminar" aria-label="Hesitation in Seminar"></td><td><input type="checkbox" data-cue="hesitation" data-cmode="practicum" aria-label="Hesitation in Practicum"></td></tr>
-              <tr><th scope="row">Long silence (two gentle ticks)</th><td><input type="checkbox" data-cue="silence" data-cmode="lecture" aria-label="Long silence in Lecture"></td><td><input type="checkbox" data-cue="silence" data-cmode="seminar" aria-label="Long silence in Seminar"></td><td><input type="checkbox" data-cue="silence" data-cmode="practicum" aria-label="Long silence in Practicum"></td></tr>
+              <tr><th scope="row">Voice softened (one slow swell)</th><td class="is-scrapped"><input type="checkbox" data-cue="drop" data-cmode="lecture" aria-label="Voice softened in Lecture"></td><td><input type="checkbox" data-cue="drop" data-cmode="seminar" aria-label="Voice softened in Seminar"></td><td><input type="checkbox" data-cue="drop" data-cmode="practicum" aria-label="Voice softened in Practicum"></td></tr>
+              <tr><th scope="row">Voice rose (three quick taps)</th><td class="is-scrapped"><input type="checkbox" data-cue="rise" data-cmode="lecture" aria-label="Voice rose in Lecture"></td><td><input type="checkbox" data-cue="rise" data-cmode="seminar" aria-label="Voice rose in Seminar"></td><td><input type="checkbox" data-cue="rise" data-cmode="practicum" aria-label="Voice rose in Practicum"></td></tr>
+              <tr><th scope="row">Hesitation (soft flutter)</th><td class="is-scrapped"><input type="checkbox" data-cue="hesitation" data-cmode="lecture" aria-label="Hesitation in Lecture"></td><td><input type="checkbox" data-cue="hesitation" data-cmode="seminar" aria-label="Hesitation in Seminar"></td><td><input type="checkbox" data-cue="hesitation" data-cmode="practicum" aria-label="Hesitation in Practicum"></td></tr>
+              <tr><th scope="row">Long silence (two gentle ticks)</th><td class="is-scrapped"><input type="checkbox" data-cue="silence" data-cmode="lecture" aria-label="Long silence in Lecture"></td><td><input type="checkbox" data-cue="silence" data-cmode="seminar" aria-label="Long silence in Seminar"></td><td><input type="checkbox" data-cue="silence" data-cmode="practicum" aria-label="Long silence in Practicum"></td></tr>
             </tbody>
           </table>
           <label class="check"><input type="checkbox" id="setSeminarCues"> Give tone cues in Seminar mode (off by default: seat taps only)</label>
-          <p class="fineprint">Lecture mode never taps for seats; the stole only answers the queue pad and marks long silences. Practicum has tone cues on. Speaker taps are never limited by these switches.</p>
+          <p class="fineprint">Practicum has tone cues on. Speaker taps are never limited by these switches.</p>
           <label class="field"><span>A silence counts as long after</span><select id="setSilence"><option value="3">3 seconds</option><option value="4">4 seconds</option><option value="5">5 seconds</option><option value="6">6 seconds</option><option value="8">8 seconds</option><option value="10">10 seconds</option></select></label>
-          <label class="field"><span>Remind me while I wait to speak after</span><select id="setReminder"><option value="0">Never</option><option value="30">30 seconds</option><option value="60">60 seconds</option><option value="120">2 minutes</option></select><small>One squeeze on both shoulders, at most once a minute.</small></label>
+          <label class="field is-scrapped"><span>Remind me while I wait to speak after</span><select id="setReminder"><option value="0">Never</option><option value="30">30 seconds</option><option value="60">60 seconds</option><option value="120">2 minutes</option></select><small>One squeeze on both shoulders, at most once a minute.</small></label>
         </section>
 
         <section class="panel" aria-labelledby="toneTitle2">
           <h2 id="toneTitle2">Tone estimates</h2>
           <label class="check"><input type="checkbox" id="setToneReview"> Estimate each person's tone for the session review</label>
           <label class="check"><input type="checkbox" id="setToneLive"> Also show tone estimates live, next to the captions</label>
-          <p class="fineprint">Kandha compares each voice with how that person usually sounds, after hearing them a few times. It notes "more intense than usual" or "softer, sad-sounding", and names an emotion only when it is at least 80% sure. These are estimates of how a voice sounds, learned from actors, not readings of what anyone feels. <button type="button" class="linkish" id="toneAboutBtn2">How accurate is this?</button></p>
+          <p class="fineprint">Kandha compares each voice with how that person usually sounds, after hearing them a few times. It notes "more intense than usual" or "softer, sad-sounding". It never names an emotion. These are estimates of how a voice sounds, learned from actors, not readings of what anyone feels. <button type="button" class="linkish" id="toneAboutBtn2">How accurate is this?</button></p>
           <h3>Voices</h3>
           <label class="field"><span>How readily Kandha gives a new colour</span><input type="range" id="setSens" min="0.6" max="1.6" step="0.1" aria-label="Sensitivity to new voices"><span class="range-ends"><span>Fewer new voices</span><span>More new voices</span></span></label>
           <label class="field"><span>Most voices in a seminar</span><select id="setMax"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><small>Practicum always uses two: you and your partner.</small></label>
@@ -257,16 +291,45 @@
     </button>
     <button class="btn" id="missBtn" aria-label="What did I miss? The last 30 seconds" title="Shortcut: M"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="label-long">What did I miss?</span></button>
     <button class="btn" id="newVoiceBtn" title="Shortcut: N">New voice</button>
-    <span class="dock__keys" aria-hidden="true"><span class="kbd">Q</span> queue · <span class="kbd">S</span> start · <span class="kbd">M</span> missed · <span class="kbd">1–4</span> seat</span>
+    <span class="dock__keys" aria-hidden="true"><span class="kbd">S</span> start · <span class="kbd">M</span> missed · <span class="kbd">1–4</span> seat</span>
+    <button class="btn" id="audioBtn" title="Audio source and direction test"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="label-long">Audio</span></button>
     <span class="dock__spacer"></span>
-    <button class="queue-btn" id="queueBtn" aria-pressed="false" title="Shortcut: Q">
+    <button class="queue-btn is-scrapped" id="queueBtn" aria-pressed="false" tabindex="-1">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V6.5a1.5 1.5 0 0 1 3 0V11M10 10V4.5a1.5 1.5 0 0 1 3 0V10M13 10V5.5a1.5 1.5 0 0 1 3 0V12M16 9.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.2a6 6 0 0 1-4.6-2.2L4.6 15.6a1.6 1.6 0 0 1 2.4-2.1L7 13.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span id="queueText">I want to speak</span>
     </button>
   </footer>
 </div>
 
-<dialog id="voiceDlg" aria-labelledby="voiceTitle">
+<dialog id="audioDlg" aria-labelledby="audioDlgTitle">
+    <form method="dialog" class="dlg dlg--audio">
+    <div class="dlg__head"><h2 id="audioDlgTitle">Audio test</h2><span class="sim-badge" id="audioSim" hidden>Simulated</span><button class="icon-btn dlg__close" value="close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button></div>
+    <p class="audio__mode" id="audioDlgMode"></p>
+    <div class="audio__grid">
+      <div><h3 class="audio__h">Input level</h3><div class="audio__meters" id="audioMeters"></div></div>
+      <div class="audio__dialwrap">
+        <svg class="audio__dial" id="audioDial" viewBox="0 0 200 200" role="img" aria-label="Direction of the voice heard now">
+          <circle cx="100" cy="100" r="86" class="dial__ring"/>
+          <path d="M100 100 L39 39 A86 86 0 0 1 161 39 Z" class="dial__zone" data-zone="F"/>
+          <path d="M100 100 L161 39 A86 86 0 0 1 161 161 Z" class="dial__zone" data-zone="R"/>
+          <path d="M100 100 L161 161 A86 86 0 0 1 39 161 Z" class="dial__zone" data-zone="B"/>
+          <path d="M100 100 L39 161 A86 86 0 0 1 39 39 Z" class="dial__zone" data-zone="L"/>
+          <text x="100" y="30" text-anchor="middle" class="dial__label">Front</text>
+          <text x="176" y="104" text-anchor="middle" class="dial__label">Right</text>
+          <text x="100" y="182" text-anchor="middle" class="dial__label">Behind</text>
+          <text x="24" y="104" text-anchor="middle" class="dial__label">Left</text>
+          <circle cx="100" cy="100" r="14" class="dial__you"/>
+          <g id="audioNeedle" class="dial__needle" hidden><line x1="100" y1="100" x2="100" y2="34"/><circle cx="100" cy="34" r="7"/></g>
+        </svg>
+        <p class="audio__reading" aria-live="polite"><b id="audioZone">No voice yet</b> <span id="audioReading"></span></p>
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" id="audioTapTest"> Tap the zone I hear (through the normal scheduler, on the real or virtual stole)</label>
+    <p class="audio__error" id="audioError" role="alert" hidden></p>
+    <p class="fineprint">Only angles, levels and confidence leave this test. The audio is analysed in memory and dropped: it is never recorded or sent anywhere.</p>
+    </form>
+  </dialog>
+  <dialog id="voiceDlg" aria-labelledby="voiceTitle">
   <form method="dialog" class="dlg">
     <div class="dlg__head"><span class="badge badge--sm" id="voiceBadge" aria-hidden="true"></span><h2 id="voiceTitle">Voice</h2><button class="icon-btn dlg__close" value="close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button></div>
     <label class="field"><span>Name</span><input type="text" id="voiceName" autocomplete="off"></label>
@@ -314,15 +377,15 @@
       <thead><tr><th scope="col">Tested on 10 actors the model never heard</th><th scope="col">Result</th></tr></thead>
       <tbody>
         <tr><td>Best guess among six acted emotions (chance: 17%)</td><td>56%</td></tr>
-        <tr><td>Emotion named (≥ 80% sure): how often right</td><td>98%</td></tr>
-        <tr><td>…and how often it is that sure</td><td>4% of sentences</td></tr>
+        <tr class="is-scrapped"><td>Emotion named (≥ 80% sure): how often right</td><td>98%</td></tr>
+        <tr class="is-scrapped"><td>…and how often it is that sure</td><td>4% of sentences</td></tr>
         <tr><td>"Voice rose" on angry, happy or fearful speech</td><td>50% (was 41%)</td></tr>
         <tr><td>"Voice rose" wrongly, on neutral speech</td><td>2% (was 12%)</td></tr>
         <tr><td>"Voice softened" on sad speech</td><td>43% (was 28%)</td></tr>
         <tr><td>"Voice softened" wrongly, on angry, happy or fearful speech</td><td>6% (was 12%)</td></tr>
       </tbody>
     </table>
-    <p>On 4 minutes of natural, calm reading by three other people, the model named an emotion once in 55 stretches (wrongly: "happy") and gave no tone cues. Speaker colours in a stitched four-person seminar were right 98% of the time.</p>
+    <p>On 4 minutes of natural, calm reading by three other people, the model gave no tone cues.</p>
     <p class="fineprint"><b>Limits.</b> The actors are American and the emotions are acted. Nothing has been tested on Indian English or Hindi speakers, on real classroom conversation, or with a physical stole. Treat every estimate as a hint to look again, not a fact about how someone feels. Kandha needs to hear a person a few times before it estimates anything about them.</p>
     <p class="fineprint"><b>Credits.</b> Model trained on CREMA-D (Cao et al., 2014; ODbL 1.0 / DbCL 1.0), using the speaker splits and evaluation approach of Audial-AI by Vedant Sood (MIT licence). Natural-speech checks use LibriSpeech (CC BY 4.0). Everything runs on this device.</p>
     <div class="dlg__foot"><button class="btn btn--primary" value="close">Close</button></div>

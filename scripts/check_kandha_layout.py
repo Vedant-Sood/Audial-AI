@@ -41,9 +41,9 @@ ANALYZE = r"""
     }
     return true;
   };
-  const clipOf = (el) => {           // intersect with every clipping ancestor and the viewport
+  const clipOf = (el, self) => {     // intersect with every clipping box (the element too, for text) and the viewport
     let r = { left: 0, top: 0, right: vw, bottom: vh };
-    for (let e = el.parentElement; e && e !== document.documentElement; e = e.parentElement) {
+    for (let e = self ? el : el.parentElement; e && e !== document.documentElement; e = e.parentElement) {
       const cs = getComputedStyle(e);
       if (cs.overflowX !== 'visible' || cs.overflowY !== 'visible') {
         const b = e.getBoundingClientRect();
@@ -61,6 +61,27 @@ ANALYZE = r"""
     const cls = (el.getAttribute('class') || '').split(/\s+/).filter(Boolean).slice(0, 2).map((c) => '.' + c).join('');
     return el.tagName.toLowerCase() + id + cls;
   };
+  // hidden behind something opaque (e.g. a card laid over the page) is not "visible", so it
+  // cannot overlap anything; a transparent element on top does not hide what is under it
+  const opaque = (node) => {
+    for (let e = node; e && e !== document.documentElement; e = e.parentElement) {
+      const bg = getComputedStyle(e).backgroundColor;
+      const m = bg.match(/rgba?\(([^)]+)\)/);
+      if (m) { const parts = m[1].split(',').map(Number); if (parts.length < 4 || parts[3] > 0.9) return true; }
+    }
+    return false;
+  };
+  const occluded = (el, r) => {
+    const x = Math.min(vw - 1, Math.max(0, (r.left + r.right) / 2)), y = Math.min(vh - 1, Math.max(0, (r.top + r.bottom) / 2));
+    const hit = document.elementFromPoint(x, y);
+    if (!hit || hit === el || el.contains(hit) || hit.contains(el)) return false;
+    const common = (() => { for (let e = hit; e; e = e.parentElement) if (e.contains(el)) return e; return null; })();
+    for (let e = hit; e && e !== common; e = e.parentElement) {
+      const bg = getComputedStyle(e).backgroundColor, m = bg.match(/rgba?\(([^)]+)\)/);
+      if (m) { const parts = m[1].split(',').map(Number); if (parts.length < 4 || parts[3] > 0.9) return true; }
+    }
+    return false;
+  };
   const boxes = [];
   const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
   for (let n; (n = walker.nextNode());) {
@@ -68,11 +89,12 @@ ANALYZE = r"""
     if (!text) continue;
     const el = n.parentElement;
     if (!el || el.closest('script,style,title,option,template,noscript') || !shown(el)) continue;
-    const clip = clipOf(el);
+    const clip = clipOf(el, true);     // an ellipsis-cut text stops at its own box
     const range = document.createRange(); range.selectNodeContents(n);
     for (const rect of range.getClientRects()) {
       const r = cut(rect, clip);
       if (r.right - r.left < 1 || r.bottom - r.top < 1) continue;
+      if (occluded(el, r)) continue;
       boxes.push({ node: n, el, r, text: text.slice(0, 48), where: label(el), kind: 'text' });
     }
   }
@@ -81,7 +103,7 @@ ANALYZE = r"""
     const b = el.getBoundingClientRect();
     if (b.width > 48 || b.height > 48 || b.width < 2 || !shown(el)) continue;   // icons only, not diagrams
     const r = cut(b, clipOf(el));
-    if (area(r) < 4) continue;
+    if (area(r) < 4 || occluded(el, r)) continue;
     boxes.push({ node: el, el, r, text: '[icon]', where: label(el), kind: 'icon' });
   }
   const overlaps = [];
@@ -188,6 +210,13 @@ def run(output, fontsets, browser_path, states):
                             report[f"{fontset}/{size}/demo-live-missdialog"] = page.evaluate(ANALYZE)
                             if output:
                                 page.screenshot(path=str(Path(output) / fontset / size / "demo-live-missdialog.jpg"), type="jpeg", quality=70)
+                            page.keyboard.press("Escape")
+                            page.evaluate("document.querySelector('#audioBtn') && document.querySelector('#audioBtn').click()")
+                            page.wait_for_timeout(600)
+                            report[f"{fontset}/{size}/demo-live-audiodialog"] = page.evaluate(ANALYZE)
+                            if output:
+                                page.screenshot(path=str(Path(output) / fontset / size / "demo-live-audiodialog.jpg"), type="jpeg", quality=70)
+                            page.keyboard.press("Escape")
                     page.close()
                 browser.close()
     finally:

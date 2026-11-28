@@ -223,6 +223,7 @@
   function renderRooms() {
     const voices = Array.from(S.speakers.values());
     renderRoomLive();
+    renderWhoWhere(voices);
     if (views.roomBig) views.roomBig.render(K.seats, voices, S.current, K.pending && K.pending.voice);
     const un = voices.filter((v) => !zoneOf(v.id) || zoneOf(v.id) === 'me');
     setHTML($('#unseated'), un.map((v) => `<li><button type="button" class="chip${views.roomBig && views.roomBig.selected === v.id ? ' is-selected' : ''}" draggable="true" data-chip="${v.id}" style="--c:${colourVar(v.id)}" aria-label="${esc(v.name)}, no seat. Select, then press 1 to 4."><i aria-hidden="true"></i>${esc(v.name)}</button></li>`).join(''));
@@ -299,12 +300,12 @@
     if (!x || x.relative === 'learning') return '';
     if (x.relative === 'usual' && !x.accepted && !opts.showUsual) return '';
     const info = TONE_INFO[x.relative];
-    const est = x.accepted ? `<span class="est">Estimate: ${esc(EMOTION_NAME[x.label] || x.label)} ${Math.round(x.confidence * 100)}%${x.demo ? ' (scripted)' : ''}</span>` : (x.demo ? '<span class="est">scripted</span>' : '');
+    const est = x.demo ? '<span class="est">scripted</span>' : '';   // named emotions are never shown (Q11)
     return `<span class="tone-chip" title="Tone estimate: how this voice sounded compared with how this person usually sounds. A hint, not a fact about feelings."><svg viewBox="0 0 24 24" aria-hidden="true">${info.icon}</svg><span><span class="visually-hidden">Tone: </span><b>${info.label}</b></span>${est}</span>`;
   }
   function toneText(x) {
     if (!x || x.relative === 'learning' || (x.relative === 'usual' && !x.accepted)) return '';
-    return `tone: ${TONE_INFO[x.relative].label.toLowerCase()}${x.accepted ? `; estimate ${EMOTION_NAME[x.label] || x.label} ${Math.round(x.confidence * 100)}%` : ''}${x.demo ? ' (scripted)' : ''}`;
+    return `tone: ${TONE_INFO[x.relative].label.toLowerCase()}${x.demo ? ' (scripted)' : ''}`;
   }
   function onTone(e) {
     const x = { t0: e.t0, t1: e.t1, speakerId: e.speakerId, relative: e.relative, label: e.label, confidence: e.confidence, accepted: !!e.accepted, personal: !!e.personal, shift: e.shift, demo: !!e.demo };
@@ -494,6 +495,7 @@
       if (data.state === 'connected') K.stole.error = null;
       renderStole();
     });
+    on('audio', (data) => { K.audio = Object.assign({}, K.audio, data); scheduleAudioRender(); });
     on('stole_status', (data) => { if (data.device === 'stole') { K.stole = Object.assign({}, K.stole, { status: data }); renderStole(); } });
     on('stole_connected', (data) => { toast(`Stole connected: <b>${esc(data.name || data.address)}</b>.`); K.stole.state = 'connected'; renderStole(); });
     on('stole_error', (data) => { K.stole.error = data.error; renderStole(); });
@@ -502,7 +504,7 @@
   }
   function applyServerState(state) {
     K.settings = state.settings; K.stole = state.stole || K.stole; K.virtual = state.virtual;
-    K.seats = (state.seats && state.seats.seats) || {}; K.pending = state.seats && state.seats.pending; K.rooms = (state.seats && state.seats.rooms) || []; K.lastRoom = state.seats && state.seats.last_room; K.loadedRoom = state.seats && state.seats.loaded_room;
+    K.seats = (state.seats && state.seats.seats) || {}; K.seatSources = (state.seats && state.seats.sources) || {}; K.pending = state.seats && state.seats.pending; K.rooms = (state.seats && state.seats.rooms) || []; K.lastRoom = state.seats && state.seats.last_room; K.loadedRoom = state.seats && state.seats.loaded_room;
     K.queue = state.queue || K.queue; K.latency = state.latency_ms;
     if (K.settings.mode !== settings.mode) { settings.mode = K.settings.mode; saveSettings(); }
     applyDisplay(); renderStole(); renderVoices(); renderRooms(); renderNow(); fillSettings();
@@ -536,6 +538,9 @@
     if (data.rooms) { K.rooms = data.rooms; K.loadedRoom = data.loaded_room; }
     if (data.voice != null && 'zone' in data && data.action !== 'no-window' && data.action !== 'no-current') {
       K.seats[String(data.voice)] = data.zone;
+      K.seatSources = K.seatSources || {};
+      if (data.source) K.seatSources[String(data.voice)] = data.source;
+      if (data.bearing != null) (K.seatBearing = K.seatBearing || {})[String(data.voice)] = data.bearing;
       if (data.changed !== false && data.source !== 'new-voice') {
         const t = nowT();
         S.seatChanges.push({ t, voice: data.voice, zone: data.zone });
@@ -799,7 +804,7 @@
       colour: (id, lit) => { if (!lit) return colourVar(id); const s = speaker(id); return s ? light[s.idx] : '#4e5c6b'; },
       changes: S.changes, cues: S.lines.filter((l) => l.kind === 'cue').map((l) => ({ t: l.t, label: CUE_INFO[l.cue].label, short: CUE_INFO[l.cue].short })),
       showTone: settings.toneReview && S.tones.some((x) => x.personal),
-      tones: S.tones.filter((x) => x.personal && x.relative !== 'learning').map((x) => Object.assign({ text: TONE_INFO[x.relative].label + (x.accepted ? ` · estimate ${EMOTION_NAME[x.label] || x.label} ${Math.round(x.confidence * 100)}%` : '') + (x.demo ? ' (scripted)' : '') }, x)),
+      tones: S.tones.filter((x) => x.personal && x.relative !== 'learning').map((x) => Object.assign({ text: TONE_INFO[x.relative].label + '' + (x.demo ? ' (scripted)' : '') }, x)),
       queue: S.lines.filter((l) => l.kind === 'queue' && /asked/.test(l.text)).map((l) => ({ t: l.t, text: 'Asked to speak' })),
       taps: S.taps.filter((h) => h.intent !== 'test'), seats: S.seatChanges,
     };
@@ -813,7 +818,7 @@
       : 'Nothing to review yet. Start listening or watch a demo first.';
     $('#timelineWrap').innerHTML = timelineSVG(timelineData(false));
     $('#reviewLegend').innerHTML = Array.from(S.speakers.values()).map((s) => `<span><i class="swatch" style="--c:${colourVar(s.id)}"></i>${esc(s.name)}${zoneOf(s.id) === 'me' ? ' · you' : zoneOf(s.id) ? ' · ' + esc(ZONE_NAME[zoneOf(s.id)]) : ''}</span>`).join('') +
-      '<span><i class="swatch" style="--c:var(--signal)"></i>Asked to speak</span><span><i class="swatch" style="--c:var(--tap)"></i>Stole tap</span>';
+      '<span><i class="swatch" style="--c:var(--tap)"></i>Stole tap</span>';
     renderToneSummary();
     $('#reviewList').innerHTML = S.lines.map((l) => lineHTML(l, 'review')).join('');
   }
@@ -823,7 +828,7 @@
       if (!x.personal || x.relative === 'learning') continue;
       const r = by.get(x.speakerId) || { intense: 0, softer: 0, usual: 0, named: [] };
       r[x.relative]++;
-      if (x.accepted) r.named.push(`${EMOTION_NAME[x.label] || x.label} ${Math.round(x.confidence * 100)}%`);
+      // named emotions are never shown (Q11)
       by.set(x.speakerId, r);
     }
     return by;
@@ -847,6 +852,148 @@
   // Kandha never saves or exports a transcript (docs/kandha/decisions/0018): the review lives on
   // this screen only and goes with the session.
 
+  // ------------------------------------------------------------------ "Who is where?" (the seats screen)
+  // One question: who sits on which side. A card per voice (colour, shape, name); tap a card,
+  // then one of four big side buttons. Voices sharing a side are listed, never overlapped.
+  const VOICE_SHAPES = [
+    '<circle cx="12" cy="12" r="8"/>',
+    '<rect x="4.5" y="4.5" width="15" height="15" rx="2"/>',
+    '<path d="M12 3.5l9 16H3z"/>',
+    '<path d="M12 2.5l9.5 9.5-9.5 9.5L2.5 12z"/>',
+    '<path d="M12 3l8.6 6.2-3.3 10.1H6.7L3.4 9.2z"/>',
+    '<path d="M7 3.5h10l5 8.5-5 8.5H7l-5-8.5z"/>',
+  ];
+  const SEAT_SOURCE = { direction: 'heard there', pad: 'set with a pad', screen: 'set by you', key: 'set by you', drag: 'set by you',
+    room: 'from the saved room', 'mode-default': 'practicum default', 'room-load': 'from the saved room',
+    'new-voice': 'set when they first spoke', demo: 'set by the demo (scripted)' };
+  const ww = { selected: null };
+  function shapeSVG(id) {
+    const s = speaker(id);
+    return `<svg class="ww__shape" viewBox="0 0 24 24" aria-hidden="true">${VOICE_SHAPES[(s ? s.idx : 0) % VOICE_SHAPES.length]}</svg>`;
+  }
+  function seatSourceText(id) {
+    const src = K.seatSources && K.seatSources[String(id)];
+    if (!src || !zoneOf(id) || zoneOf(id) === 'me') return '';
+    const bearing = K.seatBearing && K.seatBearing[String(id)];
+    return (SEAT_SOURCE[src] || src) + (src === 'direction' && bearing != null ? ` · ${Math.round(bearing)}°` : '');
+  }
+  function wwCard(v) {
+    const z = zoneOf(v.id), src = seatSourceText(v.id);
+    const cls = 'ww__card' + (v.id === S.current ? ' is-current' : '') + (v.id === ww.selected ? ' is-selected' : '') + (z === 'me' ? ' is-me' : '');
+    return `<li><button type="button" class="${cls}" data-voice="${v.id}" draggable="true" style="--c:${colourVar(v.id)}" aria-pressed="${v.id === ww.selected}" aria-label="${esc(v.name)}, ${esc(seatText(v.id) || 'no seat')}${v.id === S.current ? ', speaking now' : ''}">${shapeSVG(v.id)}<span class="ww__name">${esc(v.name)}</span>${z === 'me' ? '<span class="ww__src">you</span>' : src ? `<span class="ww__src">${esc(src)}</span>` : ''}${v.id === S.current ? '<span class="ww__live">Speaking</span>' : ''}</button></li>`;
+  }
+  function renderWhoWhere(voices) {
+    if (!$('#wwRoom')) return;
+    voices = voices || Array.from(S.speakers.values());
+    if (ww.selected != null && !S.speakers.has(ww.selected)) ww.selected = null;
+    const by = { F: [], L: [], R: [], B: [], '': [] };
+    for (const v of voices) { const z = zoneOf(v.id); by[z && z !== 'me' ? z : ''].push(v); }
+    for (const side of $$('.ww-panel .ww__side')) setHTML(side.querySelector('.ww__list'), (by[side.dataset.side] || []).map(wwCard).join(''));
+    $('#wwEmpty').hidden = voices.length > 0;
+    const sel = ww.selected != null ? speaker(ww.selected) : null;
+    $('#wwActions').hidden = !sel;
+    if (sel) {
+      setText($('#wwSelected'), `${sel.name}: ${zoneOf(sel.id) === 'me' ? 'this is you' : zoneOf(sel.id) ? 'sits ' + ZONE_NAME[zoneOf(sel.id)] : 'no seat yet'}. Choose a side:`);
+      for (const b of $$('#wwActions [data-seat]')) b.setAttribute('aria-pressed', String((zoneOf(sel.id) || '') === b.dataset.seat));
+      if (document.activeElement !== $('#wwName')) $('#wwName').value = sel.name;
+      setHTML($('#wwJoinSel'), voices.filter((v) => v.id !== sel.id).map((v) => `<option value="${v.id}">${esc(v.name)}</option>`).join(''));
+      $('#wwJoinBtn').disabled = voices.length < 2;
+    }
+  }
+  function wireWhoWhere() {
+    const panel = $('.ww-panel');
+    if (!panel) return;
+    panel.addEventListener('click', (e) => {
+      const card = e.target.closest('.ww__card');
+      if (card) { const id = +card.dataset.voice; ww.selected = ww.selected === id ? null : id; renderWhoWhere(); return; }
+      const seat = e.target.closest('#wwActions [data-seat]');
+      if (seat && ww.selected != null) assignSeat(ww.selected, seat.dataset.seat || null, 'screen');
+    });
+    panel.addEventListener('dragstart', (e) => { const card = e.target.closest('.ww__card'); if (card) e.dataTransfer.setData('text/kandha-voice', card.dataset.voice); });
+    for (const side of $$('.ww-panel .ww__side')) {
+      side.addEventListener('dragover', (e) => { e.preventDefault(); side.classList.add('is-over'); });
+      side.addEventListener('dragleave', () => side.classList.remove('is-over'));
+      side.addEventListener('drop', (e) => { e.preventDefault(); side.classList.remove('is-over'); const id = +e.dataTransfer.getData('text/kandha-voice'); if (id) assignSeat(id, side.dataset.side || null, 'drag'); });
+    }
+    $('#wwMe').addEventListener('click', () => { if (ww.selected != null) assignSeat(ww.selected, 'me', 'screen'); });
+    $('#wwName').addEventListener('change', () => {
+      const s = ww.selected != null ? speaker(ww.selected) : null;
+      const n = $('#wwName').value.trim().slice(0, 40);
+      if (s && n) { s.name = n; rerenderHistory(); renderVoices(); renderNow(); renderRooms(); }
+    });
+    $('#wwJoinBtn').addEventListener('click', () => {
+      if (ww.selected == null) return;
+      const into = +$('#wwJoinSel').value, name = nameOf(into);
+      if (!into) return;
+      mergeVoices(into, ww.selected);
+      ww.selected = into;
+      toast(`Joined into <b>${esc(name)}</b>.`);
+    });
+  }
+
+  // ------------------------------------------------------------------ audio source and test (decision 0027)
+  const AUDIO_TEXT = {
+    mono: 'Mono: one microphone. No direction: voices are seated on the Seats screen or with the pads.',
+    stereo: 'Stereo: tells left from right, not front from back. A voice behind you shows as in front; the B pad corrects it.',
+    quad: '4-sided: four microphones on a square tell front, right, behind and left. Needs a 4-channel interface or array.',
+    recorded: 'Recorded: plays a 2- or 4-channel file with voices at known places. Everything it shows is simulated.',
+  };
+  const ZONE_WORD = { F: 'Front', R: 'Right', B: 'Behind', L: 'Left' };
+  function showAudioFields() {
+    const mode = $('#setAudioMode').value;
+    $('#audioModeText').textContent = AUDIO_TEXT[mode] || '';
+    $('#audioDeviceField').hidden = !(mode === 'stereo' || mode === 'quad');
+    $('#audioSwapField').hidden = mode !== 'stereo';
+    $('#audioFileField').hidden = mode !== 'recorded';
+  }
+  async function loadAudioDevices() {
+    try {
+      const out = await api('/api/kandha/audio/devices', {});
+      const sel = $('#setAudioDevice'), keep = (K.settings && K.settings.audio_device) || '';
+      const opts = ['<option value="">Default input</option>'].concat((out.devices || []).filter((d) => d.id && d.channels >= 2)
+        .map((d) => `<option value="${esc(d.id)}">${esc(d.name)} · ${d.channels} ch${d.pulse ? ' (PipeWire)' : ''}</option>`));
+      setHTML(sel, opts.join(''));
+      if (keep && !Array.from(sel.options).some((o) => o.value === keep)) sel.insertAdjacentHTML('beforeend', `<option value="${esc(keep)}">${esc(keep)}</option>`);
+      sel.value = keep;
+    } catch (e) { /* the list is a convenience; the device can still be typed into settings */ }
+  }
+  async function openAudioTest() {
+    try { K.audio = await api('/api/kandha/audio/status', {}); } catch (e) { /* the stream fills it in */ }
+    loadAudioDevices();
+    renderAudio();
+    $('#audioDlg').showModal();
+  }
+  let audioRaf = 0;
+  function scheduleAudioRender() { if (!audioRaf) audioRaf = requestAnimationFrame(() => { audioRaf = 0; if ($('#audioDlg').open) renderAudio(); }); }
+  function renderAudio() {
+    const a = K.audio || {};
+    const mode = a.mode || (K.settings && K.settings.audio_mode) || 'mono';
+    setText($('#audioDlgMode'), AUDIO_TEXT[mode] + (a.device ? ` Input: ${a.device}${a.channels ? `, ${a.channels} channels` : ''}${a.rate ? `, ${a.rate} Hz` : ''}.` : ''));
+    $('#audioSim').hidden = !(a.simulated || mode === 'recorded');
+    const levels = a.levels_db || [];
+    const meters = $('#audioMeters');
+    if (meters.children.length !== Math.max(levels.length, 1)) {
+      setHTML(meters, (levels.length ? levels : [null]).map((_, i) => `<div class="meterrow"><span>${levels.length ? (levels.length === 2 ? ['Left', 'Right'][i] : `Mic ${i + 1}`) : 'Input'}</span><div class="meterrow__bar"><span></span></div><span class="meterrow__db">—</span></div>`).join(''));
+    }
+    Array.from(meters.children).forEach((row, i) => {
+      const db = levels[i];
+      row.querySelector('.meterrow__bar > span').style.width = db == null ? '0%' : `${Math.max(0, Math.min(100, ((db + 70) / 60) * 100))}%`;
+      setText(row.querySelector('.meterrow__db'), db == null ? '—' : `${Math.round(db)} dB`);
+    });
+    const needle = $('#audioNeedle');
+    const zone = a.zone || null;
+    needle.hidden = a.bearing == null;
+    if (a.bearing != null) needle.setAttribute('transform', `rotate(${a.bearing} 100 100)`);
+    for (const z of $$('#audioDial .dial__zone')) z.classList.toggle('is-on', z.dataset.zone === zone);
+    setText($('#audioZone'), mode === 'mono' ? 'No direction in Mono' : zone ? ZONE_WORD[zone] : 'No voice yet');
+    setText($('#audioReading'), a.bearing != null ? `${Math.round(a.bearing)}° · ${Math.round((a.confidence || 0) * 100)}% sure${a.sided_only ? ' · left/right only' : ''}` : '');
+    $('#audioTapTest').checked = !!a.test_tap;
+    $('#audioTapTest').disabled = mode === 'mono';
+    const err = $('#audioError');
+    err.hidden = !a.error;
+    setText(err, a.error || '');
+  }
+
   // ------------------------------------------------------------------ settings screen
   let settingsFilling = false;
   function fillSettings() {
@@ -869,6 +1016,16 @@
       $('#setSeminarCues').checked = !!K.settings.seminar_cues;
       $('#setReminder').value = String(K.settings.queue_reminder_s);
       $('#setLastLayout').checked = !!K.settings.use_last_layout;
+    }
+    if (K.settings) {
+      $('#setAudioMode').value = K.settings.audio_mode || 'mono';
+      $('#setRecordedFile').value = K.settings.recorded_file || '';
+      $('#setStereoSwap').checked = !!K.settings.stereo_swap;
+      if (K.settings.audio_device && !Array.from($('#setAudioDevice').options).some((o) => o.value === K.settings.audio_device)) {
+        $('#setAudioDevice').insertAdjacentHTML('beforeend', `<option value="${esc(K.settings.audio_device)}">${esc(K.settings.audio_device)}</option>`);
+      }
+      $('#setAudioDevice').value = K.settings.audio_device || '';
+      showAudioFields();
     }
     settingsFilling = false;
   }
@@ -982,6 +1139,15 @@
       catch (err) { toast(esc(err.message)); }
     });
     $('#setLink').addEventListener('change', (e) => updateServerSettings({ link: e.target.value }));
+    $('#setAudioMode').addEventListener('change', (e) => { if (!settingsFilling) updateServerSettings({ audio_mode: e.target.value }); showAudioFields(); });
+    $('#setAudioDevice').addEventListener('change', (e) => { if (!settingsFilling) updateServerSettings({ audio_device: e.target.value }); });
+    $('#setRecordedFile').addEventListener('change', (e) => { if (!settingsFilling) updateServerSettings({ recorded_file: e.target.value.trim() }); });
+    $('#setStereoSwap').addEventListener('change', (e) => { if (!settingsFilling) updateServerSettings({ stereo_swap: e.target.checked }); });
+    wireWhoWhere();
+    $('#audioBtn').addEventListener('click', openAudioTest);
+    $('#audioTestBtn').addEventListener('click', openAudioTest);
+    $('#audioTapTest').addEventListener('change', async (e) => { try { K.audio = await api('/api/kandha/audio/test-tap', { on: e.target.checked }); renderAudio(); } catch (err) { toast(esc(err.message)); } });
+    $('#audioDlg').addEventListener('close', () => { if ($('#audioTapTest').checked) { $('#audioTapTest').checked = false; api('/api/kandha/audio/test-tap', { on: false }).catch(() => {}); } });
     $('#forgetBtn').addEventListener('click', async () => { try { const snap = await api('/api/kandha/stole/forget', {}); K.stole = snap.stole; renderStole(); } catch (e) { toast(esc(e.message)); } });
     $$('[data-test]').forEach((b) => b.addEventListener('click', async () => { try { await api('/api/kandha/test', { zone: b.dataset.test }); } catch (e) { toast(esc(e.message)); } }));
     $('#stopTapsBtn').addEventListener('click', async () => { try { await api('/api/kandha/stop', {}); } catch (e) { toast(esc(e.message)); } });
@@ -1062,14 +1228,14 @@
     document.addEventListener('keydown', (e) => {
       if (e.target.closest('input, textarea, select, dialog[open], [contenteditable]') || e.metaKey || e.ctrlKey || e.altKey) return;
       const k = e.key.toLowerCase();
-      if (k === 'q') { e.preventDefault(); toggleQueue(); }
-      else if (k === 's') { e.preventDefault(); $('#startBtn').click(); }
+      // Q was "I want to speak"; the queue is scrapped in the final design and hidden
+      if (k === 's') { e.preventDefault(); $('#startBtn').click(); }
       else if (k === 'n') { e.preventDefault(); $('#newVoiceBtn').click(); }
       else if (k === 'm') { e.preventDefault(); $('#missBtn').click(); }
       else if (/^[1-4]$/.test(k)) {
         e.preventDefault();
         const z = { 1: 'L', 2: 'R', 3: 'B', 4: 'F' }[k];
-        const selected = views.roomBig && views.roomBig.selected;
+        const selected = ww.selected;
         assignSeat(selected != null && settings.screen === 'seats' ? selected : S.current, z, 'key');
       }
     });

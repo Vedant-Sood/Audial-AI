@@ -1,0 +1,434 @@
+{
+ "system/1280x720/empty-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 59
+ },
+ "system/1280x720/empty-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 48
+ },
+ "system/1280x720/demo-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 70
+ },
+ "system/1280x720/demo-stole": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 60
+ },
+ "system/1280x720/demo-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 55
+ },
+ "system/1280x720/demo-review": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 55
+ },
+ "system/1280x720/demo-settings": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 61
+ },
+ "system/1280x720/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 24
+ },
+ "system/1280x720/demo-live-audiodialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 15
+ },
+ "system/1920x1080/empty-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 68
+ },
+ "system/1920x1080/empty-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 47
+ },
+ "system/1920x1080/demo-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 78
+ },
+ "system/1920x1080/demo-stole": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 78
+ },
+ "system/1920x1080/demo-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 54
+ },
+ "system/1920x1080/demo-review": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 79
+ },
+ "system/1920x1080/demo-settings": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 88
+ },
+ "system/1920x1080/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 29
+ },
+ "system/1920x1080/demo-live-audiodialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 15
+ },
+ "system/390x844/empty-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 35
+ },
+ "system/390x844/empty-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 35
+ },
+ "system/390x844/demo-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 44
+ },
+ "system/390x844/demo-stole": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 40
+ },
+ "system/390x844/demo-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 42
+ },
+ "system/390x844/demo-review": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 44
+ },
+ "system/390x844/demo-settings": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 31
+ },
+ "system/390x844/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 24
+ },
+ "system/390x844/demo-live-audiodialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 19
+ },
+ "system/360x640/empty-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 29
+ },
+ "system/360x640/empty-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 31
+ },
+ "system/360x640/demo-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 30
+ },
+ "system/360x640/demo-stole": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 33
+ },
+ "system/360x640/demo-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 38
+ },
+ "system/360x640/demo-review": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 32
+ },
+ "system/360x640/demo-settings": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 26
+ },
+ "system/360x640/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 20
+ },
+ "system/360x640/demo-live-audiodialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 16
+ },
+ "bundled/1280x720/empty-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 59
+ },
+ "bundled/1280x720/empty-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 48
+ },
+ "bundled/1280x720/demo-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 70
+ },
+ "bundled/1280x720/demo-stole": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 60
+ },
+ "bundled/1280x720/demo-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 55
+ },
+ "bundled/1280x720/demo-review": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 55
+ },
+ "bundled/1280x720/demo-settings": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 61
+ },
+ "bundled/1280x720/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 24
+ },
+ "bundled/1280x720/demo-live-audiodialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 15
+ },
+ "bundled/1920x1080/empty-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 68
+ },
+ "bundled/1920x1080/empty-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 47
+ },
+ "bundled/1920x1080/demo-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 78
+ },
+ "bundled/1920x1080/demo-stole": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 78
+ },
+ "bundled/1920x1080/demo-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 54
+ },
+ "bundled/1920x1080/demo-review": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 79
+ },
+ "bundled/1920x1080/demo-settings": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 88
+ },
+ "bundled/1920x1080/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 29
+ },
+ "bundled/1920x1080/demo-live-audiodialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 15
+ },
+ "bundled/390x844/empty-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 35
+ },
+ "bundled/390x844/empty-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 35
+ },
+ "bundled/390x844/demo-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 44
+ },
+ "bundled/390x844/demo-stole": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 40
+ },
+ "bundled/390x844/demo-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 42
+ },
+ "bundled/390x844/demo-review": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 44
+ },
+ "bundled/390x844/demo-settings": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 31
+ },
+ "bundled/390x844/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 24
+ },
+ "bundled/390x844/demo-live-audiodialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 19
+ },
+ "bundled/360x640/empty-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 29
+ },
+ "bundled/360x640/empty-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 31
+ },
+ "bundled/360x640/demo-live": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 30
+ },
+ "bundled/360x640/demo-stole": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 33
+ },
+ "bundled/360x640/demo-seats": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 38
+ },
+ "bundled/360x640/demo-review": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 32
+ },
+ "bundled/360x640/demo-settings": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 27
+ },
+ "bundled/360x640/demo-live-missdialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 20
+ },
+ "bundled/360x640/demo-live-audiodialog": {
+  "overlaps": [],
+  "missing": {},
+  "spill": [],
+  "boxes": 16
+ }
+}

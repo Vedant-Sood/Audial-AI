@@ -236,7 +236,7 @@
     const x0 = 20, W = Math.max(600, Math.ceil(T * pxPerSec) + 40);
     // taps get 32 px so their zone letters stay inside their own lane (U5); the queue lane is
     // hidden with the rest of the scrapped queue feature (U12)
-    const lanes = [['voices', 44], ['cues', 24], ['tone', data.showTone ? 22 : 0], ['taps', 32], ['seats', data.seats && data.seats.length ? 18 : 0]].filter((l) => l[1] > 0);
+    const lanes = [['voices', 44], ['cues', 24], ['tone', data.showTone ? 22 : 0], ['taps', 40], ['seats', data.seats && data.seats.length ? 18 : 0]].filter((l) => l[1] > 0);
     let y = 18; const laneY = {};
     for (const [name, h] of lanes) { laneY[name] = y; y += h + 6; }
     const H = y + 16;
